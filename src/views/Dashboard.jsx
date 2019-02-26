@@ -2,7 +2,7 @@ import React from 'react';
 
 function Dashboard() {
   return (
-    <main>
+    <main className="container-fluid overflow-auto">
       <h2>Dashboard</h2>
       <SummaryDashboard />
       <BalanceDashboard />
@@ -14,7 +14,7 @@ function BalanceDashboard() {
   return (
     <section>
       <h3>Top Ten Balances</h3>
-      <table>
+      <table className="table table-striped table-bordered table-hover table-sm">
         <caption>Top ten users with outstanding balances</caption>
         <thead>
           <tr>
@@ -25,52 +25,52 @@ function BalanceDashboard() {
         </thead>
         <tbody>
           <tr>
-            <td>Username</td>
+            <th scope="row">Username</th>
             <td>Medication</td>
             <td>Balance</td>
           </tr>
           <tr>
-            <td>Username</td>
+            <th scope="row">Username</th>
             <td>Medication</td>
             <td>Balance</td>
           </tr>
           <tr>
-            <td>Username</td>
+            <th scope="row">Username</th>
             <td>Medication</td>
             <td>Balance</td>
           </tr>
           <tr>
-            <td>Username</td>
+            <th scope="row">Username</th>
             <td>Medication</td>
             <td>Balance</td>
           </tr>
           <tr>
-            <td>Username</td>
+            <th scope="row">Username</th>
             <td>Medication</td>
             <td>Balance</td>
           </tr>
           <tr>
-            <td>Username</td>
+            <th scope="row">Username</th>
             <td>Medication</td>
             <td>Balance</td>
           </tr>
           <tr>
-            <td>Username</td>
+            <th scope="row">Username</th>
             <td>Medication</td>
             <td>Balance</td>
           </tr>
           <tr>
-            <td>Username</td>
+            <th scope="row">Username</th>
             <td>Medication</td>
             <td>Balance</td>
           </tr>
           <tr>
-            <td>Username</td>
+            <th scope="row">Username</th>
             <td>Medication</td>
             <td>Balance</td>
           </tr>
           <tr>
-            <td>Username</td>
+            <th scope="row">Username</th>
             <td>Medication</td>
             <td>Balance</td>
           </tr>
@@ -84,7 +84,7 @@ function SummaryDashboard() {
   return (
     <section>
       <h3>Summary</h3>
-      <table>
+      <table className="table table-bordered table-sm">
         <caption>Summary of C2 activity</caption>
         <thead>
           <tr>

@@ -1,8 +1,8 @@
 {
   "name": "c2-auditing-tools",
-  "productName": "c2-auditing-tools",
-  "version": "1.0.0",
-  "description": "My Electron application description",
+  "productName": "C2 Auditing Tools",
+  "version": "0.0.0",
+  "description": "Tools for auditing C2 medication handling at North Shore University Hospital",
   "main": "src/index.js",
   "scripts": {
     "start": "electron-forge start",
@@ -54,6 +54,7 @@
     "electron-squirrel-startup": "^1.0.0",
     "jquery": "^3.3.1",
     "popper.js": "^1.14.7",
+    "prop-types": "^15.7.2",
     "react": "^15.6.2",
     "react-dom": "^15.6.2",
     "react-hot-loader": "^3.1.3",

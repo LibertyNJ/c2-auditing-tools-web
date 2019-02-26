@@ -8,6 +8,8 @@ import Dashboard from './views/Dashboard';
 import Transactions from './views/Transactions';
 import Balance from './views/Balance';
 import Users from './views/Users';
+import Pyxis from './views/Pyxis';
+import Administrations from './views/Administrations';
 
 const version = '0.0.0';
 
@@ -22,6 +24,8 @@ export default class App extends React.Component {
           <Route path="/users" component={Users} />
           <Route path="/transactions" component={Transactions} />
           <Route path="/balance" component={Balance} />
+          <Route path="/pyxis" component={Pyxis} />
+          <Route path="/administrations" component={Administrations} />
         </Switch>
         <Footer version={version} />
       </div>
