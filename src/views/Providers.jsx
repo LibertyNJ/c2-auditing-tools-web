@@ -1,6 +1,6 @@
 import React from 'react';
 
-function Users() {
+function Providers() {
   return (
     <main className="container-fluid overflow-auto">
       <h2>Users</h2>
@@ -66,4 +66,4 @@ function Table() {
   );
 }
 
-export default Users;
+export default Providers;
