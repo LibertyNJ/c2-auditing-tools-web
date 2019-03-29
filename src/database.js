@@ -9,7 +9,7 @@ const database = {
     administration: {
       columns: {
         id: 'INTEGER PRIMARY KEY',
-        providerId: 'INTEGER REFERENCES provider(id) NOT NULL',
+        providerEmarId: 'INTEGER REFERENCES providerEmar(id) NOT NULL',
         medicationOrderId: 'CHAR(9) REFERENCES medicationOrder(id) NOT NULL',
         timestamp: 'CHAR(19) NOT NULL',
       },
@@ -19,10 +19,17 @@ const database = {
       },
     },
 
+    medication: {
+      columns: {
+        id: 'INTEGER PRIMARY KEY',
+        name: 'VARCHAR(255) UNIQUE NOT NULL',
+      },
+    },
+
     medicationOrder: {
       columns: {
         id: 'CHAR(9) PRIMARY KEY',
-        medication: 'VARCHAR(255) NOT NULL',
+        medicationId: 'VARCHAR(255) REFERENCES medication(id) NOT NULL',
         dose: 'FLOAT NOT NULL',
         units: 'VARCHAR(255) NOT NULL',
         form: 'VARCHAR(255) NOT NULL',
@@ -33,21 +40,21 @@ const database = {
     medicationProduct: {
       columns: {
         id: 'INTEGER PRIMARY KEY',
-        medication: 'VARCHAR(255) NOT NULL',
-        strength: 'INT NOT NULL',
+        medicationId: 'VARCHAR(255) REFERENCES medication(id) NOT NULL',
+        strength: 'FLOAT NOT NULL',
         units: 'VARCHAR(255) NOT NULL',
         form: 'VARCHAR(255) NOT NULL',
-        adcId: 'INTEGER REFERENCES medicationProductAdcId(id) UNIQUE NOT NULL',
+        adcId: 'INTEGER REFERENCES medicationProductAdc(id) UNIQUE NOT NULL',
       },
     },
 
-    medicationProductAdcId: {
+    medicationProductAdc: {
       columns: {
         id: 'INTEGER PRIMARY KEY',
-        value: 'VARCHAR(255) UNIQUE NOT NULL',
+        name: 'VARCHAR(255) UNIQUE NOT NULL',
       },
       unique: {
-        columns: ['value'],
+        columns: ['name'],
         onConflict: 'ignore',
       },
     },
@@ -58,29 +65,29 @@ const database = {
         lastName: 'VARCHAR(255) NOT NULL',
         firstName: 'VARCHAR(255) NOT NULL',
         mi: 'CHAR(1)',
-        adcId: 'INTEGER REFERENCES providerAdcId(id) UNIQUE',
-        emarId: 'INTEGER REFERENCES providerEmarId(id) UNIQUE',
+        adcId: 'INTEGER REFERENCES providerAdc(id) UNIQUE',
+        emarId: 'INTEGER REFERENCES providerEmar(id) UNIQUE',
       },
     },
 
-    providerAdcId: {
+    providerAdc: {
       columns: {
         id: 'INTEGER PRIMARY KEY',
-        value: 'VARCHAR(255) NOT NULL',
+        name: 'VARCHAR(255) NOT NULL',
       },
       unique: {
-        columns: ['value'],
+        columns: ['name'],
         onConflict: 'ignore',
       },
     },
 
-    providerEmarId: {
+    providerEmar: {
       columns: {
         id: 'INTEGER PRIMARY KEY',
-        value: 'VARCHAR(255) NOT NULL',
+        name: 'VARCHAR(255) NOT NULL',
       },
       unique: {
-        columns: ['value'],
+        columns: ['name'],
         onConflict: 'ignore',
       },
     },
@@ -88,7 +95,7 @@ const database = {
     restock: {
       columns: {
         id: 'INTEGER PRIMARY KEY',
-        providerId: 'INTEGER REFERENCES provider(id) NOT NULL',
+        providerAdcId: 'INTEGER REFERENCES ProviderAdc(id) NOT NULL',
         medicationOrderId: 'CHAR(9) REFERENCES medicationOrder(id) NOT NULL',
         medicationProductId:
           'INTEGER REFERENCES medicationProduct(id) NOT NULL',
@@ -104,7 +111,7 @@ const database = {
     return: {
       columns: {
         id: 'INTEGER PRIMARY KEY',
-        providerId: 'INTEGER REFERENCES provider(id) NOT NULL',
+        providerAdcId: 'INTEGER REFERENCES ProviderAdc(id) NOT NULL',
         medicationOrderId: 'CHAR(9) REFERENCES medicationOrder(id) NOT NULL',
         medicationProductId:
           'INTEGER REFERENCES medicationProduct(id) NOT NULL',
@@ -128,7 +135,7 @@ const database = {
     waste: {
       columns: {
         id: 'INTEGER PRIMARY KEY',
-        providerId: 'INTEGER REFERENCES provider(id) NOT NULL',
+        providerAdcId: 'INTEGER REFERENCES ProviderAdc(id) NOT NULL',
         medicationOrderId: 'CHAR(9) REFERENCES medicationOrder(id) NOT NULL',
         medicationProductId:
           'INTEGER REFERENCES medicationProduct(id) NOT NULL',
@@ -144,7 +151,7 @@ const database = {
     withdrawal: {
       columns: {
         id: 'INTEGER PRIMARY KEY',
-        providerId: 'INTEGER REFERENCES provider(id) NOT NULL',
+        providerAdcId: 'INTEGER REFERENCES ProviderAdc(id) NOT NULL',
         medicationOrderId: 'CHAR(9) REFERENCES medicationOrder(id) NOT NULL',
         medicationProductId:
           'INTEGER REFERENCES medicationProduct(id) NOT NULL',
@@ -157,6 +164,15 @@ const database = {
       },
     },
   },
+
+  medications: [
+    'Fentanyl',
+    'Hydrocodone–Homatropine',
+    'Hydromorphone',
+    'Morphine',
+    'Oxycodone',
+    'Oxycodone–Acetaminophen',
+  ],
 
   open() {
     this.db = new sqlite3.Database(this.file, err => {
@@ -182,14 +198,45 @@ const database = {
     });
   },
 
+  serialize(callback) {
+    if (callback) {
+      this.db.serialize(() => {
+        callback();
+      });
+    } else {
+      this.db.serialize();
+    }
+  },
+
+  parallelize(callback) {
+    if (callback) {
+      this.db.parallelize(() => {
+        callback();
+      });
+    } else {
+      this.db.parallelize();
+    }
+  },
+
   initialize() {
     this.open();
+    this.serialize();
 
     Object.entries(this.schema).forEach(([tableName, parameters]) =>
       this.createTable(tableName, parameters)
     );
 
+    this.medications.forEach(medication => {
+      this.create('medication', {
+        onConflict: 'ignore',
+        data: {
+          name: medication,
+        },
+      });
+    });
+
     this.clean();
+
     this.close();
   },
 
@@ -224,7 +271,15 @@ const database = {
       : '';
 
     const columns = Object.keys(parameters.data).join(', ');
-    const values = Object.values(parameters.data).join(', ');
+    const values = Object.values(parameters.data)
+      .map(value => {
+        if (typeof value === 'string') {
+          return `'${value}'`;
+        }
+
+        return value;
+      })
+      .join(', ');
 
     this.db.run(
       `
@@ -237,7 +292,8 @@ const database = {
         if (err) {
           throw err;
         }
-        console.log(`Created record with ID ${this.lastId} in ${tableName}.`);
+
+        console.log(`Created record with ID ${this.lastID} in ${tableName}.`);
       }
     );
   },
@@ -268,6 +324,24 @@ const database = {
       : '';
 
     const limit = parameters.limit ? `LIMIT ${parameters.limit}` : '';
+
+    if (parameters.columns.length === 1 && /id/i.test(parameters.columns[0])) {
+      this.db.get(
+        `
+        SELECT ${columns}
+        FROM ${tableName}
+        WHERE ${where}
+        `,
+        [],
+        (err, row) => {
+          if (err) {
+            throw err;
+          }
+
+          return row.id;
+        }
+      );
+    }
 
     this.db.all(
       `
