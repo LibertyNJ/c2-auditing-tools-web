@@ -1,26 +1,35 @@
-import Excel from 'exceljs';
-import fs from 'fs';
+// import Excel from 'exceljs';
+// import fs from 'fs';
+import { ipcRenderer } from 'electron';
 import React from 'react';
-import database from '../database';
+// import database from '../database';
 
 const Data = () => (
-  <main className="container-fluid overflow-auto">
+  <React.Fragment>
     <h1 className="text-center">Data</h1>
-    <p className="lead">Upload data to the database.</p>
-    <p>Use the filepickers below to add data to the database.</p>
-    <ol>
-      <li>
-        Download these reports from BICC and RxAuditor for the same time period:
-        <ul>
-          <li>Medication Order Task Status Summary (as CSV)</li>
-          <li>C2 Activity (as XLSX)</li>
-        </ul>
-      </li>
-      <li>Select each file with the appropriate filepicker widget.</li>
-      <li>Press upload.</li>
-    </ol>
-    <DataUploadForm />
-  </main>
+    <div className="row">
+      <div className="col mx-auto" style={{ maxWidth: '33em' }}>
+        <p className="lead">Upload data to the database.</p>
+        <p>Use the filepickers below to add data to the database.</p>
+        <ol>
+          <li>
+            Download these reports from BICC and RxAuditor for the same time period:
+            <ul>
+              <li>
+                Medication Order Task Status Summary (<span className="font-italic">as CSV</span>)
+              </li>
+              <li>
+                C2 Activity (<span className="font-italic">as XLSX</span>)
+              </li>
+            </ul>
+          </li>
+          <li>Select each file with the appropriate filepicker widget.</li>
+          <li>Press upload.</li>
+        </ol>
+        <DataUploadForm />
+      </div>
+    </div>
+  </React.Fragment>
 );
 
 class DataUploadForm extends React.Component {
@@ -29,11 +38,7 @@ class DataUploadForm extends React.Component {
 
     this.state = {
       emar: '',
-      emarFileName: '',
-      emarFilePath: '',
       adc: '',
-      adcFileName: '',
-      adcFilePath: '',
       isUploading: false,
     };
 
@@ -60,340 +65,14 @@ class DataUploadForm extends React.Component {
   handleSubmit(event) {
     event.preventDefault();
     this.setState({ isUploading: true });
-
-    const getMedication = string => {
-      if (/oxycodone/i.test(string)) {
-        if (/acetaminophen/i.test(string)) {
-          return 'Oxycodone–Acetaminophen';
-        }
-
-        return 'Oxycodone';
-      }
-
-      if (/hydromorphone/i.test(string)) {
-        return 'Hydromorphone';
-      }
-
-      if (/morphine/i.test(string)) {
-        return 'Morphine';
-      }
-
-      if (/fentanyl/i.test(string)) {
-        return 'Fentanyl';
-      }
-
-      if (/hydrocodone/i.test(string)) {
-        if (/homatrop/i.test(string)) {
-          return 'Hydrocodone–Homatropine';
-        }
-
-        return null;
-      }
-
-      return null;
-    };
-
-    const getUnits = string => {
-      if (/milligram/i.test(string)) {
-        return 'mG';
-      }
-
-      if (/microgram/i.test(string)) {
-        if (/kg\/hr/i.test(string)) {
-          return 'mCg/kG/Hr';
-        }
-
-        return 'mCg';
-      }
-
-      if (/mg\/hr/i.test(string)) {
-        return 'mG/Hr';
-      }
-
-      if (/tablet/i.test(string)) {
-        return 'tablet';
-      }
-
-      if (/patch/i.test(string)) {
-        return 'patch';
-      }
-
-      return null;
-    };
-
-    const getForm = string => {
-      if (/tablet/i.test(string)) {
-        if (/[^a-zA-Z]ER[^a-zA-Z]/.test(string)) {
-          return 'ER Tablet';
-        }
-
-        return 'Tablet';
-      }
-
-      if (/[^a-zA-Z]ir[^a-zA-Z]|oxycodone.*acetaminophen/i.test(string)) {
-        return 'Tablet';
-      }
-
-      if (/capsule/i.test(string)) {
-        return 'Capsule';
-      }
-
-      if (/cup|syrup|solution|liquid/i.test(string)) {
-        return 'Cup';
-      }
-
-      if (/vial/i.test(string)) {
-        return 'Vial';
-      }
-
-      if (/injectable/i.test(string)) {
-        return 'Injectable';
-      }
-
-      if (/ampule/i.test(string)) {
-        return 'Ampule';
-      }
-
-      if (/patch/i.test(string)) {
-        return 'Patch';
-      }
-
-      if (/bag|infusion|ivbp/i.test(string)) {
-        return 'Bag';
-      }
-
-      if (/syringe|tubex|pca/i.test(string)) {
-        return 'Syringe';
-      }
-
-      if (/concentrate/i.test(string)) {
-        return 'Concentrate';
-      }
-
-      return null;
-    };
-
-    const getTransactionType = string => {
-      switch (string) {
-        case 'WITHDRAWN':
-          return 'withdrawal';
-
-        case 'RESTOCKED':
-          return 'restock';
-
-        case 'RETURNED':
-          return 'return';
-
-        default:
-          return null;
-      }
-    };
-
-    database.open();
-
-    const adcData = fs.createReadStream(`file://${this.state.adcFilePath}`);
-
-    const adcWorkbook = new Excel.Workbook();
-    adcWorkbook.xlsx
-      .read(adcData)
-      .then(() => {
-        const getTimestamp = (date, time) => {
-          const [month, day, year] = date.split(/\//);
-          return `'${year}/${month}/${day}T${time}'`;
-        };
-
-        const worksheet = adcWorkbook.getWorksheet(1);
-        worksheet.eachRow((row, rowNumber) => {
-          const headerRowNumber = 11;
-          const transactionType = getTransactionType(row.getCell('E').value);
-
-          if (rowNumber > headerRowNumber && transactionType) {
-            const strength = row.getCell('O').value;
-            const units = getUnits(row.getCell('P').value);
-            const form = getForm(row.getCell('C').value);
-            const medicationOrderId = row.getCell('J').value.slice(1);
-            const amount = row.getCell('D').value;
-            const timestamp = getTimestamp(
-              row.getCell('A').value,
-              row.getCell('B').value
-            );
-
-            database.serialize(() => {
-              database.create('providerAdc', {
-                onConflict: 'ignore',
-                data: { name: row.getCell('K').value },
-              });
-
-              const providerAdcId = database.read('providerAdc', {
-                columns: ['id'],
-                where: { name: row.getCell('K').value },
-              });
-
-              database.create('medicationProductAdc', {
-                onConflict: 'ignore',
-                data: { name: row.getCell('C').value },
-              });
-
-              const medicationProductAdcId = database.read(
-                'medicationProductAdc',
-                {
-                  columns: ['id'],
-                  where: { name: row.getCell.toString('C').value },
-                }
-              );
-
-              const medicationId = database.read('medication', {
-                columns: ['id'],
-                where: { name: getMedication(row.getCell('C').value) },
-              });
-
-              database.create('medicationProduct', {
-                onConflict: 'ignore',
-                data: {
-                  medicationId,
-                  strength,
-                  units,
-                  form,
-                  adcId: medicationProductAdcId,
-                },
-              });
-
-              const medicationProductId = database.read('medicationProduct', {
-                columns: ['id'],
-                where: { adcId: medicationProductAdcId },
-              });
-
-              database.create(transactionType, {
-                onConflict: 'ignore',
-                data: {
-                  providerAdcId,
-                  medicationOrderId,
-                  medicationProductId,
-                  amount,
-                  timestamp,
-                },
-              });
-
-              if (/WASTED/.test(row.getCell('F').value)) {
-                const waste = row.getCell('F').value.split(/\s/)[2];
-
-                database.create('waste', {
-                  onConflict: 'ignore',
-                  data: {
-                    providerAdcId,
-                    medicationOrderId,
-                    medicationProductId,
-                    waste,
-                    timestamp,
-                  },
-                });
-              }
-            });
-          }
-        });
-      })
-      .then(() => adcData.close())
-      .catch(error => {
-        throw error;
-      });
-
-    const emarData = fs.createReadStream(`file://${this.state.emarFilePath}`);
-
-    const emarWorkbook = new Excel.Workbook();
-    emarWorkbook.csv
-      .read(emarData)
-      .then(worksheet => {
-        const getTimestamp = string => {
-          if (!string) {
-            return null;
-          }
-
-          const [date, time, meridian] = string.split(/\s/);
-
-          let [month, day, year] = date.split(/\//);
-          month = month.padStart(2, '0');
-          day = day.padStart(2, '0');
-
-          let [hours, minutes] = time.split(/:/);
-          if (meridian === 'PM' && hours !== '12') {
-            hours = (+hours + 12).toString();
-          } else if (meridian === 'AM' && hours === '12') {
-            hours = '00';
-          } else {
-            hours = hours.padStart(2, '0');
-          }
-          return `${year}/${month}/${day}T${hours}:${minutes}:00`;
-        };
-
-        worksheet.eachRow((row, rowNumber) => {
-          const headerRowNumber = 7;
-
-          if (rowNumber > headerRowNumber) {
-            const visitId = row.getCell('F').value;
-            const discharged = getTimestamp(row.getCell('L').value);
-            const mrn = row.getCell('G').value.padStart(8, '0');
-            const medicationOrderId = row.getCell('M').value;
-            let [dose, units] = row.getCell('R').value.split(/\s/);
-            const form = getForm(row.getCell('P').value);
-            units = getUnits(units);
-            const timestamp = getTimestamp(row.getCell('AM'));
-
-            database.create('visit', {
-              onConflict: 'ignore',
-              data: {
-                id: visitId,
-                discharged,
-                mrn,
-              },
-            });
-
-            database.serialize(() => {
-              const medicationId = database.read('medication', {
-                columns: ['id'],
-                where: { name: getMedication(row.getCell('O').value) },
-              });
-
-              database.create('medicationOrder', {
-                onConflict: 'ignore',
-                data: {
-                  id: medicationOrderId,
-                  medicationId,
-                  dose,
-                  units,
-                  form,
-                  visitId,
-                },
-              });
-
-              database.create('providerEmar', {
-                onConflict: 'ignore',
-                data: {
-                  name: row.getCell('AP').value,
-                },
-              });
-
-              const providerEmarId = database.read('providerEmar', {
-                columns: ['id'],
-                where: { name: row.getCell('AP').value },
-              });
-
-              database.create('administration', {
-                onConflict: 'ignore',
-                data: { providerEmarId, medicationOrderId, timestamp },
-              });
-            });
-          }
-        });
-      })
-      .then(() => emarData.close())
-      .catch(error => console.error(error));
+    ipcRenderer.send('data-upload', { emarPath: this.state.emar, adcPath: this.state.adc });
   }
 
   render() {
     return (
       <form className="form" onSubmit={this.handleSubmit}>
         <div className="form-row">
-          <div className="col-6">
+          <div className="col">
             <FileInput
               name="emar"
               value={this.state.emar}
@@ -409,7 +88,7 @@ class DataUploadForm extends React.Component {
           </div>
         </div>
         <div className="form-row">
-          <div className="col-6">
+          <div className="col">
             <FileInput
               name="adc"
               value={this.state.adc}
@@ -425,7 +104,7 @@ class DataUploadForm extends React.Component {
           </div>
         </div>
         <div className="form-row">
-          <div className="col-6">
+          <div className="col">
             <UploadButton isUploading={this.state.isUploading} />
           </div>
         </div>
@@ -452,15 +131,11 @@ const FileInput = props => (
   </div>
 );
 
-const UploadButton = props => {
+const UploadButton = (props) => {
   if (props.isUploading) {
     return (
       <button className="btn btn-primary mb-3 ml-auto" type="submit" disabled>
-        <span
-          className="spinner-border spinner-border-sm"
-          role="status"
-          aria-hidden="true"
-        />
+        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
         Uploading…
       </button>
     );

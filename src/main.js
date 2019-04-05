@@ -1,8 +1,8 @@
-import { app, BrowserWindow } from 'electron';
-import database from './database';
-import installExtension, {
-  REACT_DEVELOPER_TOOLS,
-} from 'electron-devtools-installer';
+import { fork } from 'child_process';
+import path from 'path';
+
+import { app, BrowserWindow, ipcMain } from 'electron';
+import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
 import { enableLiveReload } from 'electron-compile';
 
 let mainWindow;
@@ -18,22 +18,27 @@ const createWindow = async () => {
 
   mainWindow.loadURL(`file://${__dirname}/index.html`);
 
+  if (isDevMode) {
+    await installExtension(REACT_DEVELOPER_TOOLS);
+  }
+
   mainWindow.once('ready-to-show', () => {
     mainWindow.maximize();
     mainWindow.show();
-  });
 
-  if (isDevMode) {
-    await installExtension(REACT_DEVELOPER_TOOLS);
-    mainWindow.webContents.openDevTools();
-  }
+    if (isDevMode) {
+      mainWindow.webContents.openDevTools();
+    }
+  });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
 };
 
-app.on('ready', createWindow);
+app.on('ready', () => {
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -47,4 +52,7 @@ app.on('activate', () => {
   }
 });
 
-database.initialize();
+const dbProcessPath = path.join(__dirname, 'database.js');
+const db = fork(dbProcessPath, [], {});
+
+ipcMain.on('data-upload', (event, arg) => console.log(arg));
