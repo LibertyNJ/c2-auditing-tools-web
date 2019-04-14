@@ -2,7 +2,9 @@ import { fork } from 'child_process';
 import path from 'path';
 
 import { app, BrowserWindow, ipcMain } from 'electron';
-import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
+import installExtension, {
+  REACT_DEVELOPER_TOOLS,
+} from 'electron-devtools-installer';
 import { enableLiveReload } from 'electron-compile';
 
 let mainWindow;
@@ -54,5 +56,12 @@ app.on('activate', () => {
 
 const dbProcessPath = path.join(__dirname, 'database.js');
 const db = fork(dbProcessPath, [], {});
+db.on('message', data => {
+  if (data.header === 'query') {
+    mainWindow.webContents.send('query', data);
+  } else {
+    mainWindow.webContents.send('database', data);
+  }
+});
 
-ipcMain.on('data-upload', (event, arg) => console.log(arg));
+ipcMain.on('database', (event, data) => db.send(data));

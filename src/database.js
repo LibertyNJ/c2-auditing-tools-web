@@ -1,205 +1,23 @@
 const path = require('path');
+const fs = require('fs');
 
 const Database = require('better-sqlite3');
+const Excel = require('exceljs');
+
+const schema = require('./schema.js');
 
 const dbPath = path.join(__dirname, 'data', 'database.db');
 const db = new Database(dbPath, { verbose: console.log });
 
-const schema = {
-  administration: {
-    columns: {
-      id: 'INTEGER PRIMARY KEY',
-      providerEmarId: 'INTEGER REFERENCES providerEmar(id) NOT NULL',
-      medicationOrderId: 'CHAR(9) REFERENCES medicationOrder(id) NOT NULL',
-      timestamp: 'CHAR(19) NOT NULL',
-    },
-    unique: {
-      columns: ['medicationOrderId', 'timestamp'],
-      onConflict: 'ignore',
-    },
-  },
-
-  medication: {
-    columns: {
-      id: 'INTEGER PRIMARY KEY',
-      name: 'VARCHAR(255) UNIQUE NOT NULL',
-    },
-  },
-
-  medicationOrder: {
-    columns: {
-      id: 'CHAR(9) PRIMARY KEY',
-      medicationId: 'VARCHAR(255) REFERENCES medication(id) NOT NULL',
-      dose: 'FLOAT NOT NULL',
-      units: 'VARCHAR(255) NOT NULL',
-      form: 'VARCHAR(255) NOT NULL',
-      visitId: 'CHAR(12) REFERENCES visit(id) NOT NULL',
-    },
-  },
-
-  medicationProduct: {
-    columns: {
-      id: 'INTEGER PRIMARY KEY',
-      medicationId: 'VARCHAR(255) REFERENCES medication(id) NOT NULL',
-      strength: 'FLOAT NOT NULL',
-      units: 'VARCHAR(255) NOT NULL',
-      form: 'VARCHAR(255) NOT NULL',
-      adcId: 'INTEGER REFERENCES medicationProductAdc(id) UNIQUE NOT NULL',
-    },
-  },
-
-  medicationProductAdc: {
-    columns: {
-      id: 'INTEGER PRIMARY KEY',
-      name: 'VARCHAR(255) UNIQUE NOT NULL',
-    },
-    unique: {
-      columns: ['name'],
-      onConflict: 'ignore',
-    },
-  },
-
-  provider: {
-    columns: {
-      id: 'INTEGER PRIMARY KEY',
-      lastName: 'VARCHAR(255) NOT NULL',
-      firstName: 'VARCHAR(255) NOT NULL',
-      mi: 'CHAR(1)',
-      adcId: 'INTEGER REFERENCES providerAdc(id) UNIQUE',
-      emarId: 'INTEGER REFERENCES providerEmar(id) UNIQUE',
-    },
-  },
-
-  providerAdc: {
-    columns: {
-      id: 'INTEGER PRIMARY KEY',
-      name: 'VARCHAR(255) NOT NULL',
-    },
-    unique: {
-      columns: ['name'],
-      onConflict: 'ignore',
-    },
-  },
-
-  providerEmar: {
-    columns: {
-      id: 'INTEGER PRIMARY KEY',
-      name: 'VARCHAR(255) NOT NULL',
-    },
-    unique: {
-      columns: ['name'],
-      onConflict: 'ignore',
-    },
-  },
-
-  restock: {
-    columns: {
-      id: 'INTEGER PRIMARY KEY',
-      providerAdcId: 'INTEGER REFERENCES ProviderAdc(id) NOT NULL',
-      medicationOrderId: 'CHAR(9) REFERENCES medicationOrder(id) NOT NULL',
-      medicationProductId: 'INTEGER REFERENCES medicationProduct(id) NOT NULL',
-      amount: 'INT NOT NULL',
-      timestamp: 'CHAR(19) NOT NULL',
-    },
-    unique: {
-      columns: ['medicationOrderId', 'timestamp'],
-      onConflict: 'ignore',
-    },
-  },
-
-  return: {
-    columns: {
-      id: 'INTEGER PRIMARY KEY',
-      providerAdcId: 'INTEGER REFERENCES ProviderAdc(id) NOT NULL',
-      medicationOrderId: 'CHAR(9) REFERENCES medicationOrder(id) NOT NULL',
-      medicationProductId: 'INTEGER REFERENCES medicationProduct(id) NOT NULL',
-      amount: 'INT NOT NULL',
-      timestamp: 'CHAR(19) NOT NULL',
-    },
-    unique: {
-      columns: ['medicationOrderId', 'timestamp'],
-      onConflict: 'ignore',
-    },
-  },
-
-  visit: {
-    columns: {
-      id: 'CHAR(12) PRIMARY KEY',
-      discharged: 'CHAR(19) NOT NULL',
-      mrn: 'CHAR(8) NOT NULL',
-    },
-  },
-
-  waste: {
-    columns: {
-      id: 'INTEGER PRIMARY KEY',
-      providerAdcId: 'INTEGER REFERENCES ProviderAdc(id) NOT NULL',
-      medicationOrderId: 'CHAR(9) REFERENCES medicationOrder(id) NOT NULL',
-      medicationProductId: 'INTEGER REFERENCES medicationProduct(id) NOT NULL',
-      waste: 'FLOAT NOT NULL',
-      timestamp: 'CHAR(19) NOT NULL',
-    },
-    unique: {
-      columns: ['medicationOrderId', 'timestamp'],
-      onConflict: 'ignore',
-    },
-  },
-
-  withdrawal: {
-    columns: {
-      id: 'INTEGER PRIMARY KEY',
-      providerAdcId: 'INTEGER REFERENCES ProviderAdc(id) NOT NULL',
-      medicationOrderId: 'CHAR(9) REFERENCES medicationOrder(id) NOT NULL',
-      medicationProductId: 'INTEGER REFERENCES medicationProduct(id) NOT NULL',
-      amount: 'INT NOT NULL',
-      timestamp: 'CHAR(19) NOT NULL',
-    },
-    unique: {
-      columns: ['medicationOrderId', 'timestamp'],
-      onConflict: 'ignore',
-    },
-  },
-};
-
-db.initialize = function initialize() {
-  Object.entries(schema).forEach(([table, parameters]) => {
-    const columns = Object.entries(parameters.columns)
-      .map(([column, constraint]) => `${column} ${constraint}`)
-      .join(', ');
-
-    const unique = parameters.unique
-      ? `, UNIQUE (${parameters.unique.columns.join(
-          ', ',
-        )}) ON CONFLICT ${parameters.unique.onConflict.toUpperCase()}`
-      : '';
-
-    const stmt = this.prepare(`
-      CREATE TABLE IF NOT EXISTS ${table}
-      (${columns}${unique});
-      `);
-
-    stmt.run();
-  });
-};
-
-db.initialize();
-
-const medications = [
-  'Fentanyl',
-  'Hydrocodone–Homatropine',
-  'Hydromorphone',
-  'Morphine',
-  'Oxycodone',
-  'Oxycodone–Acetaminophen',
-];
-
-db.create = function create(table, parameters) {
-  const onConflict = parameters.onConflict ? `OR ${parameters.onConflict.toUpperCase()} ` : '';
+db.create = (table, parameters) => {
+  const onConflict = parameters.onConflict
+    ? `OR ${parameters.onConflict.toUpperCase()} `
+    : '';
   const columns = Object.keys(parameters.data).join(', ');
   const values = Object.values(parameters.data);
   const valuePlaceholders = values.map(() => '?').join(', ');
 
-  const stmt = this.prepare(`
+  const stmt = db.prepare(`
     INSERT ${onConflict}INTO ${table} (${columns})
     VALUES (${valuePlaceholders});
     `);
@@ -207,46 +25,85 @@ db.create = function create(table, parameters) {
   stmt.run(...values);
 };
 
-db.read = function read(table, parameters) {
+db.read = (table, parameters) => {
   const isDistinct = parameters.isDistinct ? 'DISTINCT ' : '';
-  const columns = parameters.columns;
+  const columns = parameters.columns.join(', ');
+  const whereValues = parameters.wheres
+    ? parameters.wheres
+        .filter(where => where)
+        .reduce((flattenedWheres, where) => {
+          return flattenedWheres.concat(where);
+        }, [])
+        .map(({ value }) => value)
+    : null;
 
-  const where = Object.entries(parameters.where)
-    .map(([column, condition]) => `${column} ${condition}`)
-    .join(', ');
+  const wheres = parameters.wheres
+    ? `WHERE ${parameters.wheres
+        .filter(where => where)
+        .map(where => {
+          if (Array.isArray(where)) {
+            return `(${where
+              .map(subWhere => `${subWhere.column} ${subWhere.operator} ?`)
+              .join(' OR ')})`;
+          }
 
-  const join = parameters.join
-    ? Object.entries(parameters.join)
-        .map(([joinTable, joinConstraint]) => `INNER JOIN ${joinTable} ON ${joinConstraint}`)
+          if (/timestamp/.test(where.column)) {
+            return `strftime('%s', ${where.column}) ${
+              where.operator
+            } strftime('%s', ?)`;
+          }
+
+          return `${where.column} ${where.operator} ?`;
+        })
+        .join(' AND ')}`
+    : '';
+
+  const joins = parameters.joins
+    ? parameters.joins
+        .map(join => `JOIN ${join.table} ON ${join.predicate}`)
         .join(' ')
     : '';
 
-  const [orderDirection, orderColumns] = parameters.order
-    ? Object.entries(parameters.order)
-    : [null, null];
-
-  const order = parameters.order ? `ORDER BY ${orderColumns.join(', ')} ${orderDirection}` : '';
+  const orderBys = parameters.orderBys
+    ? `ORDER BY ${parameters.orderBys
+        .map(({ column, direction }) => `${column} ${direction}`)
+        .join(', ')}`
+    : '';
 
   const limit = parameters.limit ? `LIMIT ${parameters.limit}` : '';
 
-  const stmt = this.prepare(`
+  // This console.log for debugging queries, remove for production
+  console.log(`
+  SELECT ${isDistinct}${columns}
+  FROM ${table}
+  ${joins}
+  ${wheres}
+  ${orderBys}
+  ${limit};
+`);
+
+  const stmt = db.prepare(`
     SELECT ${isDistinct}${columns}
     FROM ${table}
-    WHERE ${where}
-    ${join}
-    ${order}
+    ${joins}
+    ${wheres}
+    ${orderBys}
     ${limit};
   `);
 
   if (parameters.columns.length === 1 && /id/i.test(parameters.columns[0])) {
-    return stmt.get();
+    const record = stmt.get(...whereValues);
+    return record ? record.id : null;
   }
 
-  return stmt.all();
+  const records = stmt.all(...whereValues);
+  return records || null;
 };
 
-db.update = function update(table, parameters) {
-  const onConflict = parameters.onConflict ? `OR ${parameters.onConflict.toUpperCase()} ` : '';
+db.update = (table, parameters) => {
+  const onConflict = parameters.onConflict
+    ? `OR ${parameters.onConflict.toUpperCase()} `
+    : '';
 
   const set = Object.keys(parameters.set)
     .map(column => `${column} = ?`)
@@ -254,32 +111,129 @@ db.update = function update(table, parameters) {
 
   const values = Object.values(parameters.set);
 
-  const where = Object.entries(parameters.where)
-    .map(([column, condition]) => `${column} ${condition}`)
-    .join(', ');
+  const whereValues = parameters.wheres
+    ? parameters.wheres.filter(where => where).map(({ value }) => value)
+    : null;
 
-  const stmt = this.prepare(`
+  const wheres = parameters.wheres
+    ? `WHERE ${parameters.wheres
+        .filter(where => where)
+        .map(({ column, operator }) => {
+          if (/timestamp/.test(column)) {
+            return `strftime('%s', ${column}) ${operator} strftime('%s', ?)`;
+          }
+          return `${column} ${operator} ?`;
+        })
+        .join(' AND ')}`
+    : '';
+
+  const stmt = db.prepare(`
   UPDATE ${onConflict}${table}
   SET ${set}
-  WHERE ${where};
+  ${wheres};
   `);
 
-  stmt.run(...values);
+  stmt.run(...values, ...whereValues);
 };
 
-db.delete = function delet(table, parameters) {
-  const where = Object.entries(parameters.where)
-    .map(([column, condition]) => `${column} ${condition}`)
-    .join(', ');
+db.delete = (table, parameters) => {
+  const whereValues = parameters.wheres
+    ? parameters.wheres.filter(where => where).map(({ value }) => value)
+    : null;
 
-  const stmt = this.prepare(`
+  const wheres = parameters.wheres
+    ? `WHERE ${parameters.wheres
+        .filter(where => where)
+        .map(({ column, operator }) => {
+          if (/timestamp/.test(column)) {
+            return `strftime('%s', ${column}) ${operator} strftime('%s', ?)`;
+          }
+          return `${column} ${operator} ?`;
+        })
+        .join(' AND ')}`
+    : '';
+
+  const stmt = db.prepare(`
   DELETE FROM ${table}
-  WHERE ${where};
+  ${wheres};
   `);
 
-  stmt.run();
+  stmt.run(...whereValues);
 };
 
+db.updateStatus = status => {
+  db.status = status;
+  process.send({
+    header: 'status',
+    body: db.status,
+  });
+};
+
+db.initialize = () => {
+  db.updateStatus('Initializing');
+
+  Object.entries(schema).forEach(([table, parameters]) => {
+    const columns = Object.entries(parameters.columns)
+      .map(([column, constraint]) => `${column} ${constraint}`)
+      .join(', ');
+
+    const unique = parameters.unique
+      ? `, UNIQUE (${parameters.unique.columns.join(
+          ', '
+        )}) ON CONFLICT ${parameters.unique.onConflict.toUpperCase()}`
+      : '';
+
+    const stmt = db.prepare(`
+      CREATE TABLE IF NOT EXISTS ${table}
+      (${columns}${unique});
+      `);
+
+    stmt.run();
+  });
+
+  const medications = [
+    'Fentanyl',
+    'Hydrocodone–Homatropine',
+    'Hydromorphone',
+    'Morphine',
+    'Oxycodone',
+    'Oxycodone–Acetaminophen',
+  ];
+
+  medications.forEach(medication => {
+    db.create('medication', {
+      onConflict: 'ignore',
+      data: { name: medication },
+    });
+  });
+
+  const adcTransactionTypes = ['Restock', 'Return', 'Waste', 'Withdrawal'];
+
+  adcTransactionTypes.forEach(adcTransactionType => {
+    db.create('adcTransactionType', {
+      onConflict: 'ignore',
+      data: {
+        name: adcTransactionType,
+      },
+    });
+  });
+
+  db.create('medicationOrder', {
+    onConflict: 'ignore',
+    data: {
+      id: 'OVERRIDE',
+      medicationId: null,
+      dose: null,
+      units: null,
+      form: null,
+      visitId: null,
+    },
+  });
+
+  db.updateStatus('Ready');
+};
+
+db.initialize();
 
 const getMedication = string => {
   if (/oxycodone/i.test(string)) {
@@ -314,7 +268,7 @@ const getMedication = string => {
 };
 
 const getUnits = string => {
-  if (/milligram/i.test(string)) {
+  if (/milligram|cup/i.test(string)) {
     return 'mG';
   }
 
@@ -393,215 +347,332 @@ const getForm = string => {
   return null;
 };
 
-const getTransactionType = string => {
+const getAdcTransactionType = string => {
   switch (string) {
     case 'WITHDRAWN':
-      return 'withdrawal';
+      return 'Withdrawal';
 
     case 'RESTOCKED':
-      return 'restock';
+      return 'Restock';
 
     case 'RETURNED':
-      return 'return';
+      return 'Return';
 
     default:
       return null;
   }
 };
 
-// const adcData = fs.createReadStream(`file://${this.state.adcFilePath}`);
+db.parseAdc = function parseAdc(filePath) {
+  return new Promise((resolve, reject) => {
+    const readStream = fs.createReadStream(filePath);
 
-// const adcWorkbook = new Excel.Workbook();
-// adcWorkbook.xlsx
-//   .read(adcData)
-//   .then(() => {
-//     const getTimestamp = (date, time) => {
-//       const [month, day, year] = date.split(/\//);
-//       return `'${year}/${month}/${day}T${time}'`;
-//     };
+    const workbook = new Excel.Workbook();
+    workbook.xlsx
+      .read(readStream)
+      .then(() => {
+        const getTimestamp = (date, time) => {
+          const [month, day, year] = date.split(/\//);
+          return `${year}-${month}-${day}T${time}`;
+        };
 
-//     const worksheet = adcWorkbook.getWorksheet(1);
-//     worksheet.eachRow((row, rowNumber) => {
-//       const headerRowNumber = 11;
-//       const transactionType = getTransactionType(row.getCell('E').value);
+        const worksheet = workbook.getWorksheet(1);
+        worksheet.eachRow((row, rowNumber) => {
+          const headerRowNumber = 11;
+          const adcTransactionType = getAdcTransactionType(
+            row.getCell('E').value
+          );
 
-//       if (rowNumber > headerRowNumber && transactionType) {
-//         const strength = row.getCell('O').value;
-//         const units = getUnits(row.getCell('P').value);
-//         const form = getForm(row.getCell('C').value);
-//         const medicationOrderId = row.getCell('J').value.slice(1);
-//         const amount = row.getCell('D').value;
-//         const timestamp = getTimestamp(
-//           row.getCell('A').value,
-//           row.getCell('B').value
-//         );
+          const medicationId = db.read('medication', {
+            columns: ['id'],
+            wheres: [
+              {
+                column: 'name',
+                operator: '=',
+                value: getMedication(row.getCell('C').value),
+              },
+            ],
+          });
 
-//         database.serialize(() => {
-//           database.create('providerAdc', {
-//             onConflict: 'ignore',
-//             data: { name: row.getCell('K').value },
-//           });
+          if (
+            rowNumber > headerRowNumber &&
+            medicationId &&
+            adcTransactionType
+          ) {
+            const strength = row.getCell('O').value;
+            const units = getUnits(row.getCell('C').value);
+            const form = getForm(row.getCell('C').value);
+            const medicationOrderId =
+              row.getCell('J').value === 'OVERRIDE'
+                ? 'OVERRIDE'
+                : row.getCell('J').value.slice(1);
+            const amount = row.getCell('D').value;
+            const timestamp = getTimestamp(
+              row.getCell('A').value,
+              row.getCell('B').value
+            );
 
-//           const providerAdcId = database.read('providerAdc', {
-//             columns: ['id'],
-//             where: { name: row.getCell('K').value },
-//           });
+            db.create('providerAdc', {
+              onConflict: 'ignore',
+              data: { name: row.getCell('K').value },
+            });
 
-//           database.create('medicationProductAdc', {
-//             onConflict: 'ignore',
-//             data: { name: row.getCell('C').value },
-//           });
+            const providerAdcId = db.read('providerAdc', {
+              columns: ['id'],
+              wheres: [
+                {
+                  column: 'name',
+                  operator: '=',
+                  value: row.getCell('K').value,
+                },
+              ],
+            });
 
-//           const medicationProductAdcId = database.read(
-//             'medicationProductAdc',
-//             {
-//               columns: ['id'],
-//               where: { name: row.getCell.toString('C').value },
-//             }
-//           );
+            db.create('medicationProductAdc', {
+              onConflict: 'ignore',
+              data: { name: row.getCell('C').value },
+            });
 
-//           const medicationId = database.read('medication', {
-//             columns: ['id'],
-//             where: { name: getMedication(row.getCell('C').value) },
-//           });
+            const medicationProductAdcId = db.read('medicationProductAdc', {
+              columns: ['id'],
+              wheres: [
+                {
+                  column: 'name',
+                  operator: '=',
+                  value: row.getCell('C').value,
+                },
+              ],
+            });
 
-//           database.create('medicationProduct', {
-//             onConflict: 'ignore',
-//             data: {
-//               medicationId,
-//               strength,
-//               units,
-//               form,
-//               adcId: medicationProductAdcId,
-//             },
-//           });
+            db.create('medicationProduct', {
+              onConflict: 'ignore',
+              data: {
+                medicationId,
+                strength,
+                units,
+                form,
+                adcId: medicationProductAdcId,
+              },
+            });
 
-//           const medicationProductId = database.read('medicationProduct', {
-//             columns: ['id'],
-//             where: { adcId: medicationProductAdcId },
-//           });
+            const medicationProductId = db.read('medicationProduct', {
+              columns: ['id'],
+              wheres: [
+                {
+                  column: 'adcId',
+                  operator: '=',
+                  value: medicationProductAdcId,
+                },
+              ],
+            });
 
-//           database.create(transactionType, {
-//             onConflict: 'ignore',
-//             data: {
-//               providerAdcId,
-//               medicationOrderId,
-//               medicationProductId,
-//               amount,
-//               timestamp,
-//             },
-//           });
+            db.create('medicationOrder', {
+              onConflict: 'ignore',
+              data: {
+                id: medicationOrderId,
+                medicationId,
+              },
+            });
 
-//           if (/WASTED/.test(row.getCell('F').value)) {
-//             const waste = row.getCell('F').value.split(/\s/)[2];
+            const adcTransactionTypeId = db.read('adcTransactionType', {
+              columns: ['id'],
+              wheres: [
+                {
+                  column: 'name',
+                  operator: '=',
+                  value: adcTransactionType,
+                },
+              ],
+            });
 
-//             database.create('waste', {
-//               onConflict: 'ignore',
-//               data: {
-//                 providerAdcId,
-//                 medicationOrderId,
-//                 medicationProductId,
-//                 waste,
-//                 timestamp,
-//               },
-//             });
-//           }
-//         });
-//       }
-//     });
-//   })
-//   .then(() => adcData.close())
-//   .catch(error => {
-//     throw error;
-//   });
+            db.create('adcTransaction', {
+              onConflict: 'ignore',
+              data: {
+                typeId: adcTransactionTypeId,
+                providerAdcId,
+                medicationOrderId,
+                medicationProductId,
+                amount,
+                timestamp,
+              },
+            });
 
-// const emarData = fs.createReadStream(`file://${this.state.emarFilePath}`);
+            if (/WASTED/.test(row.getCell('F').value)) {
+              const amountWasted = row.getCell('F').value.split(/\s/)[2];
 
-// const emarWorkbook = new Excel.Workbook();
-// emarWorkbook.csv
-//   .read(emarData)
-//   .then(worksheet => {
-//     const getTimestamp = string => {
-//       if (!string) {
-//         return null;
-//       }
+              const adcWasteTypeId = db.read('adcTransactionType', {
+                columns: ['id'],
+                wheres: [
+                  {
+                    column: 'name',
+                    operator: '=',
+                    value: 'Waste',
+                  },
+                ],
+              });
 
-//       const [date, time, meridian] = string.split(/\s/);
+              db.create('adcTransaction', {
+                onConflict: 'ignore',
+                data: {
+                  typeId: adcWasteTypeId,
+                  providerAdcId,
+                  medicationOrderId,
+                  medicationProductId,
+                  amount: amountWasted,
+                  timestamp,
+                },
+              });
+            }
+          }
+        });
+      })
+      .then(() => {
+        readStream.close();
+        resolve();
+      })
+      .catch(error => reject(error));
+  });
+};
 
-//       let [month, day, year] = date.split(/\//);
-//       month = month.padStart(2, '0');
-//       day = day.padStart(2, '0');
+db.parseEmar = function parseEmar(filePath) {
+  return new Promise((resolve, reject) => {
+    const readStream = fs.createReadStream(filePath);
 
-//       let [hours, minutes] = time.split(/:/);
-//       if (meridian === 'PM' && hours !== '12') {
-//         hours = (+hours + 12).toString();
-//       } else if (meridian === 'AM' && hours === '12') {
-//         hours = '00';
-//       } else {
-//         hours = hours.padStart(2, '0');
-//       }
-//       return `${year}/${month}/${day}T${hours}:${minutes}:00`;
-//     };
+    const workbook = new Excel.Workbook();
+    workbook.csv
+      .read(readStream)
+      .then(worksheet => {
+        const getTimestamp = string => {
+          if (!string) {
+            return null;
+          }
 
-//     worksheet.eachRow((row, rowNumber) => {
-//       const headerRowNumber = 7;
+          const [date, time, meridian] = string.split(/\s/);
 
-//       if (rowNumber > headerRowNumber) {
-//         const visitId = row.getCell('F').value;
-//         const discharged = getTimestamp(row.getCell('L').value);
-//         const mrn = row.getCell('G').value.padStart(8, '0');
-//         const medicationOrderId = row.getCell('M').value;
-//         let [dose, units] = row.getCell('R').value.split(/\s/);
-//         const form = getForm(row.getCell('P').value);
-//         units = getUnits(units);
-//         const timestamp = getTimestamp(row.getCell('AM'));
+          let [month, day, year] = date.split(/\//);
+          month = month.toString().padStart(2, '0');
+          day = day.toString().padStart(2, '0');
 
-//         database.create('visit', {
-//           onConflict: 'ignore',
-//           data: {
-//             id: visitId,
-//             discharged,
-//             mrn,
-//           },
-//         });
+          let [hours, minutes] = time.split(/:/);
+          if (meridian === 'PM' && hours !== '12') {
+            hours = (+hours + 12).toString();
+          } else if (meridian === 'AM' && hours === '12') {
+            hours = '00';
+          } else {
+            hours = hours.toString().padStart(2, '0');
+          }
+          return `${year}-${month}-${day}T${hours}:${minutes}:00`;
+        };
 
-//         database.serialize(() => {
-//           const medicationId = database.read('medication', {
-//             columns: ['id'],
-//             where: { name: getMedication(row.getCell('O').value) },
-//           });
+        worksheet.eachRow((row, rowNumber) => {
+          const headerRowNumber = 7;
 
-//           database.create('medicationOrder', {
-//             onConflict: 'ignore',
-//             data: {
-//               id: medicationOrderId,
-//               medicationId,
-//               dose,
-//               units,
-//               form,
-//               visitId,
-//             },
-//           });
+          if (rowNumber > headerRowNumber) {
+            const visitId = row.getCell('F').value;
+            const discharged = getTimestamp(row.getCell('L').value);
+            const mrn = row.getCell('G').value;
+            const medicationOrderId = row.getCell('M').value;
+            let [dose, units] = row.getCell('R').value.split(/\s/);
+            const form = getForm(row.getCell('P').value);
+            units = getUnits(units);
+            const timestamp = getTimestamp(row.getCell('AM').value);
 
-//           database.create('providerEmar', {
-//             onConflict: 'ignore',
-//             data: {
-//               name: row.getCell('AP').value,
-//             },
-//           });
+            db.create('visit', {
+              onConflict: 'replace',
+              data: {
+                id: visitId,
+                discharged,
+                mrn,
+              },
+            });
 
-//           const providerEmarId = database.read('providerEmar', {
-//             columns: ['id'],
-//             where: { name: row.getCell('AP').value },
-//           });
+            const medicationId = db.read('medication', {
+              columns: ['id'],
+              wheres: [
+                {
+                  column: 'name',
+                  operator: '=',
+                  value: getMedication(row.getCell('O').value),
+                },
+              ],
+            });
 
-//           database.create('administration', {
-//             onConflict: 'ignore',
-//             data: { providerEmarId, medicationOrderId, timestamp },
-//           });
-//         });
-//       }
-//     });
-//   })
-//   .then(() => emarData.close())
-//   .catch(error => console.error(error));
+            db.create('medicationOrder', {
+              onConflict: 'replace',
+              data: {
+                id: medicationOrderId,
+                medicationId,
+                dose,
+                units,
+                form,
+                visitId,
+              },
+            });
+
+            db.create('providerEmar', {
+              onConflict: 'ignore',
+              data: {
+                name: row.getCell('AP').value,
+              },
+            });
+
+            const providerEmarId = db.read('providerEmar', {
+              columns: ['id'],
+              wheres: [
+                {
+                  column: 'name',
+                  operator: '=',
+                  value: row.getCell('AP').value,
+                },
+              ],
+            });
+
+            db.create('administration', {
+              onConflict: 'ignore',
+              data: { providerEmarId, medicationOrderId, timestamp },
+            });
+          }
+        });
+      })
+      .then(() => {
+        readStream.close();
+        resolve();
+      })
+      .catch(error => reject(error));
+  });
+};
+
+process.on('message', data => {
+  if (data.header === 'status') {
+    process.send({
+      header: 'status',
+      body: db.status,
+    });
+  }
+
+  if (data.header === 'upload') {
+    db.updateStatus('Uploading');
+
+    Promise.all([
+      db.parseAdc(data.body.adcPath),
+      db.parseEmar(data.body.emarPath),
+    ])
+      .then(() => db.updateStatus('Ready'))
+      .catch(error => {
+        db.updateStatus('Error');
+        console.error(error);
+      });
+  }
+
+  if (data.header === 'query') {
+    db.updateStatus('Querying');
+    try {
+      const records = db.read(data.body.table, data.body.parameters);
+      process.send({ header: 'query', body: records });
+      db.updateStatus('Ready');
+    } catch (error) {
+      db.updateStatus('Error');
+      console.error(error);
+    }
+  }
+});

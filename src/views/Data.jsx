@@ -1,10 +1,9 @@
-// import Excel from 'exceljs';
-// import fs from 'fs';
+import path from 'path';
 import { ipcRenderer } from 'electron';
+import PropTypes from 'prop-types';
 import React from 'react';
-// import database from '../database';
 
-const Data = () => (
+const DataView = () => (
   <React.Fragment>
     <h1 className="text-center">Data</h1>
     <div className="row">
@@ -38,7 +37,9 @@ class DataUploadForm extends React.Component {
 
     this.state = {
       emar: '',
+      emarPath: '',
       adc: '',
+      adcPath: '',
       isUploading: false,
     };
 
@@ -50,22 +51,35 @@ class DataUploadForm extends React.Component {
     const target = event.target;
     const name = target.name;
     const value = target.value;
-    const fileNameName = `${name}FileName`;
-    const fileNameValue = target.files[0].name;
-    const filePathName = `${name}FilePath`;
-    const filePathValue = target.files[0].path;
 
-    this.setState({
-      [name]: value,
-      [fileNameName]: fileNameValue,
-      [filePathName]: filePathValue,
-    });
+    this.setState({ [name]: value });
+
+    if (value) {
+      const pathName = `${name}Path`;
+      const pathValue = target.files[0].path;
+
+      this.setState({ [pathName]: pathValue });
+    }
   }
 
   handleSubmit(event) {
     event.preventDefault();
+
     this.setState({ isUploading: true });
-    ipcRenderer.send('data-upload', { emarPath: this.state.emar, adcPath: this.state.adc });
+
+    ipcRenderer.send('database', {
+      header: 'upload',
+      body: {
+        adcPath: this.state.adcPath,
+        emarPath: this.state.emarPath,
+      },
+    });
+
+    ipcRenderer.once('database', (event, message) => {
+      if (message === 'Data upload complete.') {
+        this.setState({ isUploading: false });
+      }
+    });
   }
 
   render() {
@@ -77,8 +91,7 @@ class DataUploadForm extends React.Component {
               name="emar"
               value={this.state.emar}
               label="Medication Order Task Status:"
-              fileName={this.state.FileName}
-              handleChange={this.emarhandleChange}
+              handleChange={this.handleChange}
               disabled={this.state.isUploading}
               attributes={{
                 accept: '.csv',
@@ -93,7 +106,6 @@ class DataUploadForm extends React.Component {
               name="adc"
               value={this.state.adc}
               label="C2 Activity:"
-              fileName={this.state.adcFileName}
               handleChange={this.handleChange}
               disabled={this.state.isUploading}
               attributes={{
@@ -126,15 +138,28 @@ const FileInput = props => (
       {...props.attributes}
     />
     <label className="custom-file-label" htmlFor={props.name}>
-      {props.label} {props.fileName}
+      {props.label} {path.basename(props.value)}
     </label>
   </div>
 );
 
+FileInput.propTypes = {
+  name: PropTypes.string.isRequired,
+  value: PropTypes.string.isRequired,
+  disabled: PropTypes.bool.isRequired,
+  handleChange: PropTypes.func.isRequired,
+  attributes: PropTypes.object,
+  label: PropTypes.string.isRequired,
+};
+
+FileInput.defaultProps = {
+  attributes: null,
+};
+
 const UploadButton = (props) => {
   if (props.isUploading) {
     return (
-      <button className="btn btn-primary mb-3 ml-auto" type="submit" disabled>
+      <button className="btn btn-primary d-block mb-3 ml-auto" type="submit" disabled>
         <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
         Uploading…
       </button>
@@ -148,4 +173,8 @@ const UploadButton = (props) => {
   );
 };
 
-export default Data;
+UploadButton.propTypes = {
+  isUploading: PropTypes.bool.isRequired,
+};
+
+export default DataView;
