@@ -1,166 +1,265 @@
+import Input from '../components/Input';
 import { ipcRenderer } from 'electron';
 import React from 'react';
+import RecordsTableSection from '../components/RecordsTableSection';
+import SearchFormSection from '../components/SearchFormSection';
 
 class ProviderView extends React.Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      datetimeEnd: '',
-      datetimeStart: '',
-      medicationOrderId: '',
-      medicationProduct: '',
-      provider: '',
+      lastName: '',
+      firstName: '',
+      mi: '',
+      adcId: '',
+      emarId: '',
+      orderByColumn: '',
+      orderByDirection: '',
 
-      results: [],
+      records: [],
     };
 
     this.handleChange = this.handleChange.bind(this);
+    this.handleClick = this.handleClick.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
   }
 
   handleChange(event) {
     const target = event.target;
-    const name = target.name;
-    const value = target.value;
 
-    this.setState({ [name]: value });
+    if (target.tagName === 'SELECT') {
+      const values = [...target.selectedOptions].map(option => option.value);
+      this.setState({ [target.name]: values });
+    } else {
+      this.setState({ [target.name]: target.value });
+    }
+  }
+
+  handleClick(event) {
+    const target = event.target;
+
+    this.setState(oldState => {
+      const orderByDirection =
+        oldState.orderByColumn === target.dataset.orderByColumn &&
+        oldState.orderByDirection === 'ASC'
+          ? 'DESC'
+          : 'ASC';
+      return {
+        orderByColumn: target.dataset.orderByColumn,
+        orderByDirection,
+      };
+    }, this.handleSubmit);
   }
 
   handleSubmit(event) {
-    event.preventDefault();
+    if (event) {
+      event.preventDefault();
+    }
 
-    const datetimeEnd = this.state.datetimeEnd;
-    const datetimeStart = this.state.datetimeStart;
-    const medicationOrderId = this.state.medicationOrderId;
-    const medicationProduct = this.state.medicationProduct;
-    const provider = this.state.provider;
+    const datetimeEnd = this.state.datetimeEnd
+      ? { column: 'timestamp', operator: '<', value: this.state.datetimeEnd }
+      : null;
+
+    const datetimeStart = this.state.datetimeStart
+      ? { column: 'timestamp', operator: '>', value: this.state.datetimeStart }
+      : null;
+
+    const medicationOrderId = this.state.medicationOrderId
+      ? {
+          column: 'medicationOrderId',
+          operator: 'LIKE',
+          value: `%${this.state.medicationOrderId}%`,
+        }
+      : null;
+
+    const medication = this.state.medication
+      ? {
+          column: 'medication',
+          operator: 'LIKE',
+          value: `%${this.state.medication}%`,
+        }
+      : null;
+
+    const provider = this.state.provider
+      ? {
+          column: 'provider',
+          operator: 'LIKE',
+          value: `%${this.state.provider}%`,
+        }
+      : null;
+
+    const orderBys = this.state.orderByColumn
+      ? [
+          {
+            column: this.state.orderByColumn,
+            direction: this.state.orderByDirection,
+          },
+        ]
+      : null;
 
     ipcRenderer.send('database', {
       header: 'query',
+
       body: {
-        table: 'administration',
+        table: 'provider',
+
         parameters: {
-          columns: ['providerAdcId', 'medicationProductId', 'amount', 'timestamp'],
-          where: {
-            timestamp: [
-              { operator: '>', value: datetimeStart },
-              { operator: '<', value: datetimeEnd },
-            ],
-            providerAdcId: { operator: '=', value: provider },
-            medicationOrderId: { operator: 'LIKE', value: `%${medicationOrderId}%` },
-            medicationProductId: { operator: '=', value: medicationProduct },
-          },
+          columns: [
+            'timestamp',
+            "provider.lastName || ', ' || provider.firstName || ' ' || provider.mi AS provider",
+            "medication.name || ', ' || medicationProduct.strength || ' ' || medicationProduct.units || ' ' || medicationProduct.form AS medication",
+            'amount',
+            'medicationOrderId',
+          ],
+
+          wheres: [
+            datetimeEnd,
+            datetimeStart,
+            provider,
+            medicationOrderId,
+            medication,
+          ],
+
+          joins: [
+            {
+              table: 'providerAdc',
+              predicate: 'providerAdcId = providerAdc.id',
+            },
+            {
+              table: 'provider',
+              predicate: 'providerAdc.providerId = provider.id',
+            },
+            {
+              table: 'medicationProduct',
+              predicate: 'medicationProductId = medicationProduct.id',
+            },
+            {
+              table: 'medication',
+              predicate: 'medicationProduct.medicationId = medication.id',
+            },
+          ],
+
+          orderBys,
         },
-      }
+      },
     });
 
-    ipcRenderer.once('database', (event, data) => {
+    ipcRenderer.once('query', (event, data) => {
       if (data.header === 'query') {
-        this.setState({ results: data.body.results });
+        this.setState({ records: data.body });
       }
     });
   }
 
   render() {
-    const tableBodyRows = this.state.results.map(record => (
-      <tr key={record.id}>
-        <td>{record.timestamp}</td>
-        <td>{record.providerAdcId}</td>
-        <td>{record.medicationProductId}</td>
-        <td>{record.amount}</td>
-        <td>{record.medicationOrderId}</td>
-      </tr>
-    ));
+    const columnHeadings = [
+      {
+        name: 'Last',
+        orderByColumn: 'lastName',
+      },
+      {
+        name: 'First',
+        orderByColumn: 'firstName',
+      },
+      {
+        name: 'MI',
+        orderByColumn: 'mi',
+      },
+      {
+        name: 'ADC IDs',
+        orderByColumn: '',
+      },
+      {
+        name: 'EMAR IDs',
+        orderByColumn: '',
+      },
+    ];
+
+    const tableBodyRows =
+      this.state.records.length > 0 ? (
+        this.state.records.map(record => {
+          return (
+            <tr key={record.id}>
+              <td className="border-right">
+                {new Date(record.timestamp).toLocaleString('en-US', {
+                  month: '2-digit',
+                  day: '2-digit',
+                  year: 'numeric',
+                  hour: 'numeric',
+                  minute: 'numeric',
+                  second: 'numeric',
+                  hour12: false,
+                })}
+              </td>
+              <td className="border-right">{record.provider}</td>
+              <td className="border-right">{record.transactionType}</td>
+              <td className="border-right">{record.medication}</td>
+              <td className="border-right">{record.medication}</td>
+              <td className="border-right">{record.medication}</td>
+            </tr>
+          );
+        })
+      ) : (
+        <tr>
+          <td className="font-italic text-center border-right" colSpan={5}>
+            No records found!
+          </td>
+        </tr>
+      );
 
     return (
       <React.Fragment>
-        <h1 className="text-center">Providers</h1>
+        <div className="row flex-shrink-0">
+          <header className="col">
+            <h1 className="text-center">Providers</h1>
+          </header>
+        </div>
         <div className="row">
-          <div className="col-3">
-            <section>
-              <h2>Parameters</h2>
-              <form className="form" onSubmit={this.handleSubmit}>
-                <div className="form-group">
-                  <label htmlFor="datetimeStart">Start time</label>
-                  <input
-                    id="datetimeStart"
-                    className="form-control"
-                    type="datetime-local"
-                    name="datetimeStart"
-                    value={this.state.datetimeStart}
-                    max="9999-12-31T23:59"
-                    required
-                    onChange={this.handleChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="datetimeEnd">End time</label>
-                  <input
-                    id="datetimeEnd"
-                    className="form-control"
-                    type="datetime-local"
-                    name="datetimeEnd"
-                    value={this.state.datetimeEnd}
-                    max="9999-12-31T23:59"
-                    required
-                    onChange={this.handleChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="provider">Provider</label>
-                  <input
-                    id="provider"
-                    className="form-control"
-                    type="text"
-                    name="provider"
-                    value={this.state.provider}
-                    onChange={this.handleChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="medicationOrderId">Order ID</label>
-                  <input
-                    id="medicationOrderId"
-                    className="form-control"
-                    type="text"
-                    name="medicationOrderId"
-                    value={this.state.medicationOrderId}
-                    onChange={this.handleChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="medicationProduct">Product</label>
-                  <input
-                    id="medicationProduct"
-                    className="form-control"
-                    type="text"
-                    name="medicationProduct"
-                    value={this.state.medicationProduct}
-                    onChange={this.handleChange}
-                  />
-                </div>
-                <button className="btn btn-primary d-block ml-auto" type="submit">
-                  Search
-                </button>
-              </form>
-            </section>
-          </div>
-          <div className="col-9">
-            <section>
-              <h2>Results</h2>
-              <table className="table table-bordered">
-                <thead>
-                  <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col">ADC ID</th>
-                    <th scope="col">EMAR ID</th>
-                  </tr>
-                </thead>
-                <tbody>{tableBodyRows}</tbody>
-              </table>
-            </section>
-          </div>
+          <SearchFormSection handleSubmit={this.handleSubmit}>
+            <Input
+              type="text"
+              name="lastName"
+              value={this.state.lastName}
+              label="Last name"
+              handleChange={this.handleChange}
+            />
+            <Input
+              type="text"
+              name="firstName"
+              value={this.state.firstName}
+              label="First name"
+              handleChange={this.handleChange}
+            />
+            <Input
+              type="text"
+              name="mi"
+              value={this.state.mi}
+              label="Middle initial"
+              handleChange={this.handleChange}
+            />
+            <Input
+              type="text"
+              name="adcId"
+              value={this.state.adcId}
+              label="ADC ID"
+              handleChange={this.handleChange}
+            />
+            <Input
+              type="text"
+              name="emarId"
+              value={this.state.emarId}
+              label="EMAR ID"
+              handleChange={this.handleChange}
+            />
+          </SearchFormSection>
+          <RecordsTableSection
+            orderByColumn={this.state.orderByColumn}
+            orderByDirection={this.state.orderByDirection}
+            columnHeadings={columnHeadings}
+            tableBodyRows={tableBodyRows}
+            handleClick={this.handleClick}
+          />
         </div>
       </React.Fragment>
     );

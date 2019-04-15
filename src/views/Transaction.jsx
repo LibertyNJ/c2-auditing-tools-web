@@ -1,5 +1,9 @@
+import Input from '../components/Input';
 import { ipcRenderer } from 'electron';
 import React from 'react';
+import RecordsTableSection from '../components/RecordsTableSection';
+import SearchFormSection from '../components/SearchFormSection';
+import SVGIcon from '../components/SVGIcon';
 
 class TransactionView extends React.Component {
   constructor(props) {
@@ -9,7 +13,7 @@ class TransactionView extends React.Component {
       datetimeEnd: '',
       datetimeStart: '',
       medicationOrderId: '',
-      medication: '',
+      product: '',
       provider: '',
       transactionTypes: [],
       orderByColumn: '',
@@ -22,8 +26,6 @@ class TransactionView extends React.Component {
     this.handleClick = this.handleClick.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
   }
-
-  componentWillMount() {}
 
   handleChange(event) {
     const target = event.target;
@@ -81,16 +83,20 @@ class TransactionView extends React.Component {
         }
       : null;
 
-    const medication = this.state.medication
+    const product = this.state.product
       ? {
-          column: 'medication.name',
+          column: 'product',
           operator: 'LIKE',
-          value: `%${this.state.medication}%`,
+          value: `%${this.state.product}%`,
         }
       : null;
 
-    const providerAdcId = this.state.provider
-      ? { column: 'providerAdcId', operator: '=', value: this.state.provider }
+    const provider = this.state.provider
+      ? {
+          column: 'provider',
+          operator: 'LIKE',
+          value: `%${this.state.provider}%`,
+        }
       : null;
 
     const transactionTypes = this.state.transactionTypes
@@ -122,14 +128,9 @@ class TransactionView extends React.Component {
           columns: [
             'adcTransaction.id',
             'timestamp',
-            'provider.lastName',
-            'provider.firstName',
-            'provider.mi',
+            "provider.lastName || ', ' || provider.firstName || ' ' || provider.mi AS provider",
             'adcTransactionType.name AS transactionType',
-            'medication.name AS medication',
-            'medicationProduct.strength',
-            'medicationProduct.units',
-            'medicationProduct.form',
+            "medication.name || ', ' || medicationProduct.strength || ' ' || medicationProduct.units || ' ' || medicationProduct.form AS product",
             'amount',
             'medicationOrderId',
           ],
@@ -137,10 +138,10 @@ class TransactionView extends React.Component {
           wheres: [
             datetimeEnd,
             datetimeStart,
-            providerAdcId,
+            provider,
             transactionTypes,
             medicationOrderId,
-            medication,
+            product,
           ],
 
           joins: [
@@ -186,7 +187,7 @@ class TransactionView extends React.Component {
       },
       {
         name: 'Provider',
-        orderByColumn: 'provider.lastName',
+        orderByColumn: 'provider',
       },
       {
         name: 'Transaction',
@@ -194,7 +195,7 @@ class TransactionView extends React.Component {
       },
       {
         name: 'Product',
-        orderByColumn: 'medication.name',
+        orderByColumn: 'product',
       },
       {
         name: 'Amount',
@@ -206,67 +207,37 @@ class TransactionView extends React.Component {
       },
     ];
 
-    const tableHeadHeadings = columnHeadings.map(columnHeading => {
-      let sortImgSrc = './assets/icons/sort.svg';
-
-      if (columnHeading.orderByColumn === this.state.orderByColumn) {
-        if (this.state.orderByDirection === 'ASC') {
-          sortImgSrc = './assets/icons/sort-up.svg';
-        } else {
-          sortImgSrc = './assets/icons/sort-down.svg';
-        }
-      }
-
-      return (
-        <th
-          key={columnHeading.name}
-          className="sticky-top bg-white p-0 border-top-0 border-bottom-0 border-right"
-          scope="col"
-        >
-          <button
-            className="btn btn-link text-reset font-weight-bold d-block w-100 h-100 border-bottom rounded-0"
-            type="button"
-            data-order-by-column={columnHeading.orderByColumn}
-            onClick={this.handleClick}
-          >
-            {columnHeading.name}&nbsp;
-            <img
-              className="img-fluid"
-              src={sortImgSrc}
-              alt="Sort"
-              style={{ maxHeight: '1rem', maxWidth: '1rem' }}
-            />
-          </button>
-        </th>
-      );
-    });
-
-    const tableBodyRows = this.state.records.map(record => {
-      return (
-        <tr key={record.id}>
-          <td className="border-right">
-            {new Date(record.timestamp).toLocaleString('en-US', {
-              month: '2-digit',
-              day: '2-digit',
-              year: 'numeric',
-              hour: 'numeric',
-              minute: 'numeric',
-              second: 'numeric',
-              hour12: false,
-            })}
+    const tableBodyRows =
+      this.state.records.length > 0 ? (
+        this.state.records.map(record => {
+          return (
+            <tr key={record.id}>
+              <td className="border-right">
+                {new Date(record.timestamp).toLocaleString('en-US', {
+                  month: '2-digit',
+                  day: '2-digit',
+                  year: 'numeric',
+                  hour: 'numeric',
+                  minute: 'numeric',
+                  second: 'numeric',
+                  hour12: false,
+                })}
+              </td>
+              <td className="border-right">{record.provider}</td>
+              <td className="border-right">{record.transactionType}</td>
+              <td className="border-right">{record.product}</td>
+              <td className="border-right">{record.amount}</td>
+              <td className="border-right">{record.medicationOrderId}</td>
+            </tr>
+          );
+        })
+      ) : (
+        <tr>
+          <td className="font-italic text-center border-right" colSpan={6}>
+            No records found!
           </td>
-          <td className="border-right">
-            {record.lastName}, {record.firstName} {record.mi}
-          </td>
-          <td className="border-right">{record.transactionType}</td>
-          <td className="border-right">
-            {record.medication} {record.strength} {record.units} {record.form}
-          </td>
-          <td className="border-right">{record.amount}</td>
-          <td className="border-right">{record.medicationOrderId}</td>
         </tr>
       );
-    });
 
     return (
       <React.Fragment>
@@ -276,107 +247,84 @@ class TransactionView extends React.Component {
           </header>
         </div>
         <div className="row">
-          <section className="col-3 d-flex flex-column mb-3">
-            <header>
-              <h2>Parameters</h2>
-            </header>
-            <form
-              className="form overflow-auto pr-3"
-              onSubmit={this.handleSubmit}
-            >
-              <div className="form-group">
-                <label htmlFor="datetimeStart">Start time</label>
-                <input
-                  id="datetimeStart"
-                  className="form-control"
-                  type="datetime-local"
-                  name="datetimeStart"
-                  value={this.state.datetimeStart}
-                  max="9999-12-31T23:59"
-                  required
-                  onChange={this.handleChange}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="datetimeEnd">End time</label>
-                <input
-                  id="datetimeEnd"
-                  className="form-control"
-                  type="datetime-local"
-                  name="datetimeEnd"
-                  value={this.state.datetimeEnd}
-                  max="9999-12-31T23:59"
-                  required
-                  onChange={this.handleChange}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="transactionTypes">Transaction types</label>
-                <select
-                  id="transactionTypes"
-                  className="custom-select"
-                  type="text"
-                  name="transactionTypes"
-                  value={this.state.transactionTypes}
-                  multiple
-                  required
-                  onChange={this.handleChange}
-                >
-                  <option value="Withdrawal">Withdrawal</option>
-                  <option value="Waste">Waste</option>
-                  <option value="Restock">Restock</option>
-                  <option value="Return">Return</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="provider">Provider</label>
-                <input
-                  id="provider"
-                  className="form-control"
-                  type="text"
-                  name="provider"
-                  value={this.state.provider}
-                  onChange={this.handleChange}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="medicationOrderId">Order ID</label>
-                <input
-                  id="medicationOrderId"
-                  className="form-control"
-                  type="text"
-                  name="medicationOrderId"
-                  value={this.state.medicationOrderId}
-                  onChange={this.handleChange}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="medication">Medication</label>
-                <input
-                  id="medication"
-                  className="form-control"
-                  type="text"
-                  name="medication"
-                  value={this.state.medication}
-                  onChange={this.handleChange}
-                />
-              </div>
-              <button className="btn btn-primary d-block ml-auto" type="submit">
-                Search
-              </button>
-            </form>
-          </section>
-          <section className="col-9 d-flex flex-column mb-3">
-            <h2>Results</h2>
-            <div className="overflow-auto border">
-              <table className="table table-sm mb-0">
-                <thead>
-                  <tr className="border-0">{tableHeadHeadings}</tr>
-                </thead>
-                <tbody>{tableBodyRows}</tbody>
-              </table>
+          <SearchFormSection handleSubmit={this.handleSubmit}>
+            <Input
+              type="datetime-local"
+              name="datetimeStart"
+              value={this.state.datetimeStart}
+              label="Time start"
+              handleChange={this.handleChange}
+              info="Required"
+              max="9999-12-31T23:59"
+              required
+            />
+            <Input
+              type="datetime-local"
+              name="datetimeEnd"
+              value={this.state.datetimeEnd}
+              label="Time end"
+              handleChange={this.handleChange}
+              info="Required"
+              max="9999-12-31T23:59"
+              required
+            />
+            <div className="form-group">
+              <label htmlFor="transactionTypes">Transaction types</label>
+              <select
+                id="transactionTypes"
+                className="custom-select"
+                type="text"
+                name="transactionTypes"
+                value={this.state.transactionTypes}
+                multiple
+                required
+                onChange={this.handleChange}
+              >
+                <option value="Withdrawal">Withdrawal</option>
+                <option value="Waste">Waste</option>
+                <option value="Restock">Restock</option>
+                <option value="Return">Return</option>
+              </select>
+              <small className="form-text text-info">
+                <SVGIcon
+                  className="align-baseline"
+                  type="info-circle"
+                  width="1em"
+                  height="1em"
+                  fill="#17b2a8"
+                />{' '}
+                Required, may select multiple options
+              </small>
             </div>
-          </section>
+            <Input
+              type="text"
+              name="provider"
+              value={this.state.provider}
+              label="Provider"
+              handleChange={this.handleChange}
+            />
+            <Input
+              type="text"
+              name="product"
+              value={this.state.product}
+              label="Product"
+              handleChange={this.handleChange}
+            />
+            <Input
+              type="text"
+              name="medicationOrderId"
+              value={this.state.medicationOrderId}
+              label="Order ID"
+              handleChange={this.handleChange}
+            />
+          </SearchFormSection>
+          <RecordsTableSection
+            orderByColumn={this.state.orderByColumn}
+            orderByDirection={this.state.orderByDirection}
+            columnHeadings={columnHeadings}
+            tableBodyRows={tableBodyRows}
+            handleClick={this.handleClick}
+          />
         </div>
       </React.Fragment>
     );

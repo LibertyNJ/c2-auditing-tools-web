@@ -650,8 +650,8 @@ process.on('message', data => {
     });
   }
 
-  if (data.header === 'upload') {
-    db.updateStatus('Uploading');
+  if (data.header === 'import') {
+    db.updateStatus('Importing');
 
     Promise.all([
       db.parseAdc(data.body.adcPath),

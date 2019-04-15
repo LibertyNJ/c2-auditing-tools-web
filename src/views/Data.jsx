@@ -2,36 +2,39 @@ import path from 'path';
 import { ipcRenderer } from 'electron';
 import PropTypes from 'prop-types';
 import React from 'react';
+import SVGIcon from '../components/SVGIcon';
 
 const DataView = () => (
   <React.Fragment>
     <h1 className="text-center">Data</h1>
     <div className="row">
       <div className="col mx-auto" style={{ maxWidth: '33em' }}>
-        <p className="lead">Upload data to the database.</p>
+        <p className="lead">Import data to the database.</p>
         <p>Use the filepickers below to add data to the database.</p>
         <ol>
           <li>
-            Download these reports from BICC and RxAuditor for the same time period:
+            Download these reports from BICC and RxAuditor for the same time
+            period:
             <ul>
               <li>
-                Medication Order Task Status Summary (<span className="font-italic">as CSV</span>)
+                Medication Order Task Status Summary (
+                <span className="font-italic">as CSV</span>)
               </li>
               <li>
-                C2 Activity (<span className="font-italic">as XLSX</span>)
+                C2 Activity (<span className="font-italic">as XLSX</span>){' '}
               </li>
             </ul>
           </li>
           <li>Select each file with the appropriate filepicker widget.</li>
-          <li>Press upload.</li>
+          <li>Press import.</li>
         </ol>
-        <DataUploadForm />
+        <DataImportForm />
       </div>
     </div>
   </React.Fragment>
 );
 
-class DataUploadForm extends React.Component {
+class DataImportForm extends React.Component {
   constructor(props) {
     super(props);
 
@@ -40,7 +43,7 @@ class DataUploadForm extends React.Component {
       emarPath: '',
       adc: '',
       adcPath: '',
-      isUploading: false,
+      isImporting: false,
     };
 
     this.handleChange = this.handleChange.bind(this);
@@ -65,10 +68,10 @@ class DataUploadForm extends React.Component {
   handleSubmit(event) {
     event.preventDefault();
 
-    this.setState({ isUploading: true });
+    this.setState({ isImporting: true });
 
     ipcRenderer.send('database', {
-      header: 'upload',
+      header: 'import',
       body: {
         adcPath: this.state.adcPath,
         emarPath: this.state.emarPath,
@@ -76,8 +79,8 @@ class DataUploadForm extends React.Component {
     });
 
     ipcRenderer.once('database', (event, message) => {
-      if (message === 'Data upload complete.') {
-        this.setState({ isUploading: false });
+      if (message === 'Data import complete.') {
+        this.setState({ isImporting: false });
       }
     });
   }
@@ -90,9 +93,20 @@ class DataUploadForm extends React.Component {
             <FileInput
               name="emar"
               value={this.state.emar}
-              label="Medication Order Task Status:"
+              label={
+                <React.Fragment>
+                  <SVGIcon
+                    className="align-baseline"
+                    type="file-csv"
+                    width="1em"
+                    height="1em"
+                    fill="#212529"
+                  />{' '}
+                  Medication Order Task Status:{' '}
+                </React.Fragment>
+              }
               handleChange={this.handleChange}
-              disabled={this.state.isUploading}
+              disabled={this.state.isImporting}
               attributes={{
                 accept: '.csv',
                 required: true,
@@ -105,9 +119,20 @@ class DataUploadForm extends React.Component {
             <FileInput
               name="adc"
               value={this.state.adc}
-              label="C2 Activity:"
+              label={
+                <React.Fragment>
+                  <SVGIcon
+                    className="align-baseline"
+                    type="file-excel"
+                    width="1em"
+                    height="1em"
+                    fill="#212529"
+                  />{' '}
+                  C2 Activity:{' '}
+                </React.Fragment>
+              }
               handleChange={this.handleChange}
-              disabled={this.state.isUploading}
+              disabled={this.state.isImporting}
               attributes={{
                 accept: '.xlsx',
                 required: true,
@@ -117,7 +142,7 @@ class DataUploadForm extends React.Component {
         </div>
         <div className="form-row">
           <div className="col">
-            <UploadButton isUploading={this.state.isUploading} />
+            <ImportButton isImporting={this.state.isImporting} />
           </div>
         </div>
       </form>
@@ -149,32 +174,47 @@ FileInput.propTypes = {
   disabled: PropTypes.bool.isRequired,
   handleChange: PropTypes.func.isRequired,
   attributes: PropTypes.object,
-  label: PropTypes.string.isRequired,
+  label: PropTypes.node.isRequired,
 };
 
 FileInput.defaultProps = {
   attributes: null,
 };
 
-const UploadButton = (props) => {
-  if (props.isUploading) {
+const ImportButton = props => {
+  if (props.isImporting) {
     return (
-      <button className="btn btn-primary d-block mb-3 ml-auto" type="submit" disabled>
-        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
-        Uploading…
+      <button
+        className="btn btn-primary d-block mb-3 ml-auto"
+        type="submit"
+        disabled
+      >
+        <span
+          className="spinner-border spinner-border-sm"
+          role="status"
+          aria-hidden="true"
+        />
+        Importing…
       </button>
     );
   }
 
   return (
     <button className="btn btn-primary d-block mb-3 ml-auto" type="submit">
-      Upload
+      <SVGIcon
+        className="align-baseline"
+        type="file-import"
+        width="1em"
+        height="1em"
+        fill="white"
+      />{' '}
+      Import
     </button>
   );
 };
 
-UploadButton.propTypes = {
-  isUploading: PropTypes.bool.isRequired,
+ImportButton.propTypes = {
+  isImporting: PropTypes.bool.isRequired,
 };
 
 export default DataView;
