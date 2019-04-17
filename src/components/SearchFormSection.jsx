@@ -1,6 +1,6 @@
+import IconButton from './IconButton';
 import PropTypes from 'prop-types';
 import React from 'react';
-import SVGIcon from './SVGIcon';
 
 const SearchFormSection = props => (
   <section className="col-3 d-flex flex-column">
@@ -12,16 +12,13 @@ const SearchFormSection = props => (
       onSubmit={props.handleSubmit}
     >
       {props.children}
-      <button className="btn btn-primary d-block ml-auto" type="submit">
-        <SVGIcon
-          className="align-baseline"
-          type="search"
-          width="1em"
-          height="1em"
-          fill="white"
-        />{' '}
-        Search
-      </button>
+      <IconButton
+        type="submit"
+        text="Search"
+        color="primary"
+        icon="search"
+        className="d-block ml-auto"
+      />
     </form>
   </section>
 );

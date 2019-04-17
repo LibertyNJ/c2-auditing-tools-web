@@ -56,12 +56,7 @@ app.on('activate', () => {
 
 const dbProcessPath = path.join(__dirname, 'database.js');
 const db = fork(dbProcessPath, [], {});
-db.on('message', data => {
-  if (data.header === 'query') {
-    mainWindow.webContents.send('query', data);
-  } else {
-    mainWindow.webContents.send('database', data);
-  }
-});
+
+db.on('message', data => mainWindow.webContents.send(data.header.type, data));
 
 ipcMain.on('database', (event, data) => db.send(data));

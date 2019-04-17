@@ -79,7 +79,7 @@ module.exports = {
       id: 'INTEGER PRIMARY KEY',
       lastName: 'VARCHAR(255) NOT NULL',
       firstName: 'VARCHAR(255) NOT NULL',
-      mi: 'CHAR(1)',
+      middleInitial: 'CHAR(1)',
     },
   },
 

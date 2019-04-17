@@ -103,7 +103,10 @@ class AdministrationView extends React.Component {
       : null;
 
     ipcRenderer.send('database', {
-      header: 'query',
+      header: {
+        type: 'query',
+        response: 'query',
+      },
 
       body: {
         table: 'emarAdministration',
@@ -128,18 +131,22 @@ class AdministrationView extends React.Component {
 
           joins: [
             {
+              type: '',
               table: 'providerEmar',
               predicate: 'providerEmarId = providerEmar.id',
             },
             {
+              type: '',
               table: 'provider',
               predicate: 'providerEmar.providerId = provider.id',
             },
             {
+              type: '',
               table: 'medicationOrder',
               predicate: 'medicationOrderId = medicationOrder.id',
             },
             {
+              type: '',
               table: 'medication',
               predicate: 'medicationOrder.medicationId = medication.id',
             },
@@ -150,11 +157,9 @@ class AdministrationView extends React.Component {
       },
     });
 
-    ipcRenderer.once('query', (event, data) => {
-      if (data.header === 'query') {
-        this.setState({ records: data.body });
-      }
-    });
+    ipcRenderer.once('query', (event, data) =>
+      this.setState({ records: data.body })
+    );
   }
 
   render() {
@@ -228,8 +233,10 @@ class AdministrationView extends React.Component {
               label="Time start"
               handleChange={this.handleChange}
               info="Required"
-              max="9999-12-31T23:59"
-              required
+              attributes={{
+                max: '9999-12-31T23:59',
+                required: true,
+              }}
             />
             <Input
               type="datetime-local"
@@ -238,8 +245,10 @@ class AdministrationView extends React.Component {
               label="Time end"
               handleChange={this.handleChange}
               info="Required"
-              max="9999-12-31T23:59"
-              required
+              attributes={{
+                max: '9999-12-31T23:59',
+                required: true,
+              }}
             />
             <Input
               type="text"

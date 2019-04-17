@@ -3,6 +3,7 @@ import { ipcRenderer } from 'electron';
 import React from 'react';
 import RecordsTableSection from '../components/RecordsTableSection';
 import SearchFormSection from '../components/SearchFormSection';
+import Select from '../components/Select';
 import SVGIcon from '../components/SVGIcon';
 
 class TransactionView extends React.Component {
@@ -119,7 +120,7 @@ class TransactionView extends React.Component {
       : null;
 
     ipcRenderer.send('database', {
-      header: 'query',
+      header: { type: 'query', response: 'query' },
 
       body: {
         table: 'adcTransaction',
@@ -146,22 +147,27 @@ class TransactionView extends React.Component {
 
           joins: [
             {
+              type: '',
               table: 'providerAdc',
               predicate: 'providerAdcId = providerAdc.id',
             },
             {
+              type: '',
               table: 'provider',
               predicate: 'providerAdc.providerId = provider.id',
             },
             {
+              type: '',
               table: 'medicationProduct',
               predicate: 'medicationProductId = medicationProduct.id',
             },
             {
+              type: '',
               table: 'medication',
               predicate: 'medicationProduct.medicationId = medication.id',
             },
             {
+              type: '',
               table: 'adcTransactionType',
               predicate: 'typeId = adcTransactionType.id',
             },
@@ -173,9 +179,7 @@ class TransactionView extends React.Component {
     });
 
     ipcRenderer.once('query', (event, data) => {
-      if (data.header === 'query') {
-        this.setState({ records: data.body });
-      }
+      this.setState({ records: data.body });
     });
   }
 
@@ -255,8 +259,10 @@ class TransactionView extends React.Component {
               label="Time start"
               handleChange={this.handleChange}
               info="Required"
-              max="9999-12-31T23:59"
-              required
+              attributes={{
+                max: '9999-12-31T23:59',
+                required: true,
+              }}
             />
             <Input
               type="datetime-local"
@@ -265,37 +271,40 @@ class TransactionView extends React.Component {
               label="Time end"
               handleChange={this.handleChange}
               info="Required"
-              max="9999-12-31T23:59"
-              required
+              attributes={{
+                max: '9999-12-31T23:59',
+                required: true,
+              }}
             />
-            <div className="form-group">
-              <label htmlFor="transactionTypes">Transaction types</label>
-              <select
-                id="transactionTypes"
-                className="custom-select"
-                type="text"
-                name="transactionTypes"
-                value={this.state.transactionTypes}
-                multiple
-                required
-                onChange={this.handleChange}
-              >
-                <option value="Withdrawal">Withdrawal</option>
-                <option value="Waste">Waste</option>
-                <option value="Restock">Restock</option>
-                <option value="Return">Return</option>
-              </select>
-              <small className="form-text text-info">
-                <SVGIcon
-                  className="align-baseline"
-                  type="info-circle"
-                  width="1em"
-                  height="1em"
-                  fill="#17b2a8"
-                />{' '}
-                Required, may select multiple options
-              </small>
-            </div>
+            <Select
+              name="transactionTypes"
+              value={this.state.transactionTypes}
+              label="Transaction types"
+              options={[
+                {
+                  value: 'Restock',
+                  text: 'Restock',
+                },
+                {
+                  value: 'Return',
+                  text: 'Return',
+                },
+                {
+                  value: 'Waste',
+                  text: 'Waste',
+                },
+                {
+                  value: 'Withdrawal',
+                  text: 'Withdrawal',
+                },
+              ]}
+              handleChange={this.handleChange}
+              info="Required, may select multiple options"
+              attributes={{
+                multiple: true,
+                required: true,
+              }}
+            />
             <Input
               type="text"
               name="provider"

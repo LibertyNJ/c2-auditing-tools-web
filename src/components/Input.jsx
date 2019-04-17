@@ -36,7 +36,9 @@ Input.propTypes = {
   label: PropTypes.string.isRequired,
   handleChange: PropTypes.func.isRequired,
   info: PropTypes.string,
-  attributes: PropTypes.object,
+  attributes: PropTypes.objectOf(
+    PropTypes.oneOfType([PropTypes.string, PropTypes.bool])
+  ),
 };
 
 Input.defaultProps = {

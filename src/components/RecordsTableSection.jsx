@@ -43,11 +43,15 @@ const RecordsTableSection = props => {
     );
   });
 
+  const tableClassName = `table table-sm mb-3 border-bottom border-left ${
+    props.className
+  }`;
+
   return (
     <section className="col-9 d-flex flex-column">
       <h2>Records</h2>
       <div className="overflow-auto border-top">
-        <table className="table table-sm mb-3 border-bottom border-left">
+        <table className={tableClassName}>
           <thead>
             <tr className="border-0">{tableHeadHeadings}</tr>
           </thead>
@@ -65,10 +69,15 @@ RecordsTableSection.propTypes = {
     PropTypes.shape({
       name: PropTypes.string.isRequired,
       orderByColumn: PropTypes.string.isRequired,
-    }),
+    })
   ).isRequired,
   tableBodyRows: PropTypes.node.isRequired,
   handleClick: PropTypes.func.isRequired,
+  className: PropTypes.string,
+};
+
+RecordsTableSection.defaultProps = {
+  className: '',
 };
 
 export default RecordsTableSection;

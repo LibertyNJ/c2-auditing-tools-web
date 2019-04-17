@@ -21,15 +21,13 @@ export default class App extends React.Component {
     };
   }
 
-  componentWillMount() {
+  componentDidMount() {
     ipcRenderer.send('database', {
-      header: 'status',
+      header: { type: 'status', response: 'status' },
     });
 
-    ipcRenderer.on('database', (event, data) => {
-      if (data.header === 'status') {
-        this.setState({ databaseStatus: data.body });
-      }
+    ipcRenderer.on('status', (event, data) => {
+      this.setState({ databaseStatus: data.body });
     });
   }
 

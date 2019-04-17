@@ -188,8 +188,10 @@ class LedgerView extends React.Component {
               label="Time withdrawn start"
               handleChange={this.handleChange}
               info="Required"
-              max="9999-12-31T23:59"
-              required
+              attributes={{
+                max: '9999-12-31T23:59',
+                required: true,
+              }}
             />
             <Input
               type="datetime-local"
@@ -198,8 +200,10 @@ class LedgerView extends React.Component {
               label="Time withdrawn end"
               handleChange={this.handleChange}
               info="Required"
-              max="9999-12-31T23:59"
-              required
+              attributes={{
+                max: '9999-12-31T23:59',
+                required: true,
+              }}
             />
             <Input
               type="text"

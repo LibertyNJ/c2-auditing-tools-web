@@ -1,4 +1,5 @@
 import path from 'path';
+import IconButton from '../components/IconButton';
 import { ipcRenderer } from 'electron';
 import PropTypes from 'prop-types';
 import React from 'react';
@@ -43,7 +44,6 @@ class DataImportForm extends React.Component {
       emarPath: '',
       adc: '',
       adcPath: '',
-      isImporting: false,
     };
 
     this.handleChange = this.handleChange.bind(this);
@@ -71,17 +71,11 @@ class DataImportForm extends React.Component {
     this.setState({ isImporting: true });
 
     ipcRenderer.send('database', {
-      header: 'import',
+      header: { type: 'import' },
       body: {
         adcPath: this.state.adcPath,
         emarPath: this.state.emarPath,
       },
-    });
-
-    ipcRenderer.once('database', (event, message) => {
-      if (message === 'Data import complete.') {
-        this.setState({ isImporting: false });
-      }
     });
   }
 
@@ -142,7 +136,13 @@ class DataImportForm extends React.Component {
         </div>
         <div className="form-row">
           <div className="col">
-            <ImportButton isImporting={this.state.isImporting} />
+            <IconButton
+              type="submit"
+              text="Import"
+              icon="file-import"
+              color="primary"
+              className="d-block mb-3 ml-auto"
+            />
           </div>
         </div>
       </form>
@@ -179,42 +179,6 @@ FileInput.propTypes = {
 
 FileInput.defaultProps = {
   attributes: null,
-};
-
-const ImportButton = props => {
-  if (props.isImporting) {
-    return (
-      <button
-        className="btn btn-primary d-block mb-3 ml-auto"
-        type="submit"
-        disabled
-      >
-        <span
-          className="spinner-border spinner-border-sm"
-          role="status"
-          aria-hidden="true"
-        />
-        Importing…
-      </button>
-    );
-  }
-
-  return (
-    <button className="btn btn-primary d-block mb-3 ml-auto" type="submit">
-      <SVGIcon
-        className="align-baseline"
-        type="file-import"
-        width="1em"
-        height="1em"
-        fill="white"
-      />{' '}
-      Import
-    </button>
-  );
-};
-
-ImportButton.propTypes = {
-  isImporting: PropTypes.bool.isRequired,
 };
 
 export default DataView;

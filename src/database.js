@@ -28,6 +28,7 @@ db.create = (table, parameters) => {
 db.read = (table, parameters) => {
   const isDistinct = parameters.isDistinct ? 'DISTINCT ' : '';
   const columns = parameters.columns.join(', ');
+
   const whereValues = parameters.wheres
     ? parameters.wheres
         .filter(where => where)
@@ -37,30 +38,31 @@ db.read = (table, parameters) => {
         .map(({ value }) => value)
     : null;
 
-  const wheres = parameters.wheres
-    ? `WHERE ${parameters.wheres
-        .filter(where => where)
-        .map(where => {
-          if (Array.isArray(where)) {
-            return `(${where
-              .map(subWhere => `${subWhere.column} ${subWhere.operator} ?`)
-              .join(' OR ')})`;
-          }
+  const wheres =
+    whereValues.length > 0
+      ? `WHERE ${parameters.wheres
+          .filter(where => where)
+          .map(where => {
+            if (Array.isArray(where)) {
+              return `(${where
+                .map(subWhere => `${subWhere.column} ${subWhere.operator} ?`)
+                .join(' OR ')})`;
+            }
 
-          if (/timestamp/.test(where.column)) {
-            return `strftime('%s', ${where.column}) ${
-              where.operator
-            } strftime('%s', ?)`;
-          }
+            if (/timestamp/.test(where.column)) {
+              return `strftime('%s', ${where.column}) ${
+                where.operator
+              } strftime('%s', ?)`;
+            }
 
-          return `${where.column} ${where.operator} ?`;
-        })
-        .join(' AND ')}`
-    : '';
+            return `${where.column} ${where.operator} ?`;
+          })
+          .join(' AND ')}`
+      : '';
 
   const joins = parameters.joins
     ? parameters.joins
-        .map(join => `JOIN ${join.table} ON ${join.predicate}`)
+        .map(join => `${join.type} JOIN ${join.table} ON ${join.predicate}`)
         .join(' ')
     : '';
 
@@ -105,53 +107,89 @@ db.update = (table, parameters) => {
     ? `OR ${parameters.onConflict.toUpperCase()} `
     : '';
 
-  const set = Object.keys(parameters.set)
-    .map(column => `${column} = ?`)
-    .join(', ');
-
-  const values = Object.values(parameters.set);
-
-  const whereValues = parameters.wheres
-    ? parameters.wheres.filter(where => where).map(({ value }) => value)
+  const setValues = parameters.sets
+    ? parameters.sets.filter(set => set).map(({ value }) => value)
     : null;
 
-  const wheres = parameters.wheres
-    ? `WHERE ${parameters.wheres
+  const sets =
+    setValues.length > 0
+      ? `SET ${parameters.sets
+          .filter(set => set)
+          .map(({ column }) => `${column} = ?`)
+          .join(', ')}`
+      : '';
+
+  const whereValues = parameters.wheres
+    ? parameters.wheres
         .filter(where => where)
-        .map(({ column, operator }) => {
-          if (/timestamp/.test(column)) {
-            return `strftime('%s', ${column}) ${operator} strftime('%s', ?)`;
-          }
-          return `${column} ${operator} ?`;
-        })
-        .join(' AND ')}`
-    : '';
+        .reduce((flattenedWheres, where) => {
+          return flattenedWheres.concat(where);
+        }, [])
+        .map(({ value }) => value)
+    : null;
+
+  const wheres =
+    whereValues.length > 0
+      ? `WHERE ${parameters.wheres
+          .filter(where => where)
+          .map(where => {
+            if (Array.isArray(where)) {
+              return `(${where
+                .map(subWhere => `${subWhere.column} ${subWhere.operator} ?`)
+                .join(' OR ')})`;
+            }
+
+            if (/timestamp/.test(where.column)) {
+              return `strftime('%s', ${where.column}) ${
+                where.operator
+              } strftime('%s', ?)`;
+            }
+
+            return `${where.column} ${where.operator} ?`;
+          })
+          .join(' AND ')}`
+      : '';
 
   const stmt = db.prepare(`
   UPDATE ${onConflict}${table}
-  SET ${set}
+  ${sets}
   ${wheres};
   `);
 
-  stmt.run(...values, ...whereValues);
+  stmt.run(...setValues, ...whereValues);
 };
 
 db.delete = (table, parameters) => {
   const whereValues = parameters.wheres
-    ? parameters.wheres.filter(where => where).map(({ value }) => value)
+    ? parameters.wheres
+        .filter(where => where)
+        .reduce((flattenedWheres, where) => {
+          return flattenedWheres.concat(where);
+        }, [])
+        .map(({ value }) => value)
     : null;
 
-  const wheres = parameters.wheres
-    ? `WHERE ${parameters.wheres
-        .filter(where => where)
-        .map(({ column, operator }) => {
-          if (/timestamp/.test(column)) {
-            return `strftime('%s', ${column}) ${operator} strftime('%s', ?)`;
-          }
-          return `${column} ${operator} ?`;
-        })
-        .join(' AND ')}`
-    : '';
+  const wheres =
+    whereValues.length > 0
+      ? `WHERE ${parameters.wheres
+          .filter(where => where)
+          .map(where => {
+            if (Array.isArray(where)) {
+              return `(${where
+                .map(subWhere => `${subWhere.column} ${subWhere.operator} ?`)
+                .join(' OR ')})`;
+            }
+
+            if (/timestamp/.test(where.column)) {
+              return `strftime('%s', ${where.column}) ${
+                where.operator
+              } strftime('%s', ?)`;
+            }
+
+            return `${where.column} ${where.operator} ?`;
+          })
+          .join(' AND ')}`
+      : '';
 
   const stmt = db.prepare(`
   DELETE FROM ${table}
@@ -164,7 +202,7 @@ db.delete = (table, parameters) => {
 db.updateStatus = status => {
   db.status = status;
   process.send({
-    header: 'status',
+    header: { type: 'status' },
     body: db.status,
   });
 };
@@ -643,15 +681,15 @@ db.parseEmar = function parseEmar(filePath) {
 };
 
 process.on('message', data => {
-  if (data.header === 'status') {
+  if (data.header.type === 'status') {
     process.send({
-      header: 'status',
+      header: { type: data.header.response },
       body: db.status,
     });
   }
 
-  if (data.header === 'import') {
-    db.updateStatus('Importing');
+  if (data.header.type === 'import') {
+    db.updateStatus('Importing…');
 
     Promise.all([
       db.parseAdc(data.body.adcPath),
@@ -664,11 +702,26 @@ process.on('message', data => {
       });
   }
 
-  if (data.header === 'query') {
-    db.updateStatus('Querying');
+  if (data.header.type === 'query') {
+    db.updateStatus('Querying…');
     try {
       const records = db.read(data.body.table, data.body.parameters);
-      process.send({ header: 'query', body: records });
+      process.send({ header: { type: data.header.response }, body: records });
+      db.updateStatus('Ready');
+    } catch (error) {
+      db.updateStatus('Error');
+      console.error(error);
+    }
+  }
+
+  if (data.header.type === 'update') {
+    db.updateStatus('Updating…');
+    try {
+      db.update(data.body.table, data.body.parameters);
+      process.send({
+        header: { type: data.header.response },
+        body: 'Updated successfully.',
+      });
       db.updateStatus('Ready');
     } catch (error) {
       db.updateStatus('Error');
