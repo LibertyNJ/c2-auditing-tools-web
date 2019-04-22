@@ -682,31 +682,52 @@ db.parseEmar = function parseEmar(filePath) {
 
 process.on('message', data => {
   if (data.header.type === 'status') {
-    process.send({
-      header: { type: data.header.response },
-      body: db.status,
-    });
+    if (data.header.response) {
+      process.send({
+        header: { type: data.header.response },
+        body: db.status,
+      });
+    }
   }
 
   if (data.header.type === 'import') {
     db.updateStatus('Importing…');
 
-    Promise.all([
-      db.parseAdc(data.body.adcPath),
-      db.parseEmar(data.body.emarPath),
-    ])
-      .then(() => db.updateStatus('Ready'))
-      .catch(error => {
-        db.updateStatus('Error');
-        console.error(error);
-      });
+    try {
+      db.parseAdc(data.body.adcPath);
+      db.parseEmar(data.body.emarPath);
+
+      if (data.header.response) {
+        process.send({
+          header: { type: data.header.response },
+          body: 'Imported successfully.',
+        });
+      }
+    } catch (error) {
+      db.updateStatus('Error');
+      console.error(error);
+    }
+
+    Promise.all([])
+      .then(() => {
+        db.updateStatus('Ready');
+      })
+      .catch(error => {});
   }
 
   if (data.header.type === 'query') {
     db.updateStatus('Querying…');
+
     try {
       const records = db.read(data.body.table, data.body.parameters);
-      process.send({ header: { type: data.header.response }, body: records });
+
+      if (data.header.response) {
+        process.send({
+          header: { type: data.header.response },
+          body: records,
+        });
+      }
+
       db.updateStatus('Ready');
     } catch (error) {
       db.updateStatus('Error');
@@ -716,12 +737,17 @@ process.on('message', data => {
 
   if (data.header.type === 'update') {
     db.updateStatus('Updating…');
+
     try {
       db.update(data.body.table, data.body.parameters);
-      process.send({
-        header: { type: data.header.response },
-        body: 'Updated successfully.',
-      });
+
+      if (data.header.response) {
+        process.send({
+          header: { type: data.header.response },
+          body: 'Updated successfully.',
+        });
+      }
+
       db.updateStatus('Ready');
     } catch (error) {
       db.updateStatus('Error');

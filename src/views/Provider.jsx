@@ -18,16 +18,9 @@ class ProviderView extends React.Component {
       orderByColumn: '',
       orderByDirection: '',
 
-      records: [],
+      selectedProviderId: '',
 
-      editRecord: {
-        id: '',
-        lastName: '',
-        firstName: '',
-        middleInitial: '',
-        adcIds: [],
-        emarIds: [],
-      },
+      records: [],
     };
 
     this.modalRef = React.createRef();
@@ -46,21 +39,11 @@ class ProviderView extends React.Component {
     const target = event.target;
 
     if (target.tagName === 'TD') {
-      const row = event.currentTarget;
-      const cells = row.cells;
-
+      const currentTarget = event.currentTarget;
+      
       this.setState(
-        {
-          editRecord: {
-            id: row.dataset.providerId,
-            lastName: cells[0].innerText,
-            firstName: cells[1].innerText,
-            middleInitial: cells[2].innerText,
-            adcIds: cells[3].innerText ? cells[3].innerText.split('; ') : [],
-            emarIds: cells[4].innerText ? cells[4].innerText.split('; ') : [],
-          },
-        },
-        this.modalRef.current.handleReset
+        { selectedProviderId: currentTarget.dataset.providerId },
+        this.modalRef.current.handleShow
       );
     } else {
       this.setState(state => {
@@ -69,6 +52,7 @@ class ProviderView extends React.Component {
           state.orderByDirection === 'ASC'
             ? 'DESC'
             : 'ASC';
+
         return {
           orderByColumn: target.dataset.orderByColumn,
           orderByDirection,
@@ -207,9 +191,9 @@ class ProviderView extends React.Component {
           return (
             <tr
               key={record.id}
+              data-provider-id={record.id}
               data-toggle="modal"
               data-target="#modal"
-              data-provider-id={record.id}
               onClick={this.handleClick}
             >
               <td className="border-right">{record.lastName}</td>
@@ -282,7 +266,11 @@ class ProviderView extends React.Component {
             className="table-hover"
           />
         </div>
-        <Modal ref={this.modalRef} editRecord={this.state.editRecord} />
+        <Modal
+          ref={this.modalRef}
+          providerId={this.state.selectedProviderId}
+          refreshView={this.handleSubmit}
+        />
       </React.Fragment>
     );
   }
