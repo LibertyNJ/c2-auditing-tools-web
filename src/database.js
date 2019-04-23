@@ -761,7 +761,7 @@ process.on('message', data => {
 
       const providerWhere = data.body.provider
         ? {
-            column: 'providerName',
+            column: 'provider',
             operator: 'LIKE',
             value: `%${data.body.provider}%`,
           }
@@ -780,7 +780,10 @@ process.on('message', data => {
           'provider.id AS providerId',
           "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS provider",
           "medication.name || ', ' || medicationProduct.strength || ' ' || medicationProduct.units || ' ' || medicationProduct.form AS product",
+          'medication.name AS medication',
+          'medicationProduct.strength',
           'medicationProductId',
+          'mrn',
           'amount',
           'medicationOrderId',
         ],
@@ -851,6 +854,7 @@ process.on('message', data => {
           'medicationProductId',
           "amount || ' ' || medicationProduct.units AS amount",
           'medicationOrderId',
+          'mrn',
         ],
 
         wheres: [
@@ -912,6 +916,7 @@ process.on('message', data => {
           'medicationProductId',
           'amount',
           'medicationOrderId',
+          'mrn',
         ],
 
         wheres: [
@@ -972,6 +977,9 @@ process.on('message', data => {
           'provider.id AS providerId',
           "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS provider",
           'medicationOrderId',
+          'mrn',
+          'medicationOrder.dose',
+          'medication.name AS medication',
         ],
 
         wheres: [
@@ -998,6 +1006,21 @@ process.on('message', data => {
             table: 'provider',
             predicate: 'providerEmar.providerId = provider.id',
           },
+          {
+            type: 'LEFT',
+            table: 'medicationOrder',
+            predicate: 'medicationOrderId = medicationOrder.id',
+          },
+          {
+            type: 'LEFT',
+            table: 'medication',
+            predicate: 'medicationOrder.medicationId = medication.id',
+          },
+          {
+            type: 'LEFT',
+            table: 'visit',
+            predicate: 'medicationOrder.visitId = visit.id',
+          },
         ],
 
         orderBys: [
@@ -1008,10 +1031,66 @@ process.on('message', data => {
         ],
       });
 
-      withdrawals.forEach(withdrawal => {
+      const result = [...withdrawals].reverse(); // Withdrawals must be run in reverse or later administrations may be assigned as dispositions for earlier diversions.
+
+      result.forEach(withdrawal => {
         if (withdrawal.medicationOrderId === 'OVERRIDE') {
-          // Run OVERRIDE logic
-        } else {
+          const wasteIndex = wastes.findIndex(waste => 
+            waste.mrn === withdrawal.mrn &&
+            waste.medicationProductId === withdrawal.medicationProductId &&
+            waste.timestamp >= withdrawal.timestamp &&
+            !waste.reconciled
+          );
+
+          if (wastes[wasteIndex]) {
+            withdrawal.waste = wastes[wasteIndex];
+            wastes[wasteIndex].reconciled = true;
+          }
+
+          const administrationIndex = administrations.findIndex(
+            administration => {
+              if (withdrawal.waste) {
+                return(
+                  administration.medication === withdrawal.medication &&
+                  administration.mrn === withdrawal.mrn &&
+                  ((withdrawal.amount * withdrawal.strength) -
+                    withdrawal.waste.amount) ===
+                    administration.dose &&
+                  administration.timestamp >= withdrawal.timestamp &&
+                  !administration.reconciled  
+                );
+              }
+
+              return(
+                administration.medication === withdrawal.medication &&
+                administration.mrn === withdrawal.mrn &&
+                (withdrawal.amount * withdrawal.strength) ===
+                  administration.dose &&
+                administration.timestamp >= withdrawal.timestamp &&
+                !administration.reconciled  
+              );
+            }
+              );
+
+              if (administrations[administrationIndex]) {
+                withdrawal.disposition = administrations[administrationIndex];
+                withdrawal.disposition.type = 'Administration';
+                administrations[administrationIndex].reconciled = true;
+              } else {
+                const otherTransactionIndex = otherTransactions.findIndex(
+                  otherTransaction =>     
+                  otherTransaction.mrn === withdrawal.mrn &&
+                  otherTransaction.medicationProductId === withdrawal.medicationProductId &&
+                      otherTransaction.timestamp >= withdrawal.timestamp &&
+                      !otherTransaction.reconciled
+                );
+    
+                if (otherTransactions[otherTransactionIndex]) {
+                  withdrawal.disposition = otherTransactions[otherTransactionIndex];
+                  otherTransactions[otherTransactionIndex].reconciled = true;
+                }
+              }
+            } else {
           const nextWithdrawal = withdrawals.find(
             otherWithdrawal =>
               otherWithdrawal.medicationOrderId ===
@@ -1019,7 +1098,7 @@ process.on('message', data => {
               otherWithdrawal.timestamp > withdrawal.timestamp
           );
 
-          withdrawal.waste = wastes.find(waste => {
+          const wasteIndex = wastes.findIndex(waste => {
             if (nextWithdrawal) {
               return (
                 waste.medicationOrderId === withdrawal.medicationOrderId &&
@@ -1036,29 +1115,38 @@ process.on('message', data => {
             );
           });
 
-          withdrawal.disposition = administrations.find(administration => {
-            if (nextWithdrawal) {
+          if (wastes[wasteIndex]) {
+            withdrawal.waste = wastes[wasteIndex];
+            wastes[wasteIndex].reconciled = true;
+          }
+
+          const administrationIndex = administrations.findIndex(
+            administration => {
+              if (nextWithdrawal) {
+                return (
+                  administration.medicationOrderId ===
+                    withdrawal.medicationOrderId &&
+                  administration.timestamp >= withdrawal.timestamp &&
+                  administration.timestamp < nextWithdrawal.timestamp &&
+                  !administration.reconciled
+                );
+              }
+
               return (
                 administration.medicationOrderId ===
                   withdrawal.medicationOrderId &&
                 administration.timestamp >= withdrawal.timestamp &&
-                administration.timestamp < nextWithdrawal.timestamp &&
                 !administration.reconciled
               );
             }
+          );
 
-            return (
-              administration.medicationOrderId ===
-                withdrawal.medicationOrderId &&
-              administration.timestamp >= withdrawal.timestamp &&
-              !administration.reconciled
-            );
-          });
-
-          if (withdrawal.disposition) {
+          if (administrations[administrationIndex]) {
+            withdrawal.disposition = administrations[administrationIndex];
             withdrawal.disposition.type = 'Administration';
+            administrations[administrationIndex].reconciled = true;
           } else {
-            withdrawal.disposition = otherTransactions.find(
+            const otherTransactionIndex = otherTransactions.findIndex(
               otherTransaction => {
                 if (nextWithdrawal) {
                   return (
@@ -1078,13 +1166,18 @@ process.on('message', data => {
                 );
               }
             );
+
+            if (otherTransactions[otherTransactionIndex]) {
+              withdrawal.disposition = otherTransactions[otherTransactionIndex];
+              otherTransactions[otherTransactionIndex].reconciled = true;
+            }
           }
         }
       });
 
       process.send({
         header: { type: data.header.response },
-        body: withdrawals,
+        body: result.reverse(),
       });
 
       db.updateStatus('Ready');
