@@ -754,4 +754,420 @@ process.on('message', data => {
       console.error(error);
     }
   }
+
+  if (data.header.type === 'ledger') {
+    db.updateStatus('Creating ledger…');
+
+    try {
+      const providerWhere = data.body.provider
+        ? {
+            column: 'providerName',
+            operator: 'LIKE',
+            value: `%${data.body.provider}%`,
+          }
+        : null;
+
+      const medicationOrderIdWhere = data.body.medicationOrderId
+        ? data.body.medicationOrderId
+        : null;
+
+      const medicationProductWhere = data.body.medicationProduct
+        ? data.body.medicationProduct
+        : null;
+
+      const withdrawals = db.read('adcTransaction', {
+        columns: [
+          'adcTransaction.id',
+          'timestamp',
+          'provider.id AS providerId',
+          "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS providerName",
+          "medication.name || ', ' || medicationProduct.strength || ' ' || medicationProduct.units || ' ' || medicationProduct.form AS product",
+          'medicationProductId',
+          'amount',
+          'medicationOrderId',
+        ],
+
+        wheres: [
+          {
+            column: 'timestamp',
+            operator: '<',
+            value: data.body.datetimeEnd,
+          },
+          {
+            column: 'timestamp',
+            operator: '>',
+            value: data.body.datetimeStart,
+          },
+          {
+            column: 'adcTransactionType.name',
+            operator: '=',
+            value: 'Withdrawal',
+          },
+          providerWhere,
+          medicationOrderIdWhere,
+          medicationProductWhere,
+        ],
+
+        joins: [
+          {
+            type: 'LEFT',
+            table: 'providerAdc',
+            predicate: 'providerAdcId = providerAdc.id',
+          },
+          {
+            type: 'LEFT',
+            table: 'provider',
+            predicate: 'providerAdc.providerId = provider.id',
+          },
+          {
+            type: '',
+            table: 'medicationProduct',
+            predicate: 'medicationProductId = medicationProduct.id',
+          },
+          {
+            type: '',
+            table: 'medication',
+            predicate: 'medicationProduct.medicationId = medication.id',
+          },
+
+          {
+            type: 'LEFT',
+            table: 'adcTransactionType',
+            predicate: 'typeId = adcTransactionType.id',
+          },
+        ],
+
+        orderBys: [
+          {
+            column: 'timestamp',
+            direction: 'ASC',
+          },
+        ],
+      });
+
+      const wastes = db.read('adcTransaction', {
+        columns: [
+          'adcTransaction.id',
+          'timestamp',
+          'provider.id AS providerId',
+          'medicationProductId',
+          "amount || ' ' || medicationProduct.units AS amount",
+          'medicationOrderId',
+        ],
+
+        wheres: [
+          {
+            column: 'timestamp',
+            operator: '<',
+            value: data.body.datetimeEnd,
+          },
+          {
+            column: 'timestamp',
+            operator: '>',
+            value: data.body.datetimeStart,
+          },
+          {
+            column: 'adcTransactionType.name',
+            operator: '=',
+            value: 'Waste',
+          },
+        ],
+
+        joins: [
+          {
+            type: 'LEFT',
+            table: 'providerAdc',
+            predicate: 'providerAdcId = providerAdc.id',
+          },
+          {
+            type: 'LEFT',
+            table: 'provider',
+            predicate: 'providerAdc.providerId = provider.id',
+          },
+          {
+            type: '',
+            table: 'medicationProduct',
+            predicate: 'medicationProductId = medicationProduct.id',
+          },
+          {
+            type: 'LEFT',
+            table: 'adcTransactionType',
+            predicate: 'typeId = adcTransactionType.id',
+          },
+        ],
+
+        orderBys: [
+          {
+            column: 'timestamp',
+            direction: 'ASC',
+          },
+        ],
+      });
+
+      const otherTransactions = db.read('adcTransaction', {
+        columns: [
+          'adcTransaction.id',
+          'adcTransactionType.name AS type',
+          'timestamp',
+          'provider.id AS providerId',
+          "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS providerName",
+          'medicationProductId',
+          'amount',
+          'medicationOrderId',
+        ],
+
+        wheres: [
+          {
+            column: 'timestamp',
+            operator: '<',
+            value: data.body.datetimeEnd,
+          },
+          {
+            column: 'timestamp',
+            operator: '>',
+            value: data.body.datetimeStart,
+          },
+          [
+            {
+              column: 'adcTransactionType.name',
+              operator: '=',
+              value: 'Restock',
+            },
+            {
+              column: 'adcTransactionType.name',
+              operator: '=',
+              value: 'Return',
+            },
+          ],
+        ],
+
+        joins: [
+          {
+            type: 'LEFT',
+            table: 'providerAdc',
+            predicate: 'providerAdcId = providerAdc.id',
+          },
+          {
+            type: 'LEFT',
+            table: 'provider',
+            predicate: 'providerAdc.providerId = provider.id',
+          },
+          {
+            type: 'LEFT',
+            table: 'adcTransactionType',
+            predicate: 'typeId = adcTransactionType.id',
+          },
+        ],
+
+        orderBys: [
+          {
+            column: 'timestamp',
+            direction: 'ASC',
+          },
+        ],
+      });
+
+      const administrations = db.read('emarAdministration', {
+        columns: [
+          'emarAdministration.id',
+          'timestamp',
+          'provider.id AS providerId',
+          "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS providerName",
+          'medicationOrderId',
+        ],
+
+        wheres: [
+          {
+            column: 'timestamp',
+            operator: '<',
+            value: data.body.datetimeEnd,
+          },
+          {
+            column: 'timestamp',
+            operator: '>',
+            value: data.body.datetimeStart,
+          },
+        ],
+
+        joins: [
+          {
+            type: 'LEFT',
+            table: 'providerEmar',
+            predicate: 'providerEmarId = providerEmar.id',
+          },
+          {
+            type: 'LEFT',
+            table: 'provider',
+            predicate: 'providerEmar.providerId = provider.id',
+          },
+        ],
+
+        orderBys: [
+          {
+            column: 'timestamp',
+            direction: 'ASC',
+          },
+        ],
+      });
+
+      console.log(administrations);
+
+      withdrawals.forEach(withdrawal => {
+        if (withdrawal.medicationOrderId === 'OVERRIDE') {
+          // Run OVERRIDE logic
+        } else {
+          withdrawal.waste = wastes.find(
+            waste =>
+              waste.medicationOrderId === withdrawal.medicationOrderId &&
+              waste.timestamp >= withdrawal.timestamp &&
+              !waste.reconciled
+          );
+
+          withdrawal.disposition = administrations.find(
+            administration =>
+              administration.medicationOrderId ===
+                withdrawal.medicationOrderId &&
+              administration.timestamp >= withdrawal.timestamp &&
+              !administration.reconciled
+          );
+
+          if (withdrawal.disposition) {
+            withdrawal.disposition.type = 'Administration';
+          } else {
+            withdrawal.disposition = otherTransactions.find(
+              otherTransaction =>
+                otherTransaction.medicationOrderId ===
+                  withdrawal.medicationOrderId &&
+                otherTransaction.timestamp >= withdrawal.timestamp &&
+                !otherTransaction.reconciled
+            );
+          }
+        }
+      });
+
+      process.send({
+        header: { type: data.header.response },
+        body: withdrawals,
+      });
+
+      db.updateStatus('Ready');
+    } catch (error) {
+      console.error(error);
+      db.updateStatus('Error');
+    }
+  }
+
+  if (data.header.type === 'transaction') {
+    try {
+      db.updateStatus('Reading…');
+
+      const datetimeStart = data.body.datetimeStart
+        ? { column: 'timestamp', operator: '>', value: data.body.datetimeStart }
+        : null;
+
+      const datetimeEnd = data.body.datetimeEnd
+        ? { column: 'timestamp', operator: '<', value: data.body.datetimeEnd }
+        : null;
+
+      const transactionTypes = data.body.transactionTypes
+        ? data.body.transactionTypes.map(transactionType => {
+            return {
+              column: 'adcTransactionType.name',
+              operator: '=',
+              value: transactionType,
+            };
+          })
+        : null;
+
+      const provider = data.body.provider
+        ? {
+            column: 'provider',
+            operator: 'LIKE',
+            value: `%${data.body.provider}%`,
+          }
+        : null;
+
+      const product = data.body.product
+        ? {
+            column: 'product',
+            operator: 'LIKE',
+            value: `%${data.body.product}%`,
+          }
+        : null;
+
+      const medicationOrderId = data.body.medicationOrderId
+        ? {
+            column: 'medicationOrderId',
+            operator: 'LIKE',
+            value: `%${data.body.medicationOrderId}%`,
+          }
+        : null;
+
+      const result = db.read('adcTransaction', {
+        columns: [
+          'adcTransaction.id',
+          'timestamp',
+          "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS provider",
+          'adcTransactionType.name AS transactionType',
+          "medication.name || ', ' || medicationProduct.strength || ' ' || medicationProduct.units || ' ' || medicationProduct.form AS product",
+          'amount',
+          'medicationOrderId',
+        ],
+
+        wheres: [
+          datetimeEnd,
+          datetimeStart,
+          provider,
+          transactionTypes,
+          medicationOrderId,
+          product,
+        ],
+
+        joins: [
+          {
+            type: '',
+            table: 'providerAdc',
+            predicate: 'providerAdcId = providerAdc.id',
+          },
+          {
+            type: '',
+            table: 'provider',
+            predicate: 'providerAdc.providerId = provider.id',
+          },
+          {
+            type: '',
+            table: 'medicationProduct',
+            predicate: 'medicationProductId = medicationProduct.id',
+          },
+          {
+            type: '',
+            table: 'medication',
+            predicate: 'medicationProduct.medicationId = medication.id',
+          },
+          {
+            type: '',
+            table: 'adcTransactionType',
+            predicate: 'typeId = adcTransactionType.id',
+          },
+        ],
+
+        orderBys: [
+          {
+            column: 'timestamp',
+            direction: 'ASC',
+          },
+        ],
+      });
+
+      process.send({
+        header: { type: data.header.response },
+        body: result,
+      });
+
+      db.updateStatus('Ready');
+    } catch (error) {
+      console.error(error);
+      db.updateStatus('Error');
+    }
+  }
 });

@@ -5,8 +5,8 @@ import SVGIcon from './SVGIcon';
 const RecordsTableSection = props => {
   const tableHeadHeadings = props.columnHeadings.map(columnHeading => {
     const getSortIconType = () => {
-      if (columnHeading.orderByColumn === props.orderByColumn) {
-        switch (props.orderByDirection) {
+      if (columnHeading.sortColumn === props.sortColumn) {
+        switch (props.sortDirection) {
           case 'ASC':
             return 'sort-up';
           case 'DESC':
@@ -22,13 +22,13 @@ const RecordsTableSection = props => {
     return (
       <th
         key={columnHeading.name}
-        className="sticky-top bg-white p-0 border-top-0 border-bottom-0 border-right"
+        className="sticky-top text-nowrap bg-white p-0 border-top-0 border-bottom-0 border-right"
         scope="col"
       >
         <button
-          className="btn btn-link text-reset font-weight-bold d-block w-100 h-100 border-bottom rounded-0"
+          className="btn btn-link stretched-link text-reset font-weight-bold d-block w-100 h-100 border-bottom rounded-0"
           type="button"
-          data-order-by-column={columnHeading.orderByColumn}
+          data-sort-column={columnHeading.sortColumn}
           onClick={props.handleClick}
         >
           {columnHeading.name}&nbsp;
@@ -63,12 +63,12 @@ const RecordsTableSection = props => {
 };
 
 RecordsTableSection.propTypes = {
-  orderByColumn: PropTypes.string.isRequired,
-  orderByDirection: PropTypes.string.isRequired,
+  sortColumn: PropTypes.string.isRequired,
+  sortDirection: PropTypes.string.isRequired,
   columnHeadings: PropTypes.arrayOf(
     PropTypes.shape({
       name: PropTypes.string.isRequired,
-      orderByColumn: PropTypes.string.isRequired,
+      sortColumn: PropTypes.string.isRequired,
     })
   ).isRequired,
   tableBodyRows: PropTypes.node.isRequired,

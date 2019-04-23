@@ -11,9 +11,10 @@ class LedgerView extends React.Component {
     this.state = {
       datetimeEnd: '',
       datetimeStart: '',
+      provider: '',
       medicationOrderId: '',
       medicationProduct: '',
-      provider: '',
+
       orderByColumn: '',
       orderByDirection: '',
 
@@ -42,6 +43,7 @@ class LedgerView extends React.Component {
         oldState.orderByDirection === 'ASC'
           ? 'DESC'
           : 'ASC';
+
       return {
         orderByColumn: target.dataset.orderByColumn,
         orderByDirection,
@@ -50,45 +52,28 @@ class LedgerView extends React.Component {
   }
 
   handleSubmit(event) {
-    event.preventDefault();
+    if (event) {
+      event.preventDefault();
+    }
 
-    const datetimeEnd = this.state.datetimeEnd;
-    const datetimeStart = this.state.datetimeStart;
-    const medicationOrderId = this.state.medicationOrderId;
-    const medicationProduct = this.state.medicationProduct;
-    const provider = this.state.provider;
+    if (!this.state.datetimeStart || !this.state.datetimeEnd) {
+      return;
+    }
 
     ipcRenderer.send('database', {
-      header: 'query',
+      header: { type: 'ledger', response: 'ledger' },
+
       body: {
-        table: 'administration',
-        parameters: {
-          columns: [
-            'providerAdcId',
-            'medicationProductId',
-            'amount',
-            'timestamp',
-          ],
-          where: {
-            timestamp: [
-              { operator: '>', value: datetimeStart },
-              { operator: '<', value: datetimeEnd },
-            ],
-            providerAdcId: { operator: '=', value: provider },
-            medicationOrderId: {
-              operator: 'LIKE',
-              value: `%${medicationOrderId}%`,
-            },
-            medicationProductId: { operator: '=', value: medicationProduct },
-          },
-        },
+        datetimeStart: this.state.datetimeStart,
+        datetimeEnd: this.state.datetimeEnd,
+        provider: this.state.provider,
+        medicationOrderId: this.state.medicationOrderId,
+        medicationProduct: this.state.medicationProduct,
       },
     });
 
-    ipcRenderer.once('query', (event, data) => {
-      if (data.header === 'query') {
-        this.setState({ records: data.body });
-      }
+    ipcRenderer.once('ledger', (event, data) => {
+      this.setState({ records: data.body });
     });
   }
 
@@ -115,12 +100,16 @@ class LedgerView extends React.Component {
         orderByColumn: 'waste',
       },
       {
-        name: 'Administered by',
-        orderByColumn: 'administeredBy',
+        name: 'Disposition',
+        orderByColumn: 'disposition',
       },
       {
-        name: 'Time administered',
-        orderByColumn: 'timeAdministered',
+        name: 'Disposed by',
+        orderByColumn: 'disposedBy',
+      },
+      {
+        name: 'Time disposed',
+        orderByColumn: 'timeDisposed',
       },
       {
         name: 'Order ID',
@@ -133,9 +122,9 @@ class LedgerView extends React.Component {
         this.state.records.map(record => {
           return (
             <tr key={record.id}>
-              <td className="border-right">{record.withdrawingProider}</td>
+              <td className="border-right">{record.providerName}</td>
               <td className="border-right">
-                {new Date(record.withdrawn).toLocaleString('en-US', {
+                {new Date(record.timestamp).toLocaleString('en-US', {
                   month: '2-digit',
                   day: '2-digit',
                   year: 'numeric',
@@ -147,26 +136,34 @@ class LedgerView extends React.Component {
               </td>
               <td className="border-right">{record.product}</td>
               <td className="border-right">{record.amount}</td>
-              <td className="border-right">{record.waste}</td>
               <td className="border-right">
-                {new Date(record.administered).toLocaleString('en-US', {
-                  month: '2-digit',
-                  day: '2-digit',
-                  year: 'numeric',
-                  hour: 'numeric',
-                  minute: 'numeric',
-                  second: 'numeric',
-                  hour12: false,
-                })}
+                {record.waste ? record.waste.amount : ''}
               </td>
-              <td className="border-right">{record.administeringProvider}</td>
+              <td className="border-right">{record.disposition.type}</td>
+              <td className="border-right">
+                {record.disposition.providerName}
+              </td>
+              <td className="border-right">
+                {new Date(record.disposition.timestamp).toLocaleString(
+                  'en-US',
+                  {
+                    month: '2-digit',
+                    day: '2-digit',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: 'numeric',
+                    second: 'numeric',
+                    hour12: false,
+                  }
+                )}
+              </td>
               <td className="border-right">{record.medicationOrderId}</td>
             </tr>
           );
         })
       ) : (
         <tr>
-          <td className="font-italic text-center border-right" colSpan={8}>
+          <td className="font-italic text-center border-right" colSpan={9}>
             No records found!
           </td>
         </tr>
@@ -183,8 +180,8 @@ class LedgerView extends React.Component {
           <SearchFormSection handleSubmit={this.handleSubmit}>
             <Input
               type="datetime-local"
-              name="timeWithdrawnStart"
-              value={this.state.timeWithdrawnStart}
+              name="withdrawnTimeStart"
+              value={this.state.datetimeStart}
               label="Time withdrawn start"
               handleChange={this.handleChange}
               info="Required"
@@ -195,8 +192,8 @@ class LedgerView extends React.Component {
             />
             <Input
               type="datetime-local"
-              name="timeWithdrawnEnd"
-              value={this.state.timeWithdrawnEnd}
+              name="withdrawnTimeEnd"
+              value={this.state.datetimeEnd}
               label="Time withdrawn end"
               handleChange={this.handleChange}
               info="Required"
@@ -208,7 +205,7 @@ class LedgerView extends React.Component {
             <Input
               type="text"
               name="withdrawnBy"
-              value={this.state.withdrawnBy}
+              value={this.state.withdrawingProvider}
               label="Withdrawn by"
               handleChange={this.handleChange}
             />
