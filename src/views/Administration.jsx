@@ -1,6 +1,6 @@
-import Input from '../components/Input';
 import { ipcRenderer } from 'electron';
 import React from 'react';
+import Input from '../components/Input';
 import RecordsTableSection from '../components/RecordsTableSection';
 import SearchFormSection from '../components/SearchFormSection';
 
@@ -9,15 +9,14 @@ class AdministrationView extends React.Component {
     super(props);
 
     this.state = {
-      datetimeEnd: '',
       datetimeStart: '',
-      medicationOrderId: '',
-      medication: '',
+      datetimeEnd: '',
       provider: '',
-      orderByColumn: '',
-      orderByDirection: '',
-
+      medication: '',
+      medicationOrderId: '',
       records: [],
+      sortColumn: '',
+      sortDirection: '',
     };
 
     this.handleChange = this.handleChange.bind(this);
@@ -37,127 +36,79 @@ class AdministrationView extends React.Component {
   }
 
   handleClick(event) {
-    const target = event.target;
+    if (this.state.records.length === 0) {
+      return;
+    }
 
-    this.setState(oldState => {
-      const orderByDirection =
-        oldState.orderByColumn === target.dataset.orderByColumn &&
-        oldState.orderByDirection === 'ASC'
-          ? 'DESC'
-          : 'ASC';
+    const targetSortColumn = event.target.dataset.sortColumn;
+
+    this.setState(state => {
+      const records = [...state.records].sort((recordA, recordB) => {
+        if (typeof recordA[targetSortColumn] === 'number') {
+          return recordA[targetSortColumn] - recordB[targetSortColumn];
+        }
+
+        const recordAString = recordA[targetSortColumn]
+          ? recordA[targetSortColumn].toLowerCase()
+          : '';
+
+        const recordBString = recordB[targetSortColumn]
+          ? recordB[targetSortColumn].toLowerCase()
+          : '';
+
+        if (recordAString > recordBString) {
+          return 1;
+        }
+
+        if (recordAString < recordBString) {
+          return -1;
+        }
+
+        return 0;
+      });
+
+      if (
+        state.sortColumn === targetSortColumn &&
+        state.sortDirection === 'ASC'
+      ) {
+        return {
+          sortColumn: targetSortColumn,
+          sortDirection: 'DESC',
+          records: records.reverse(),
+        };
+      }
+
       return {
-        orderByColumn: target.dataset.orderByColumn,
-        orderByDirection,
+        sortColumn: targetSortColumn,
+        sortDirection: 'ASC',
+        records,
       };
-    }, this.handleSubmit);
+    });
   }
 
   handleSubmit(event) {
-    if (event) {
-      event.preventDefault();
-    }
+    event.preventDefault();
 
     if (!this.state.datetimeStart || !this.state.datetimeEnd) {
       return;
     }
 
-    const datetimeEnd = this.state.datetimeEnd
-      ? { column: 'timestamp', operator: '<', value: this.state.datetimeEnd }
-      : null;
-
-    const datetimeStart = this.state.datetimeStart
-      ? { column: 'timestamp', operator: '>', value: this.state.datetimeStart }
-      : null;
-
-    const medicationOrderId = this.state.medicationOrderId
-      ? {
-          column: 'medicationOrderId',
-          operator: 'LIKE',
-          value: `%${this.state.medicationOrderId}%`,
-        }
-      : null;
-
-    const medication = this.state.medication
-      ? {
-          column: 'medication',
-          operator: 'LIKE',
-          value: `%${this.state.medication}%`,
-        }
-      : null;
-
-    const provider = this.state.provider
-      ? {
-          column: 'provider',
-          operator: 'LIKE',
-          value: `%${this.state.provider}%`,
-        }
-      : null;
-
-    const orderBys = this.state.orderByColumn
-      ? [
-          {
-            column: this.state.orderByColumn,
-            direction: this.state.orderByDirection,
-          },
-        ]
-      : null;
-
     ipcRenderer.send('database', {
       header: {
-        type: 'query',
-        response: 'query',
+        type: 'administration',
+        response: 'administration',
       },
 
       body: {
-        table: 'emarAdministration',
-
-        parameters: {
-          columns: [
-            'emarAdministration.id',
-            'timestamp',
-            "provider.lastName || ', ' || provider.firstName || ' ' || provider.mi AS provider",
-            "medication.name || ', ' || medicationOrder.form AS medication",
-            "medicationOrder.dose || ' ' || medicationOrder.units AS dose",
-            'medicationOrderId',
-          ],
-
-          wheres: [
-            datetimeEnd,
-            datetimeStart,
-            provider,
-            medicationOrderId,
-            medication,
-          ],
-
-          joins: [
-            {
-              type: '',
-              table: 'providerEmar',
-              predicate: 'providerEmarId = providerEmar.id',
-            },
-            {
-              type: '',
-              table: 'provider',
-              predicate: 'providerEmar.providerId = provider.id',
-            },
-            {
-              type: '',
-              table: 'medicationOrder',
-              predicate: 'medicationOrderId = medicationOrder.id',
-            },
-            {
-              type: '',
-              table: 'medication',
-              predicate: 'medicationOrder.medicationId = medication.id',
-            },
-          ],
-
-          orderBys,
-        },
+        datetimeStart: this.state.datetimeStart,
+        datetimeEnd: this.state.datetimeEnd,
+        provider: this.state.provider,
+        medication: this.state.medication,
+        medicationOrderId: this.state.medicationOrderId,
       },
     });
 
-    ipcRenderer.once('query', (event, data) =>
+    ipcRenderer.once('administration', (event, data) =>
       this.setState({ records: data.body })
     );
   }
@@ -166,23 +117,23 @@ class AdministrationView extends React.Component {
     const columnHeadings = [
       {
         name: 'Time',
-        orderByColumn: 'timestamp',
+        sortColumn: 'timestamp',
       },
       {
         name: 'Provider',
-        orderByColumn: 'provider',
+        sortColumn: 'provider',
       },
       {
         name: 'Medication',
-        orderByColumn: 'medication',
+        sortColumn: 'medication',
       },
       {
         name: 'Dose',
-        orderByColumn: 'dose',
+        sortColumn: 'dose',
       },
       {
         name: 'Order ID',
-        orderByColumn: 'medicationOrderId',
+        sortColumn: 'medicationOrderId',
       },
     ];
 
@@ -273,8 +224,8 @@ class AdministrationView extends React.Component {
             />
           </SearchFormSection>
           <RecordsTableSection
-            orderByColumn={this.state.orderByColumn}
-            orderByDirection={this.state.orderByDirection}
+            sortColumn={this.state.sortColumn}
+            sortDirection={this.state.sortDirection}
             columnHeadings={columnHeadings}
             tableBodyRows={tableBodyRows}
             handleClick={this.handleClick}

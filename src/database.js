@@ -771,9 +771,7 @@ process.on('message', data => {
         ? data.body.medicationOrderId
         : null;
 
-      const medicationProductWhere = data.body.medicationProduct
-        ? data.body.medicationProduct
-        : null;
+      const productWhere = data.body.product ? data.body.product : null;
 
       const withdrawals = db.read('adcTransaction', {
         columns: [
@@ -790,13 +788,13 @@ process.on('message', data => {
         wheres: [
           {
             column: 'timestamp',
-            operator: '<',
-            value: data.body.datetimeEnd,
+            operator: '>',
+            value: data.body.datetimeStart,
           },
           {
             column: 'timestamp',
-            operator: '>',
-            value: data.body.datetimeStart,
+            operator: '<',
+            value: data.body.datetimeEnd,
           },
           {
             column: 'adcTransactionType.name',
@@ -805,7 +803,7 @@ process.on('message', data => {
           },
           providerWhere,
           medicationOrderIdWhere,
-          medicationProductWhere,
+          productWhere,
         ],
 
         joins: [
@@ -1010,8 +1008,6 @@ process.on('message', data => {
         ],
       });
 
-      console.log(administrations);
-
       withdrawals.forEach(withdrawal => {
         if (withdrawal.medicationOrderId === 'OVERRIDE') {
           // Run OVERRIDE logic
@@ -1115,12 +1111,12 @@ process.on('message', data => {
         ],
 
         wheres: [
-          datetimeEnd,
           datetimeStart,
-          provider,
+          datetimeEnd,
           transactionTypes,
-          medicationOrderId,
+          provider,
           product,
+          medicationOrderId,
         ],
 
         joins: [
@@ -1154,6 +1150,206 @@ process.on('message', data => {
         orderBys: [
           {
             column: 'timestamp',
+            direction: 'ASC',
+          },
+        ],
+      });
+
+      process.send({
+        header: { type: data.header.response },
+        body: result,
+      });
+
+      db.updateStatus('Ready');
+    } catch (error) {
+      console.error(error);
+      db.updateStatus('Error');
+    }
+  }
+
+  if (data.header.type === 'administration') {
+    try {
+      db.updateStatus('Reading…');
+
+      const datetimeStart = data.body.datetimeStart
+        ? {
+            column: 'timestamp',
+            operator: '>',
+            value: data.body.datetimeStart,
+          }
+        : null;
+
+      const datetimeEnd = data.body.datetimeEnd
+        ? { column: 'timestamp', operator: '<', value: data.body.datetimeEnd }
+        : null;
+
+      const provider = data.body.provider
+        ? {
+            column: 'provider',
+            operator: 'LIKE',
+            value: `%${data.body.provider}%`,
+          }
+        : null;
+
+      const medication = data.body.medication
+        ? {
+            column: 'medication',
+            operator: 'LIKE',
+            value: `%${data.body.medication}%`,
+          }
+        : null;
+
+      const medicationOrderId = data.body.medicationOrderId
+        ? {
+            column: 'medicationOrderId',
+            operator: 'LIKE',
+            value: `%${data.body.medicationOrderId}%`,
+          }
+        : null;
+
+      const result = db.read('emarAdministration', {
+        columns: [
+          'emarAdministration.id',
+          'timestamp',
+          "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS provider",
+          "medication.name || ', ' || medicationOrder.form AS medication",
+          "medicationOrder.dose || ' ' || medicationOrder.units AS dose",
+          'medicationOrderId',
+        ],
+
+        wheres: [
+          datetimeStart,
+          datetimeEnd,
+          provider,
+          medication,
+          medicationOrderId,
+        ],
+
+        joins: [
+          {
+            type: '',
+            table: 'providerEmar',
+            predicate: 'providerEmarId = providerEmar.id',
+          },
+          {
+            type: '',
+            table: 'provider',
+            predicate: 'providerEmar.providerId = provider.id',
+          },
+          {
+            type: '',
+            table: 'medicationOrder',
+            predicate: 'medicationOrderId = medicationOrder.id',
+          },
+          {
+            type: '',
+            table: 'medication',
+            predicate: 'medicationOrder.medicationId = medication.id',
+          },
+        ],
+
+        orderBys: [
+          {
+            column: 'timestamp',
+            direction: 'ASC',
+          },
+        ],
+      });
+
+      process.send({
+        header: { type: data.header.response },
+        body: result,
+      });
+
+      db.updateStatus('Ready');
+    } catch (error) {
+      console.error(error);
+      db.updateStatus('Error');
+    }
+  }
+
+  if (data.header.type === 'provider') {
+    try {
+      db.updateStatus('Reading…');
+
+      const lastName = data.body.lastName
+        ? {
+            column: 'lastName',
+            operator: 'LIKE',
+            value: `%${data.body.lastName}%`,
+          }
+        : null;
+
+      const firstName = data.body.firstName
+        ? {
+            column: 'firstName',
+            operator: 'LIKE',
+            value: `%${data.body.firstName}%`,
+          }
+        : null;
+
+      const middleInitial = data.body.middleInitial
+        ? {
+            column: 'middleInitial',
+            operator: 'LIKE',
+            value: `%${data.body.middleInitial}%`,
+          }
+        : null;
+
+      const adcId = data.body.adcId
+        ? {
+            column: 'providerAdc.name',
+            operator: 'LIKE',
+            value: `%${data.body.adcId}%`,
+          }
+        : null;
+
+      const emarId = data.body.emarId
+        ? {
+            column: 'providerEmar.name',
+            operator: 'LIKE',
+            value: `%${data.body.emarId}%`,
+          }
+        : null;
+
+      const result = db.read('provider', {
+        isDistinct: true,
+
+        columns: [
+          'provider.id',
+          'lastName',
+          'firstName',
+          'middleInitial',
+          "(SELECT group_concat(name, '; ') FROM providerAdc WHERE providerId = provider.id) AS adcId",
+          "(SELECT group_concat(name, '; ') FROM providerEmar WHERE providerId = provider.id) AS emarId",
+        ],
+
+        wheres: [lastName, firstName, middleInitial, adcId, emarId],
+
+        joins: [
+          {
+            type: 'LEFT',
+            table: 'providerAdc',
+            predicate: 'provider.id = providerAdc.providerId',
+          },
+          {
+            type: 'LEFT',
+            table: 'providerEmar',
+            predicate: 'provider.id = providerEmar.providerId',
+          },
+        ],
+
+        orderBys: [
+          {
+            column: 'lastName',
+            direction: 'ASC',
+          },
+          {
+            column: 'firstName',
+            direction: 'ASC',
+          },
+          {
+            column: 'middleInitial',
             direction: 'ASC',
           },
         ],

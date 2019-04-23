@@ -1,7 +1,7 @@
-import Input from '../components/Input';
 import { ipcRenderer } from 'electron';
-import Modal from '../components/Modal';
 import React from 'react';
+import Input from '../components/Input';
+import Modal from '../components/Modal';
 import RecordsTableSection from '../components/RecordsTableSection';
 import SearchFormSection from '../components/SearchFormSection';
 
@@ -15,12 +15,9 @@ class ProviderView extends React.Component {
       middleInitial: '',
       adcId: '',
       emarId: '',
-      orderByColumn: '',
-      orderByDirection: '',
-
-      selectedProviderId: '',
-
       records: [],
+      sortColumn: '',
+      sortDirection: '',
     };
 
     this.modalRef = React.createRef();
@@ -40,123 +37,82 @@ class ProviderView extends React.Component {
 
     if (target.tagName === 'TD') {
       const currentTarget = event.currentTarget;
-      
+
       this.setState(
         { selectedProviderId: currentTarget.dataset.providerId },
         this.modalRef.current.handleShow
       );
     } else {
+      if (this.state.records.length === 0) {
+        return;
+      }
+
+      const targetSortColumn = target.dataset.sortColumn;
+
       this.setState(state => {
-        const orderByDirection =
-          state.orderByColumn === target.dataset.orderByColumn &&
-          state.orderByDirection === 'ASC'
-            ? 'DESC'
-            : 'ASC';
+        const records = [...state.records].sort((recordA, recordB) => {
+          if (typeof recordA[targetSortColumn] === 'number') {
+            return recordA[targetSortColumn] - recordB[targetSortColumn];
+          }
+
+          const recordAString = recordA[targetSortColumn]
+            ? recordA[targetSortColumn].toLowerCase()
+            : '';
+
+          const recordBString = recordB[targetSortColumn]
+            ? recordB[targetSortColumn].toLowerCase()
+            : '';
+
+          if (recordAString > recordBString) {
+            return 1;
+          }
+
+          if (recordAString < recordBString) {
+            return -1;
+          }
+
+          return 0;
+        });
+
+        if (
+          state.sortColumn === targetSortColumn &&
+          state.sortDirection === 'ASC'
+        ) {
+          return {
+            sortColumn: targetSortColumn,
+            sortDirection: 'DESC',
+            records: records.reverse(),
+          };
+        }
 
         return {
-          orderByColumn: target.dataset.orderByColumn,
-          orderByDirection,
+          sortColumn: targetSortColumn,
+          sortDirection: 'ASC',
+          records,
         };
-      }, this.handleSubmit);
+      });
     }
   }
 
   handleSubmit(event) {
-    if (event) {
-      event.preventDefault();
-    }
-
-    const lastName = this.state.lastName
-      ? {
-          column: 'lastName',
-          operator: 'LIKE',
-          value: `%${this.state.lastName}%`,
-        }
-      : null;
-
-    const firstName = this.state.firstName
-      ? {
-          column: 'firstName',
-          operator: 'LIKE',
-          value: `%${this.state.firstName}%`,
-        }
-      : null;
-
-    const middleInitial = this.state.middleInitial
-      ? {
-          column: 'middleInitial',
-          operator: 'LIKE',
-          value: `%${this.state.middleInitial}%`,
-        }
-      : null;
-
-    const adcId = this.state.adcId
-      ? {
-          column: 'providerAdc.name',
-          operator: 'LIKE',
-          value: `%${this.state.adcId}%`,
-        }
-      : null;
-
-    const emarId = this.state.emarId
-      ? {
-          column: 'providerEmar.name',
-          operator: 'LIKE',
-          value: `%${this.state.emarId}%`,
-        }
-      : null;
-
-    const orderBys = this.state.orderByColumn
-      ? [
-          {
-            column: this.state.orderByColumn,
-            direction: this.state.orderByDirection,
-          },
-        ]
-      : null;
+    event.preventDefault();
 
     ipcRenderer.send('database', {
       header: {
-        type: 'query',
-        response: 'query',
+        type: 'provider',
+        response: 'provider',
       },
 
       body: {
-        table: 'provider',
-
-        parameters: {
-          isDistinct: true,
-
-          columns: [
-            'provider.id',
-            'lastName',
-            'firstName',
-            'middleInitial',
-            "(SELECT group_concat(name, '; ') FROM providerAdc WHERE providerId = provider.id) AS adcId",
-            "(SELECT group_concat(name, '; ') FROM providerEmar WHERE providerId = provider.id) AS emarId",
-          ],
-
-          wheres: [lastName, firstName, middleInitial, adcId, emarId],
-
-          joins: [
-            {
-              type: 'LEFT',
-              table: 'providerAdc',
-              predicate: 'provider.id = providerAdc.providerId',
-            },
-            {
-              type: 'LEFT',
-              table: 'providerEmar',
-              predicate: 'provider.id = providerEmar.providerId',
-            },
-          ],
-
-          orderBys,
-        },
+        lastName: this.state.lastName,
+        firstName: this.state.firstName,
+        middleInitial: this.state.middleInitial,
+        adcId: this.state.adcId,
+        emarId: this.state.emarId,
       },
     });
 
-    ipcRenderer.once('query', (event, data) => {
+    ipcRenderer.once('provider', (event, data) => {
       this.setState({ records: data.body });
     });
   }
@@ -165,23 +121,23 @@ class ProviderView extends React.Component {
     const columnHeadings = [
       {
         name: 'Last name',
-        orderByColumn: 'lastName',
+        sortColumn: 'lastName',
       },
       {
         name: 'First name',
-        orderByColumn: 'firstName',
+        sortColumn: 'firstName',
       },
       {
         name: 'MI',
-        orderByColumn: 'middleInitial',
+        sortColumn: 'middleInitial',
       },
       {
         name: 'ADC IDs',
-        orderByColumn: 'adcId',
+        sortColumn: 'adcId',
       },
       {
         name: 'EMAR IDs',
-        orderByColumn: 'emarId',
+        sortColumn: 'emarId',
       },
     ];
 
@@ -258,8 +214,8 @@ class ProviderView extends React.Component {
             />
           </SearchFormSection>
           <RecordsTableSection
-            orderByColumn={this.state.orderByColumn}
-            orderByDirection={this.state.orderByDirection}
+            sortColumn={this.state.sortColumn}
+            sortDirection={this.state.sortDirection}
             columnHeadings={columnHeadings}
             tableBodyRows={tableBodyRows}
             handleClick={this.handleClick}

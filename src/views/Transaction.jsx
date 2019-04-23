@@ -1,6 +1,6 @@
-import Input from '../components/Input';
 import { ipcRenderer } from 'electron';
 import React from 'react';
+import Input from '../components/Input';
 import RecordsTableSection from '../components/RecordsTableSection';
 import SearchFormSection from '../components/SearchFormSection';
 import Select from '../components/Select';
@@ -45,32 +45,29 @@ class TransactionView extends React.Component {
     const targetSortColumn = event.target.dataset.sortColumn;
 
     this.setState(state => {
-      const records = [...state.records];
+      const records = [...state.records].sort((recordA, recordB) => {
+        if (typeof recordA[targetSortColumn] === 'number') {
+          return recordA[targetSortColumn] - recordB[targetSortColumn];
+        }
 
-      if (typeof records[0][targetSortColumn] === 'number') {
-        records.sort(
-          (recordA, recordB) =>
-            recordA[targetSortColumn] - recordB[targetSortColumn]
-        );
-      } else {
-        records.sort((recordA, recordB) => {
-          if (
-            recordA[targetSortColumn].toLowerCase() >
-            recordB[targetSortColumn].toLowerCase()
-          ) {
-            return 1;
-          }
+        const recordAString = recordA[targetSortColumn]
+          ? recordA[targetSortColumn].toLowerCase()
+          : '';
 
-          if (
-            recordA[targetSortColumn].toLowerCase() <
-            recordB[targetSortColumn].toLowerCase()
-          ) {
-            return -1;
-          }
+        const recordBString = recordB[targetSortColumn]
+          ? recordB[targetSortColumn].toLowerCase()
+          : '';
 
-          return 0;
-        });
-      }
+        if (recordAString > recordBString) {
+          return 1;
+        }
+
+        if (recordAString < recordBString) {
+          return -1;
+        }
+
+        return 0;
+      });
 
       if (
         state.sortColumn === targetSortColumn &&
@@ -120,6 +117,25 @@ class TransactionView extends React.Component {
   }
 
   render() {
+    const transactionTypeOptions = [
+      {
+        value: 'Restock',
+        text: 'Restock',
+      },
+      {
+        value: 'Return',
+        text: 'Return',
+      },
+      {
+        value: 'Waste',
+        text: 'Waste',
+      },
+      {
+        value: 'Withdrawal',
+        text: 'Withdrawal',
+      },
+    ];
+
     const columnHeadings = [
       {
         name: 'Time',
@@ -216,24 +232,7 @@ class TransactionView extends React.Component {
               name="transactionTypes"
               value={this.state.transactionTypes}
               label="Transaction types"
-              options={[
-                {
-                  value: 'Restock',
-                  text: 'Restock',
-                },
-                {
-                  value: 'Return',
-                  text: 'Return',
-                },
-                {
-                  value: 'Waste',
-                  text: 'Waste',
-                },
-                {
-                  value: 'Withdrawal',
-                  text: 'Withdrawal',
-                },
-              ]}
+              options={transactionTypeOptions}
               handleChange={this.handleChange}
               info="Required, may select multiple options"
               attributes={{

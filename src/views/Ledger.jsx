@@ -1,6 +1,6 @@
-import Input from '../components/Input';
 import { ipcRenderer } from 'electron';
 import React from 'react';
+import Input from '../components/Input';
 import RecordsTableSection from '../components/RecordsTableSection';
 import SearchFormSection from '../components/SearchFormSection';
 
@@ -9,16 +9,14 @@ class LedgerView extends React.Component {
     super(props);
 
     this.state = {
-      datetimeEnd: '',
       datetimeStart: '',
+      datetimeEnd: '',
       provider: '',
+      product: '',
       medicationOrderId: '',
-      medicationProduct: '',
-
-      orderByColumn: '',
-      orderByDirection: '',
-
       records: [],
+      sortColumn: '',
+      sortDirection: '',
     };
 
     this.handleChange = this.handleChange.bind(this);
@@ -28,27 +26,58 @@ class LedgerView extends React.Component {
 
   handleChange(event) {
     const target = event.target;
-    const name = target.name;
-    const value = target.value;
-
-    this.setState({ [name]: value });
+    this.setState({ [target.name]: target.value });
   }
 
   handleClick(event) {
-    const target = event.target;
+    if (this.state.records.length === 0) {
+      return;
+    }
 
-    this.setState(oldState => {
-      const orderByDirection =
-        oldState.orderByColumn === target.dataset.orderByColumn &&
-        oldState.orderByDirection === 'ASC'
-          ? 'DESC'
-          : 'ASC';
+    const targetSortColumn = event.target.dataset.sortColumn;
+
+    this.setState(state => {
+      const records = [...state.records].sort((recordA, recordB) => {
+        if (typeof recordA[targetSortColumn] === 'number') {
+          return recordA[targetSortColumn] - recordB[targetSortColumn];
+        }
+
+        const recordAString = recordA[targetSortColumn]
+          ? recordA[targetSortColumn].toLowerCase()
+          : '';
+
+        const recordBString = recordB[targetSortColumn]
+          ? recordB[targetSortColumn].toLowerCase()
+          : '';
+
+        if (recordAString > recordBString) {
+          return 1;
+        }
+
+        if (recordAString < recordBString) {
+          return -1;
+        }
+
+        return 0;
+      });
+
+      if (
+        state.sortColumn === targetSortColumn &&
+        state.sortDirection === 'ASC'
+      ) {
+        return {
+          sortColumn: targetSortColumn,
+          sortDirection: 'DESC',
+          records: records.reverse(),
+        };
+      }
 
       return {
-        orderByColumn: target.dataset.orderByColumn,
-        orderByDirection,
+        sortColumn: targetSortColumn,
+        sortDirection: 'ASC',
+        records,
       };
-    }, this.handleSubmit);
+    });
   }
 
   handleSubmit(event) {
@@ -67,8 +96,8 @@ class LedgerView extends React.Component {
         datetimeStart: this.state.datetimeStart,
         datetimeEnd: this.state.datetimeEnd,
         provider: this.state.provider,
+        product: this.state.product,
         medicationOrderId: this.state.medicationOrderId,
-        medicationProduct: this.state.medicationProduct,
       },
     });
 
@@ -81,39 +110,39 @@ class LedgerView extends React.Component {
     const columnHeadings = [
       {
         name: 'Withdrawn by',
-        orderByColumn: 'withdrawnBy',
+        sortColumn: 'withdrawnBy',
       },
       {
         name: 'Time withdrawn',
-        orderByColumn: 'timeWithdrawn',
+        sortColumn: 'timeWithdrawn',
       },
       {
         name: 'Product',
-        orderByColumn: 'product',
+        sortColumn: 'product',
       },
       {
         name: 'Amount',
-        orderByColumn: 'amount',
+        sortColumn: 'amount',
       },
       {
         name: 'Waste',
-        orderByColumn: 'waste',
+        sortColumn: 'waste',
       },
       {
         name: 'Disposition',
-        orderByColumn: 'disposition',
+        sortColumn: 'disposition',
       },
       {
         name: 'Disposed by',
-        orderByColumn: 'disposedBy',
+        sortColumn: 'disposedBy',
       },
       {
         name: 'Time disposed',
-        orderByColumn: 'timeDisposed',
+        sortColumn: 'timeDisposed',
       },
       {
         name: 'Order ID',
-        orderByColumn: 'medicationOrderId',
+        sortColumn: 'medicationOrderId',
       },
     ];
 
@@ -180,7 +209,7 @@ class LedgerView extends React.Component {
           <SearchFormSection handleSubmit={this.handleSubmit}>
             <Input
               type="datetime-local"
-              name="withdrawnTimeStart"
+              name="datetimeStart"
               value={this.state.datetimeStart}
               label="Time withdrawn start"
               handleChange={this.handleChange}
@@ -192,7 +221,7 @@ class LedgerView extends React.Component {
             />
             <Input
               type="datetime-local"
-              name="withdrawnTimeEnd"
+              name="datetimeEnd"
               value={this.state.datetimeEnd}
               label="Time withdrawn end"
               handleChange={this.handleChange}
@@ -204,8 +233,8 @@ class LedgerView extends React.Component {
             />
             <Input
               type="text"
-              name="withdrawnBy"
-              value={this.state.withdrawingProvider}
+              name="provider"
+              value={this.state.provider}
               label="Withdrawn by"
               handleChange={this.handleChange}
             />
@@ -225,8 +254,8 @@ class LedgerView extends React.Component {
             />
           </SearchFormSection>
           <RecordsTableSection
-            orderByColumn={this.state.orderByColumn}
-            orderByDirection={this.state.orderByDirection}
+            sortColumn={this.state.sortColumn}
+            sortDirection={this.state.sortDirection}
             columnHeadings={columnHeadings}
             tableBodyRows={tableBodyRows}
             handleClick={this.handleClick}
