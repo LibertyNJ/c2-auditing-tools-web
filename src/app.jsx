@@ -1,14 +1,14 @@
+import { ipcRenderer } from 'electron';
 import React from 'react';
 import { Route, Switch } from 'react-router-dom';
-import { ipcRenderer } from 'electron';
 
-import Layout from './components/Layout';
-import DataView from './views/Data';
-import TransactionView from './views/Transaction';
 import AdministrationView from './views/Administration';
+import Dashboard from './views/Dashboard';
+import DataView from './views/Data';
+import Layout from './components/Layout';
 import LedgerView from './views/Ledger';
 import ProviderView from './views/Provider';
-import Dashboard from './views/Dashboard';
+import TransactionView from './views/Transaction';
 
 import { version } from '../package.json';
 
@@ -29,6 +29,10 @@ export default class App extends React.Component {
     ipcRenderer.on('status', (event, data) => {
       this.setState({ databaseStatus: data.body });
     });
+  }
+
+  componentWillUnmount() {
+    ipcRenderer.removeAllListeners('status');
   }
 
   render() {

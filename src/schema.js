@@ -5,6 +5,7 @@ module.exports = {
       typeId: 'INTEGER REFERENCES transactionType(id) NOT NULL',
       providerAdcId: 'INTEGER REFERENCES ProviderAdc(id) NOT NULL',
       medicationOrderId: 'CHAR(9) REFERENCES medicationOrder(id) NOT NULL',
+      mrn: 'UNSIGNED INT(8)',
       medicationProductId: 'INTEGER REFERENCES medicationProduct(id) NOT NULL',
       amount: 'FLOAT NOT NULL',
       timestamp: 'CHAR(19) NOT NULL',

@@ -756,9 +756,9 @@ process.on('message', data => {
   }
 
   if (data.header.type === 'ledger') {
-    db.updateStatus('Creating ledger…');
-
     try {
+      db.updateStatus('Creating ledger…');
+
       const providerWhere = data.body.provider
         ? {
             column: 'providerName',
@@ -778,7 +778,7 @@ process.on('message', data => {
           'adcTransaction.id',
           'timestamp',
           'provider.id AS providerId',
-          "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS providerName",
+          "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS provider",
           "medication.name || ', ' || medicationProduct.strength || ' ' || medicationProduct.units || ' ' || medicationProduct.form AS product",
           'medicationProductId',
           'amount',
@@ -908,7 +908,7 @@ process.on('message', data => {
           'adcTransactionType.name AS type',
           'timestamp',
           'provider.id AS providerId',
-          "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS providerName",
+          "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS provider",
           'medicationProductId',
           'amount',
           'medicationOrderId',
@@ -970,7 +970,7 @@ process.on('message', data => {
           'emarAdministration.id',
           'timestamp',
           'provider.id AS providerId',
-          "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS providerName",
+          "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS provider",
           'medicationOrderId',
         ],
 
@@ -1012,30 +1012,71 @@ process.on('message', data => {
         if (withdrawal.medicationOrderId === 'OVERRIDE') {
           // Run OVERRIDE logic
         } else {
-          withdrawal.waste = wastes.find(
-            waste =>
+          const nextWithdrawal = withdrawals.find(
+            otherWithdrawal =>
+              otherWithdrawal.medicationOrderId ===
+                withdrawal.medicationOrderId &&
+              otherWithdrawal.timestamp > withdrawal.timestamp
+          );
+
+          withdrawal.waste = wastes.find(waste => {
+            if (nextWithdrawal) {
+              return (
+                waste.medicationOrderId === withdrawal.medicationOrderId &&
+                waste.timestamp >= withdrawal.timestamp &&
+                waste.timestamp < nextWithdrawal.timestamp &&
+                !waste.reconciled
+              );
+            }
+
+            return (
               waste.medicationOrderId === withdrawal.medicationOrderId &&
               waste.timestamp >= withdrawal.timestamp &&
               !waste.reconciled
-          );
+            );
+          });
 
-          withdrawal.disposition = administrations.find(
-            administration =>
+          withdrawal.disposition = administrations.find(administration => {
+            if (nextWithdrawal) {
+              return (
+                administration.medicationOrderId ===
+                  withdrawal.medicationOrderId &&
+                administration.timestamp >= withdrawal.timestamp &&
+                administration.timestamp < nextWithdrawal.timestamp &&
+                !administration.reconciled
+              );
+            }
+
+            return (
               administration.medicationOrderId ===
                 withdrawal.medicationOrderId &&
               administration.timestamp >= withdrawal.timestamp &&
               !administration.reconciled
-          );
+            );
+          });
 
           if (withdrawal.disposition) {
             withdrawal.disposition.type = 'Administration';
           } else {
             withdrawal.disposition = otherTransactions.find(
-              otherTransaction =>
-                otherTransaction.medicationOrderId ===
-                  withdrawal.medicationOrderId &&
-                otherTransaction.timestamp >= withdrawal.timestamp &&
-                !otherTransaction.reconciled
+              otherTransaction => {
+                if (nextWithdrawal) {
+                  return (
+                    otherTransaction.medicationOrderId ===
+                      withdrawal.medicationOrderId &&
+                    otherTransaction.timestamp >= withdrawal.timestamp &&
+                    otherTransaction.timestamp < nextWithdrawal.timestamp &&
+                    !otherTransaction.reconciled
+                  );
+                }
+
+                return (
+                  otherTransaction.medicationOrderId ===
+                    withdrawal.medicationOrderId &&
+                  otherTransaction.timestamp >= withdrawal.timestamp &&
+                  !otherTransaction.reconciled
+                );
+              }
             );
           }
         }

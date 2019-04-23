@@ -110,11 +110,11 @@ class LedgerView extends React.Component {
     const columnHeadings = [
       {
         name: 'Withdrawn by',
-        sortColumn: 'withdrawnBy',
+        sortColumn: 'provider',
       },
       {
         name: 'Time withdrawn',
-        sortColumn: 'timeWithdrawn',
+        sortColumn: 'timestamp',
       },
       {
         name: 'Product',
@@ -126,11 +126,11 @@ class LedgerView extends React.Component {
       },
       {
         name: 'Waste',
-        sortColumn: 'waste',
+        sortColumn: 'waste.amount',
       },
       {
         name: 'Disposition',
-        sortColumn: 'disposition',
+        sortColumn: 'disposition.type',
       },
       {
         name: 'Disposed by',
@@ -138,7 +138,7 @@ class LedgerView extends React.Component {
       },
       {
         name: 'Time disposed',
-        sortColumn: 'timeDisposed',
+        sortColumn: 'disposition.timestamp',
       },
       {
         name: 'Order ID',
@@ -151,7 +151,7 @@ class LedgerView extends React.Component {
         this.state.records.map(record => {
           return (
             <tr key={record.id}>
-              <td className="border-right">{record.providerName}</td>
+              <td className="border-right">{record.provider}</td>
               <td className="border-right">
                 {new Date(record.timestamp).toLocaleString('en-US', {
                   month: '2-digit',
@@ -168,23 +168,27 @@ class LedgerView extends React.Component {
               <td className="border-right">
                 {record.waste ? record.waste.amount : ''}
               </td>
-              <td className="border-right">{record.disposition.type}</td>
               <td className="border-right">
-                {record.disposition.providerName}
+                {record.disposition ? record.disposition.type : ''}
               </td>
               <td className="border-right">
-                {new Date(record.disposition.timestamp).toLocaleString(
-                  'en-US',
-                  {
-                    month: '2-digit',
-                    day: '2-digit',
-                    year: 'numeric',
-                    hour: 'numeric',
-                    minute: 'numeric',
-                    second: 'numeric',
-                    hour12: false,
-                  }
-                )}
+                {record.disposition ? record.disposition.provider : ''}
+              </td>
+              <td className="border-right">
+                {record.disposition
+                  ? new Date(record.disposition.timestamp).toLocaleString(
+                      'en-US',
+                      {
+                        month: '2-digit',
+                        day: '2-digit',
+                        year: 'numeric',
+                        hour: 'numeric',
+                        minute: 'numeric',
+                        second: 'numeric',
+                        hour12: false,
+                      }
+                    )
+                  : ''}
               </td>
               <td className="border-right">{record.medicationOrderId}</td>
             </tr>
