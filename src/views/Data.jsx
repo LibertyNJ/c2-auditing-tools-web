@@ -1,8 +1,8 @@
-import path from 'path';
-import IconButton from '../components/IconButton';
 import { ipcRenderer } from 'electron';
-import PropTypes from 'prop-types';
 import React from 'react';
+import path from 'path';
+import PropTypes from 'prop-types';
+import IconButton from '../components/IconButton';
 import SVGIcon from '../components/SVGIcon';
 
 const DataView = () => (
@@ -68,8 +68,6 @@ class DataImportForm extends React.Component {
   handleSubmit(event) {
     event.preventDefault();
 
-    this.setState({ isImporting: true });
-
     ipcRenderer.send('database', {
       header: { type: 'import' },
       body: {
@@ -100,7 +98,6 @@ class DataImportForm extends React.Component {
                 </React.Fragment>
               }
               handleChange={this.handleChange}
-              disabled={this.state.isImporting}
               attributes={{
                 accept: '.csv',
                 required: true,
@@ -126,7 +123,6 @@ class DataImportForm extends React.Component {
                 </React.Fragment>
               }
               handleChange={this.handleChange}
-              disabled={this.state.isImporting}
               attributes={{
                 accept: '.xlsx',
                 required: true,
@@ -171,7 +167,6 @@ const FileInput = props => (
 FileInput.propTypes = {
   name: PropTypes.string.isRequired,
   value: PropTypes.string.isRequired,
-  disabled: PropTypes.bool.isRequired,
   handleChange: PropTypes.func.isRequired,
   attributes: PropTypes.object,
   label: PropTypes.node.isRequired,

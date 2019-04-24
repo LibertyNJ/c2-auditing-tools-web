@@ -5,9 +5,9 @@ module.exports = {
       typeId: 'INTEGER REFERENCES transactionType(id) NOT NULL',
       providerAdcId: 'INTEGER REFERENCES ProviderAdc(id) NOT NULL',
       medicationOrderId: 'CHAR(9) REFERENCES medicationOrder(id) NOT NULL',
-      mrn: 'UNSIGNED INT(8)',
       medicationProductId: 'INTEGER REFERENCES medicationProduct(id) NOT NULL',
       amount: 'FLOAT NOT NULL',
+      mrn: 'UNSIGNED INT(8)',
       timestamp: 'CHAR(19) NOT NULL',
     },
     unique: {
@@ -111,8 +111,8 @@ module.exports = {
   visit: {
     columns: {
       id: 'UNSIGNED BIGINT(12) PRIMARY KEY',
-      discharged: 'CHAR(19)',
       mrn: 'UNSIGNED INT(8) NOT NULL',
+      discharged: 'CHAR(19)',
     },
   },
 };

@@ -415,8 +415,10 @@ db.parseAdc = function parseAdc(filePath) {
         };
 
         const worksheet = workbook.getWorksheet(1);
+
         worksheet.eachRow((row, rowNumber) => {
-          const headerRowNumber = 11;
+          let isPastHeaderRow = false;
+
           const adcTransactionType = getAdcTransactionType(
             row.getCell('E').value
           );
@@ -432,23 +434,27 @@ db.parseAdc = function parseAdc(filePath) {
             ],
           });
 
-          if (
-            rowNumber > headerRowNumber &&
-            medicationId &&
-            adcTransactionType
-          ) {
-            const strength = row.getCell('O').value;
-            const units = getUnits(row.getCell('C').value);
-            const form = getForm(row.getCell('C').value);
-            const medicationOrderId =
-              row.getCell('J').value === 'OVERRIDE'
-                ? 'OVERRIDE'
-                : row.getCell('J').value.slice(1);
-            const amount = row.getCell('D').value;
+          if (row.getCell('A').value === 'TRANSACTIONDATE') {
+            isPastHeaderRow = true;
+          }
+
+          if (isPastHeaderRow && medicationId && adcTransactionType) {
             const timestamp = getTimestamp(
               row.getCell('A').value,
               row.getCell('B').value
             );
+
+            const form = getForm(row.getCell('C').value);
+            const units = getUnits(row.getCell('C').value);
+            const amount = row.getCell('D').value;
+            const mrn = row.getCell('I').value;
+
+            const medicationOrderId =
+              row.getCell('J').value === 'OVERRIDE'
+                ? 'OVERRIDE'
+                : row.getCell('J').value.slice(1);
+
+            const strength = row.getCell('O').value;
 
             db.create('providerAdc', {
               onConflict: 'ignore',
@@ -531,6 +537,7 @@ db.parseAdc = function parseAdc(filePath) {
                 medicationOrderId,
                 medicationProductId,
                 amount,
+                mrn,
                 timestamp,
               },
             });
@@ -603,15 +610,19 @@ db.parseEmar = function parseEmar(filePath) {
         };
 
         worksheet.eachRow((row, rowNumber) => {
-          const headerRowNumber = 7;
+          let isPastHeaderRow = false;
 
-          if (rowNumber > headerRowNumber) {
+          if (row.getCell('A').value === 'FacilityName') {
+            isPastHeaderRow = true;
+          }
+
+          if (isPastHeaderRow) {
             const visitId = row.getCell('F').value;
-            const discharged = getTimestamp(row.getCell('L').value);
             const mrn = row.getCell('G').value;
+            const discharged = getTimestamp(row.getCell('L').value);
             const medicationOrderId = row.getCell('M').value;
-            let [dose, units] = row.getCell('R').value.split(/\s/);
             const form = getForm(row.getCell('P').value);
+            let [dose, units] = row.getCell('R').value.split(/\s/);
             units = getUnits(units);
             const timestamp = getTimestamp(row.getCell('AM').value);
 
@@ -619,8 +630,8 @@ db.parseEmar = function parseEmar(filePath) {
               onConflict: 'replace',
               data: {
                 id: visitId,
-                discharged,
                 mrn,
+                discharged,
               },
             });
 
@@ -691,34 +702,20 @@ process.on('message', data => {
   }
 
   if (data.header.type === 'import') {
-    db.updateStatus('Importing…');
-
     try {
+      db.updateStatus('Importing data…');
       db.parseAdc(data.body.adcPath);
       db.parseEmar(data.body.emarPath);
-
-      if (data.header.response) {
-        process.send({
-          header: { type: data.header.response },
-          body: 'Imported successfully.',
-        });
-      }
+      db.updateStatus('Ready');
     } catch (error) {
       db.updateStatus('Error');
       console.error(error);
     }
-
-    Promise.all([])
-      .then(() => {
-        db.updateStatus('Ready');
-      })
-      .catch(error => {});
   }
 
   if (data.header.type === 'query') {
-    db.updateStatus('Querying…');
-
     try {
+      db.updateStatus('Querying…');
       const records = db.read(data.body.table, data.body.parameters);
 
       if (data.header.response) {
@@ -736,9 +733,8 @@ process.on('message', data => {
   }
 
   if (data.header.type === 'update') {
-    db.updateStatus('Updating…');
-
     try {
+      db.updateStatus('Updating…');
       db.update(data.body.table, data.body.parameters);
 
       if (data.header.response) {
@@ -1035,62 +1031,71 @@ process.on('message', data => {
 
       result.forEach(withdrawal => {
         if (withdrawal.medicationOrderId === 'OVERRIDE') {
-          const wasteIndex = wastes.findIndex(waste => 
-            waste.mrn === withdrawal.mrn &&
-            waste.medicationProductId === withdrawal.medicationProductId &&
-            waste.timestamp >= withdrawal.timestamp &&
-            !waste.reconciled
+          const wasteIndex = wastes.findIndex(
+            waste =>
+              waste.mrn === withdrawal.mrn &&
+              waste.medicationProductId === withdrawal.medicationProductId &&
+              waste.timestamp >= withdrawal.timestamp &&
+              !waste.reconciled
           );
 
           if (wastes[wasteIndex]) {
-            withdrawal.waste = wastes[wasteIndex];
+            withdrawal.waste = wastes[wasteIndex].amount;
             wastes[wasteIndex].reconciled = true;
           }
 
           const administrationIndex = administrations.findIndex(
             administration => {
               if (withdrawal.waste) {
-                return(
+                return (
                   administration.medication === withdrawal.medication &&
                   administration.mrn === withdrawal.mrn &&
-                  ((withdrawal.amount * withdrawal.strength) -
-                    withdrawal.waste.amount) ===
+                  withdrawal.amount * withdrawal.strength - withdrawal.waste ===
                     administration.dose &&
                   administration.timestamp >= withdrawal.timestamp &&
-                  !administration.reconciled  
+                  !administration.reconciled
                 );
               }
 
-              return(
+              return (
                 administration.medication === withdrawal.medication &&
                 administration.mrn === withdrawal.mrn &&
-                (withdrawal.amount * withdrawal.strength) ===
+                withdrawal.amount * withdrawal.strength ===
                   administration.dose &&
                 administration.timestamp >= withdrawal.timestamp &&
-                !administration.reconciled  
+                !administration.reconciled
               );
             }
-              );
+          );
 
-              if (administrations[administrationIndex]) {
-                withdrawal.disposition = administrations[administrationIndex];
-                withdrawal.disposition.type = 'Administration';
-                administrations[administrationIndex].reconciled = true;
-              } else {
-                const otherTransactionIndex = otherTransactions.findIndex(
-                  otherTransaction =>     
-                  otherTransaction.mrn === withdrawal.mrn &&
-                  otherTransaction.medicationProductId === withdrawal.medicationProductId &&
-                      otherTransaction.timestamp >= withdrawal.timestamp &&
-                      !otherTransaction.reconciled
-                );
-    
-                if (otherTransactions[otherTransactionIndex]) {
-                  withdrawal.disposition = otherTransactions[otherTransactionIndex];
-                  otherTransactions[otherTransactionIndex].reconciled = true;
-                }
-              }
-            } else {
+          if (administrations[administrationIndex]) {
+            withdrawal.dispositionProvider =
+              administrations[administrationIndex].provider;
+            withdrawal.dispositionTimestamp =
+              administrations[administrationIndex].timestamp;
+            withdrawal.dispositionType = 'Administration';
+            administrations[administrationIndex].reconciled = true;
+          } else {
+            const otherTransactionIndex = otherTransactions.findIndex(
+              otherTransaction =>
+                otherTransaction.mrn === withdrawal.mrn &&
+                otherTransaction.medicationProductId ===
+                  withdrawal.medicationProductId &&
+                otherTransaction.timestamp >= withdrawal.timestamp &&
+                !otherTransaction.reconciled
+            );
+
+            if (otherTransactions[otherTransactionIndex]) {
+              withdrawal.dispositionProvider =
+                otherTransactions[otherTransactionIndex].provider;
+              withdrawal.dispositionTimestamp =
+                otherTransactions[otherTransactionIndex].timestamp;
+              withdrawal.dispositionType =
+                otherTransactions[otherTransactionIndex].type;
+              otherTransactions[otherTransactionIndex].reconciled = true;
+            }
+          }
+        } else {
           const nextWithdrawal = withdrawals.find(
             otherWithdrawal =>
               otherWithdrawal.medicationOrderId ===
@@ -1116,7 +1121,7 @@ process.on('message', data => {
           });
 
           if (wastes[wasteIndex]) {
-            withdrawal.waste = wastes[wasteIndex];
+            withdrawal.waste = wastes[wasteIndex].amount;
             wastes[wasteIndex].reconciled = true;
           }
 
@@ -1142,8 +1147,11 @@ process.on('message', data => {
           );
 
           if (administrations[administrationIndex]) {
-            withdrawal.disposition = administrations[administrationIndex];
-            withdrawal.disposition.type = 'Administration';
+            withdrawal.dispositionProvider =
+              administrations[administrationIndex].provider;
+            withdrawal.dispositionTimestamp =
+              administrations[administrationIndex].timestamp;
+            withdrawal.dispositionType = 'Administration';
             administrations[administrationIndex].reconciled = true;
           } else {
             const otherTransactionIndex = otherTransactions.findIndex(
@@ -1168,7 +1176,12 @@ process.on('message', data => {
             );
 
             if (otherTransactions[otherTransactionIndex]) {
-              withdrawal.disposition = otherTransactions[otherTransactionIndex];
+              withdrawal.dispositionProvider =
+                otherTransactions[otherTransactionIndex].provider;
+              withdrawal.dispositionTimestamp =
+                otherTransactions[otherTransactionIndex].timestamp;
+              withdrawal.dispositionType =
+                otherTransactions[otherTransactionIndex].type;
               otherTransactions[otherTransactionIndex].reconciled = true;
             }
           }

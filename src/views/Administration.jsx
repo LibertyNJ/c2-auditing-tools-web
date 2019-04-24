@@ -43,45 +43,50 @@ class AdministrationView extends React.Component {
     const targetSortColumn = event.target.dataset.sortColumn;
 
     this.setState(state => {
-      const records = [...state.records].sort((recordA, recordB) => {
-        if (typeof recordA[targetSortColumn] === 'number') {
-          return recordA[targetSortColumn] - recordB[targetSortColumn];
-        }
+      const records = [...state.records];
 
-        const recordAString = recordA[targetSortColumn]
-          ? recordA[targetSortColumn].toLowerCase()
-          : '';
+      if (targetSortColumn !== this.state.sortColumn) {
+        records.sort((recordA, recordB) => {
+          if (typeof recordA[targetSortColumn] === 'number') {
+            return recordA[targetSortColumn] - recordB[targetSortColumn];
+          }
 
-        const recordBString = recordB[targetSortColumn]
-          ? recordB[targetSortColumn].toLowerCase()
-          : '';
+          const recordAString = recordA[targetSortColumn]
+            ? recordA[targetSortColumn].toLowerCase()
+            : '';
 
-        if (recordAString > recordBString) {
-          return 1;
-        }
+          const recordBString = recordB[targetSortColumn]
+            ? recordB[targetSortColumn].toLowerCase()
+            : '';
 
-        if (recordAString < recordBString) {
-          return -1;
-        }
+          if (recordAString > recordBString) {
+            return 1;
+          }
 
-        return 0;
-      });
+          if (recordAString < recordBString) {
+            return -1;
+          }
 
-      if (
-        state.sortColumn === targetSortColumn &&
-        state.sortDirection === 'ASC'
-      ) {
+          return 0;
+        });
+
         return {
           sortColumn: targetSortColumn,
+          sortDirection: 'ASC',
+          records,
+        };
+      }
+
+      if (state.sortDirection === 'ASC') {
+        return {
           sortDirection: 'DESC',
           records: records.reverse(),
         };
       }
 
       return {
-        sortColumn: targetSortColumn,
         sortDirection: 'ASC',
-        records,
+        records: records.reverse(),
       };
     });
   }
@@ -109,7 +114,7 @@ class AdministrationView extends React.Component {
     });
 
     ipcRenderer.once('administration', (event, data) =>
-      this.setState({ records: data.body })
+      this.setState({ records: data.body, sortColumn: '', sortDirection: '' })
     );
   }
 
