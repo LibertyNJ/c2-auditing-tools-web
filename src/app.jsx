@@ -3,7 +3,7 @@ import React from 'react';
 import { Route, Switch } from 'react-router-dom';
 
 import AdministrationView from './views/Administration';
-import Dashboard from './views/Dashboard';
+import DashboardView from './views/Dashboard';
 import DataView from './views/Data';
 import Layout from './components/Layout';
 import LedgerView from './views/Ledger';
@@ -39,12 +39,12 @@ export default class App extends React.Component {
     return (
       <Layout databaseStatus={this.state.databaseStatus} version={version}>
         <Switch>
-          <Route path="/data" component={DataView} />
+          <Route exact path="/" component={DashboardView} />
+          <Route path="/ledger" component={LedgerView} />
           <Route path="/transaction" component={TransactionView} />
           <Route path="/administration" component={AdministrationView} />
-          <Route path="/ledger" component={LedgerView} />
           <Route path="/provider" component={ProviderView} />
-          <Route exact path="/" component={Dashboard} />
+          <Route path="/data" component={DataView} />
         </Switch>
       </Layout>
     );

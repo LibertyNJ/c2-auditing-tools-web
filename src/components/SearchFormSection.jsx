@@ -1,22 +1,20 @@
-import IconButton from './IconButton';
 import PropTypes from 'prop-types';
 import React from 'react';
+import Button from './Button';
 
 const SearchFormSection = props => (
   <section className="col-3 d-flex flex-column">
     <header>
       <h2>Search</h2>
     </header>
-    <form
-      className="form overflow-auto px-3 pb-3 ml-n3"
-      onSubmit={props.handleSubmit}
-    >
+    <form className="form overflow-auto px-3 pb-3 ml-n3" onSubmit={props.handleSubmit}>
       {props.children}
-      <IconButton
+      <Button
         type="submit"
         text="Search"
-        color="primary"
         icon="search"
+        color="primary"
+        disabled={props.isSubmitted}
         className="d-block ml-auto"
       />
     </form>
@@ -24,8 +22,9 @@ const SearchFormSection = props => (
 );
 
 SearchFormSection.propTypes = {
-  children: PropTypes.node.isRequired,
+  isSubmitted: PropTypes.bool.isRequired,
   handleSubmit: PropTypes.func.isRequired,
+  children: PropTypes.node.isRequired,
 };
 
 export default SearchFormSection;

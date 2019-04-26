@@ -2,8 +2,8 @@ module.exports = {
   adcTransaction: {
     columns: {
       id: 'INTEGER PRIMARY KEY',
-      typeId: 'INTEGER REFERENCES transactionType(id) NOT NULL',
-      providerAdcId: 'INTEGER REFERENCES ProviderAdc(id) NOT NULL',
+      typeId: 'INTEGER REFERENCES adcTransactionType(id) NOT NULL',
+      providerAdcId: 'INTEGER REFERENCES providerAdc(id) NOT NULL',
       medicationOrderId: 'CHAR(9) REFERENCES medicationOrder(id) NOT NULL',
       medicationProductId: 'INTEGER REFERENCES medicationProduct(id) NOT NULL',
       amount: 'FLOAT NOT NULL',
@@ -81,6 +81,10 @@ module.exports = {
       lastName: 'VARCHAR(255) NOT NULL',
       firstName: 'VARCHAR(255) NOT NULL',
       middleInitial: 'CHAR(1)',
+    },
+    unique: {
+      columns: ['lastName', 'firstName', 'middleInitial'],
+      onConflict: 'ignore',
     },
   },
 

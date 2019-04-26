@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import SVGIcon from '../components/SVGIcon';
 
-const getDatabaseStatusClass = databaseStatus => {
+const getDatabaseStatusClass = (databaseStatus) => {
   switch (databaseStatus) {
     case 'Ready':
       return 'text-success';
@@ -15,7 +15,7 @@ const getDatabaseStatusClass = databaseStatus => {
   }
 };
 
-const Layout = props => {
+const Layout = (props) => {
   const databaseStatusClass = getDatabaseStatusClass(props.databaseStatus);
 
   return (
@@ -59,12 +59,10 @@ const Layout = props => {
           </ul>
         </nav>
       </header>
-      <main className="container-fluid d-flex flex-column">
-        {props.children}
-      </main>
+      <main className="container-fluid d-flex flex-column">{props.children}</main>
       <footer className="container-fluid flex-shrink-0 d-flex justify-content-between text-light bg-dark px-3 py-1 mt-auto">
-        <p className="mb-0">Version: {props.version}</p>
-        <p className="mb-0">
+        <div className="mb-0">Version: {props.version}</div>
+        <div className="mb-0">
           <SVGIcon
             className="align-baseline"
             type="database"
@@ -73,8 +71,19 @@ const Layout = props => {
             fill="white"
           />{' '}
           Database:{' '}
+          {databaseStatusClass === 'text-warning' && (
+            <React.Fragment>
+              <div
+                className="spinner-grow text-warning align-baseline"
+                role="status"
+                style={{ width: '1em', height: '1em' }}
+              >
+                <span className="sr-only">{props.databaseStatus}</span>
+              </div>{' '}
+            </React.Fragment>
+          )}
           <span className={databaseStatusClass}>{props.databaseStatus}</span>
-        </p>
+        </div>
       </footer>
     </div>
   );

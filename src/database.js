@@ -10,9 +10,7 @@ const dbPath = path.join(__dirname, 'data', 'database.db');
 const db = new Database(dbPath, { verbose: console.log });
 
 db.create = (table, parameters) => {
-  const onConflict = parameters.onConflict
-    ? `OR ${parameters.onConflict.toUpperCase()} `
-    : '';
+  const onConflict = parameters.onConflict ? `OR ${parameters.onConflict.toUpperCase()} ` : '';
   const columns = Object.keys(parameters.data).join(', ');
   const values = Object.values(parameters.data);
   const valuePlaceholders = values.map(() => '?').join(', ');
@@ -32,9 +30,7 @@ db.read = (table, parameters) => {
   const whereValues = parameters.wheres
     ? parameters.wheres
         .filter(where => where)
-        .reduce((flattenedWheres, where) => {
-          return flattenedWheres.concat(where);
-        }, [])
+        .reduce((flattenedWheres, where) => flattenedWheres.concat(where), [])
         .map(({ value }) => value)
     : null;
 
@@ -42,7 +38,7 @@ db.read = (table, parameters) => {
     whereValues.length > 0
       ? `WHERE ${parameters.wheres
           .filter(where => where)
-          .map(where => {
+          .map((where) => {
             if (Array.isArray(where)) {
               return `(${where
                 .map(subWhere => `${subWhere.column} ${subWhere.operator} ?`)
@@ -50,9 +46,7 @@ db.read = (table, parameters) => {
             }
 
             if (/timestamp/.test(where.column)) {
-              return `strftime('%s', ${where.column}) ${
-                where.operator
-              } strftime('%s', ?)`;
+              return `strftime('%s', ${where.column}) ${where.operator} strftime('%s', ?)`;
             }
 
             return `${where.column} ${where.operator} ?`;
@@ -61,9 +55,7 @@ db.read = (table, parameters) => {
       : '';
 
   const joins = parameters.joins
-    ? parameters.joins
-        .map(join => `${join.type} JOIN ${join.table} ON ${join.predicate}`)
-        .join(' ')
+    ? parameters.joins.map(join => `${join.type} JOIN ${join.table} ON ${join.predicate}`).join(' ')
     : '';
 
   const orderBys = parameters.orderBys
@@ -73,16 +65,6 @@ db.read = (table, parameters) => {
     : '';
 
   const limit = parameters.limit ? `LIMIT ${parameters.limit}` : '';
-
-  // This console.log for debugging queries, remove for production
-  console.log(`
-  SELECT ${isDistinct}${columns}
-  FROM ${table}
-  ${joins}
-  ${wheres}
-  ${orderBys}
-  ${limit};
-`);
 
   const stmt = db.prepare(`
     SELECT ${isDistinct}${columns}
@@ -103,9 +85,7 @@ db.read = (table, parameters) => {
 };
 
 db.update = (table, parameters) => {
-  const onConflict = parameters.onConflict
-    ? `OR ${parameters.onConflict.toUpperCase()} `
-    : '';
+  const onConflict = parameters.onConflict ? `OR ${parameters.onConflict.toUpperCase()} ` : '';
 
   const setValues = parameters.sets
     ? parameters.sets.filter(set => set).map(({ value }) => value)
@@ -122,9 +102,7 @@ db.update = (table, parameters) => {
   const whereValues = parameters.wheres
     ? parameters.wheres
         .filter(where => where)
-        .reduce((flattenedWheres, where) => {
-          return flattenedWheres.concat(where);
-        }, [])
+        .reduce((flattenedWheres, where) => flattenedWheres.concat(where), [])
         .map(({ value }) => value)
     : null;
 
@@ -132,7 +110,7 @@ db.update = (table, parameters) => {
     whereValues.length > 0
       ? `WHERE ${parameters.wheres
           .filter(where => where)
-          .map(where => {
+          .map((where) => {
             if (Array.isArray(where)) {
               return `(${where
                 .map(subWhere => `${subWhere.column} ${subWhere.operator} ?`)
@@ -140,9 +118,7 @@ db.update = (table, parameters) => {
             }
 
             if (/timestamp/.test(where.column)) {
-              return `strftime('%s', ${where.column}) ${
-                where.operator
-              } strftime('%s', ?)`;
+              return `strftime('%s', ${where.column}) ${where.operator} strftime('%s', ?)`;
             }
 
             return `${where.column} ${where.operator} ?`;
@@ -163,9 +139,7 @@ db.delete = (table, parameters) => {
   const whereValues = parameters.wheres
     ? parameters.wheres
         .filter(where => where)
-        .reduce((flattenedWheres, where) => {
-          return flattenedWheres.concat(where);
-        }, [])
+        .reduce((flattenedWheres, where) => flattenedWheres.concat(where), [])
         .map(({ value }) => value)
     : null;
 
@@ -173,7 +147,7 @@ db.delete = (table, parameters) => {
     whereValues.length > 0
       ? `WHERE ${parameters.wheres
           .filter(where => where)
-          .map(where => {
+          .map((where) => {
             if (Array.isArray(where)) {
               return `(${where
                 .map(subWhere => `${subWhere.column} ${subWhere.operator} ?`)
@@ -181,9 +155,7 @@ db.delete = (table, parameters) => {
             }
 
             if (/timestamp/.test(where.column)) {
-              return `strftime('%s', ${where.column}) ${
-                where.operator
-              } strftime('%s', ?)`;
+              return `strftime('%s', ${where.column}) ${where.operator} strftime('%s', ?)`;
             }
 
             return `${where.column} ${where.operator} ?`;
@@ -199,7 +171,7 @@ db.delete = (table, parameters) => {
   stmt.run(...whereValues);
 };
 
-db.updateStatus = status => {
+db.updateStatus = (status) => {
   db.status = status;
   process.send({
     header: { type: 'status' },
@@ -207,73 +179,161 @@ db.updateStatus = status => {
   });
 };
 
-db.initialize = () => {
-  db.updateStatus('Initializing');
-
-  Object.entries(schema).forEach(([table, parameters]) => {
-    const columns = Object.entries(parameters.columns)
-      .map(([column, constraint]) => `${column} ${constraint}`)
-      .join(', ');
-
-    const unique = parameters.unique
-      ? `, UNIQUE (${parameters.unique.columns.join(
-          ', '
-        )}) ON CONFLICT ${parameters.unique.onConflict.toUpperCase()}`
-      : '';
-
-    const stmt = db.prepare(`
-      CREATE TABLE IF NOT EXISTS ${table}
-      (${columns}${unique});
-      `);
-
-    stmt.run();
+db.createProviders = () => {
+  const providerEmars = db.read('providerEmar', {
+    isDistinct: true,
+    wheres: [],
+    columns: ['id', 'name'],
   });
 
-  const medications = [
-    'Fentanyl',
-    'Hydrocodone–Homatropine',
-    'Hydromorphone',
-    'Morphine',
-    'Oxycodone',
-    'Oxycodone–Acetaminophen',
-  ];
+  providerEmars.forEach(({ id, name, providerId }) => {
+    if (providerId) {
+      return;
+    }
 
-  medications.forEach(medication => {
-    db.create('medication', {
-      onConflict: 'ignore',
-      data: { name: medication },
-    });
-  });
+    const [lastName, remainder] = name.split(', ');
+    const middleInitial = /\s\w$/.test(remainder) ? remainder.match(/\w$/)[0] : null;
+    const firstName = middleInitial ? remainder.slice(0, remainder.length - 2) : remainder;
 
-  const adcTransactionTypes = ['Restock', 'Return', 'Waste', 'Withdrawal'];
-
-  adcTransactionTypes.forEach(adcTransactionType => {
-    db.create('adcTransactionType', {
+    db.create('provider', {
       onConflict: 'ignore',
       data: {
-        name: adcTransactionType,
+        lastName,
+        firstName,
+        middleInitial,
       },
     });
-  });
 
-  db.create('medicationOrder', {
-    onConflict: 'ignore',
-    data: {
-      id: 'OVERRIDE',
-      medicationId: null,
-      dose: null,
-      units: null,
-      form: null,
-      visitId: null,
-    },
-  });
+    const newProviderId = db.read('provider', {
+      columns: ['id'],
+      wheres: [
+        {
+          column: 'lastName',
+          operator: '=',
+          value: lastName,
+        },
+        {
+          column: 'firstName',
+          operator: '=',
+          value: firstName,
+        },
+        {
+          column: 'middleInitial',
+          operator: 'IS',
+          value: middleInitial,
+        },
+      ],
+    });
 
-  db.updateStatus('Ready');
+    db.update('providerEmar', {
+      sets: [
+        {
+          column: 'providerId',
+          value: newProviderId,
+        },
+      ],
+
+      wheres: [
+        {
+          column: 'id',
+          operator: '=',
+          value: id,
+        },
+      ],
+    });
+
+    db.update('providerAdc', {
+      sets: [
+        {
+          column: 'providerId',
+          value: newProviderId,
+        },
+      ],
+
+      wheres: [
+        {
+          column: 'name',
+          operator: '=',
+          value: `${lastName.toUpperCase()}, ${firstName.toUpperCase()}`,
+        },
+      ],
+    });
+  });
+};
+
+db.initialize = () => {
+  try {
+    db.updateStatus('Initializing…');
+
+    Object.entries(schema).forEach(([table, parameters]) => {
+      const columns = Object.entries(parameters.columns)
+        .map(([column, constraint]) => `${column} ${constraint}`)
+        .join(', ');
+
+      const unique = parameters.unique
+        ? `, UNIQUE (${parameters.unique.columns.join(
+            ', ',
+          )}) ON CONFLICT ${parameters.unique.onConflict.toUpperCase()}`
+        : '';
+
+      const stmt = db.prepare(`
+        CREATE TABLE IF NOT EXISTS ${table}
+        (${columns}${unique});
+        `);
+
+      stmt.run();
+    });
+
+    const medications = [
+      'Fentanyl',
+      'Hydrocodone–Homatropine',
+      'Hydromorphone',
+      'Morphine',
+      'Oxycodone',
+      'Oxycodone–Acetaminophen',
+    ];
+
+    medications.forEach((medication) => {
+      db.create('medication', {
+        onConflict: 'ignore',
+        data: { name: medication },
+      });
+    });
+
+    const adcTransactionTypes = ['Restock', 'Return', 'Waste', 'Withdrawal'];
+
+    adcTransactionTypes.forEach((adcTransactionType) => {
+      db.create('adcTransactionType', {
+        onConflict: 'ignore',
+        data: {
+          name: adcTransactionType,
+        },
+      });
+    });
+
+    db.create('medicationOrder', {
+      onConflict: 'ignore',
+      data: {
+        id: 'OVERRIDE',
+        medicationId: null,
+        dose: null,
+        units: null,
+        form: null,
+        visitId: null,
+      },
+    });
+
+    // db.createProviders();
+    db.updateStatus('Ready');
+  } catch (error) {
+    console.error(error);
+    db.updateStatus('Error');
+  }
 };
 
 db.initialize();
 
-const getMedication = string => {
+const getMedication = (string) => {
   if (/oxycodone/i.test(string)) {
     if (/acetaminophen/i.test(string)) {
       return 'Oxycodone–Acetaminophen';
@@ -305,7 +365,7 @@ const getMedication = string => {
   return null;
 };
 
-const getUnits = string => {
+const getUnits = (string) => {
   if (/milligram|cup/i.test(string)) {
     return 'mG';
   }
@@ -333,7 +393,7 @@ const getUnits = string => {
   return null;
 };
 
-const getForm = string => {
+const getForm = (string) => {
   if (/tablet/i.test(string)) {
     if (/[^a-zA-Z]ER[^a-zA-Z]/.test(string)) {
       return 'ER Tablet';
@@ -385,7 +445,7 @@ const getForm = string => {
   return null;
 };
 
-const getAdcTransactionType = string => {
+const getAdcTransactionType = (string) => {
   switch (string) {
     case 'WITHDRAWN':
       return 'Withdrawal';
@@ -415,13 +475,10 @@ db.parseAdc = function parseAdc(filePath) {
         };
 
         const worksheet = workbook.getWorksheet(1);
+        let isPastHeaderRow = false;
 
         worksheet.eachRow((row, rowNumber) => {
-          let isPastHeaderRow = false;
-
-          const adcTransactionType = getAdcTransactionType(
-            row.getCell('E').value
-          );
+          const adcTransactionType = getAdcTransactionType(row.getCell('E').value);
 
           const medicationId = db.read('medication', {
             columns: ['id'],
@@ -434,25 +491,16 @@ db.parseAdc = function parseAdc(filePath) {
             ],
           });
 
-          if (row.getCell('A').value === 'TRANSACTIONDATE') {
-            isPastHeaderRow = true;
-          }
-
           if (isPastHeaderRow && medicationId && adcTransactionType) {
-            const timestamp = getTimestamp(
-              row.getCell('A').value,
-              row.getCell('B').value
-            );
+            const timestamp = getTimestamp(row.getCell('A').value, row.getCell('B').value);
 
             const form = getForm(row.getCell('C').value);
             const units = getUnits(row.getCell('C').value);
             const amount = row.getCell('D').value;
-            const mrn = row.getCell('I').value;
+            const mrn = +row.getCell('I').value;
 
             const medicationOrderId =
-              row.getCell('J').value === 'OVERRIDE'
-                ? 'OVERRIDE'
-                : row.getCell('J').value.slice(1);
+              row.getCell('J').value === 'OVERRIDE' ? 'OVERRIDE' : row.getCell('J').value.slice(1);
 
             const strength = row.getCell('O').value;
 
@@ -569,6 +617,10 @@ db.parseAdc = function parseAdc(filePath) {
               });
             }
           }
+
+          if (row.getCell('A').value === 'TRANSACTIONDATE') {
+            isPastHeaderRow = true;
+          }
         });
       })
       .then(() => {
@@ -586,8 +638,8 @@ db.parseEmar = function parseEmar(filePath) {
     const workbook = new Excel.Workbook();
     workbook.csv
       .read(readStream)
-      .then(worksheet => {
-        const getTimestamp = string => {
+      .then((worksheet) => {
+        const getTimestamp = (string) => {
           if (!string) {
             return null;
           }
@@ -609,16 +661,12 @@ db.parseEmar = function parseEmar(filePath) {
           return `${year}-${month}-${day}T${hours}:${minutes}:00`;
         };
 
+        let isPastHeaderRow = false;
+
         worksheet.eachRow((row, rowNumber) => {
-          let isPastHeaderRow = false;
-
-          if (row.getCell('A').value === 'FacilityName') {
-            isPastHeaderRow = true;
-          }
-
           if (isPastHeaderRow) {
             const visitId = row.getCell('F').value;
-            const mrn = row.getCell('G').value;
+            const mrn = +row.getCell('G').value;
             const discharged = getTimestamp(row.getCell('L').value);
             const medicationOrderId = row.getCell('M').value;
             const form = getForm(row.getCell('P').value);
@@ -676,10 +724,14 @@ db.parseEmar = function parseEmar(filePath) {
               ],
             });
 
-            db.create('administration', {
+            db.create('emarAdministration', {
               onConflict: 'ignore',
               data: { providerEmarId, medicationOrderId, timestamp },
             });
+          }
+
+          if (row.getCell('A').value === 'FacilityName') {
+            isPastHeaderRow = true;
           }
         });
       })
@@ -691,7 +743,7 @@ db.parseEmar = function parseEmar(filePath) {
   });
 };
 
-process.on('message', data => {
+process.on('message', (data) => {
   if (data.header.type === 'status') {
     if (data.header.response) {
       process.send({
@@ -702,15 +754,16 @@ process.on('message', data => {
   }
 
   if (data.header.type === 'import') {
-    try {
-      db.updateStatus('Importing data…');
-      db.parseAdc(data.body.adcPath);
-      db.parseEmar(data.body.emarPath);
-      db.updateStatus('Ready');
-    } catch (error) {
-      db.updateStatus('Error');
-      console.error(error);
-    }
+    db.updateStatus('Importing data…');
+    Promise.all([
+      // db.parseAdc(data.body.adcPath),
+      db.parseEmar(data.body.emarPath),
+    ])
+      .then(() => db.updateStatus('Ready'))
+      .catch((error) => {
+        db.updateStatus('Error');
+        console.error(error);
+      });
   }
 
   if (data.header.type === 'query') {
@@ -757,24 +810,34 @@ process.on('message', data => {
 
       const providerWhere = data.body.provider
         ? {
-            column: 'provider',
-            operator: 'LIKE',
-            value: `%${data.body.provider}%`,
-          }
+          column: 'provider',
+          operator: 'LIKE',
+          value: `%${data.body.provider}%`,
+        }
+        : null;
+
+      const productWhere = data.body.product
+        ? {
+          column: 'product',
+          operator: 'LIKE',
+          value: `%${data.body.product}%`,
+        }
         : null;
 
       const medicationOrderIdWhere = data.body.medicationOrderId
-        ? data.body.medicationOrderId
+        ? {
+          column: 'medicationOrderId',
+          operator: 'LIKE',
+          value: `%${data.body.medicationOrderId}%`,
+        }
         : null;
-
-      const productWhere = data.body.product ? data.body.product : null;
 
       const withdrawals = db.read('adcTransaction', {
         columns: [
           'adcTransaction.id',
           'timestamp',
           'provider.id AS providerId',
-          "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS provider",
+          "provider.lastName || ', ' || provider.firstName || ifnull(' ' || provider.middleInitial, '') AS provider",
           "medication.name || ', ' || medicationProduct.strength || ' ' || medicationProduct.units || ' ' || medicationProduct.form AS product",
           'medication.name AS medication',
           'medicationProduct.strength',
@@ -801,8 +864,8 @@ process.on('message', data => {
             value: 'Withdrawal',
           },
           providerWhere,
-          medicationOrderIdWhere,
           productWhere,
+          medicationOrderIdWhere,
         ],
 
         joins: [
@@ -908,7 +971,7 @@ process.on('message', data => {
           'adcTransactionType.name AS type',
           'timestamp',
           'provider.id AS providerId',
-          "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS provider",
+          "provider.lastName || ', ' || provider.firstName || ifnull(' ' || provider.middleInitial, '') AS provider",
           'medicationProductId',
           'amount',
           'medicationOrderId',
@@ -971,7 +1034,7 @@ process.on('message', data => {
           'emarAdministration.id',
           'timestamp',
           'provider.id AS providerId',
-          "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS provider",
+          "provider.lastName || ', ' || provider.firstName || ifnull(' ' || provider.middleInitial, '') AS provider",
           'medicationOrderId',
           'mrn',
           'medicationOrder.dose',
@@ -1029,14 +1092,16 @@ process.on('message', data => {
 
       const result = [...withdrawals].reverse(); // Withdrawals must be run in reverse or later administrations may be assigned as dispositions for earlier diversions.
 
-      result.forEach(withdrawal => {
+      // Adjustments are present for administration to adc transaction time comparisons. Emar and Adc time are not coordinated, and Emar time is only precise to the minute. Adc is precise to the second.
+
+      result.forEach((withdrawal) => {
         if (withdrawal.medicationOrderId === 'OVERRIDE') {
           const wasteIndex = wastes.findIndex(
             waste =>
               waste.mrn === withdrawal.mrn &&
               waste.medicationProductId === withdrawal.medicationProductId &&
               waste.timestamp >= withdrawal.timestamp &&
-              !waste.reconciled
+              !waste.reconciled,
           );
 
           if (wastes[wasteIndex]) {
@@ -1044,66 +1109,58 @@ process.on('message', data => {
             wastes[wasteIndex].reconciled = true;
           }
 
-          const administrationIndex = administrations.findIndex(
-            administration => {
-              if (withdrawal.waste) {
-                return (
-                  administration.medication === withdrawal.medication &&
-                  administration.mrn === withdrawal.mrn &&
-                  withdrawal.amount * withdrawal.strength - withdrawal.waste ===
-                    administration.dose &&
-                  administration.timestamp >= withdrawal.timestamp &&
-                  !administration.reconciled
-                );
-              }
-
+          const administrationIndex = administrations.findIndex((administration) => {
+            if (withdrawal.waste) {
               return (
                 administration.medication === withdrawal.medication &&
                 administration.mrn === withdrawal.mrn &&
-                withdrawal.amount * withdrawal.strength ===
+                withdrawal.amount * withdrawal.strength - withdrawal.waste ===
                   administration.dose &&
-                administration.timestamp >= withdrawal.timestamp &&
+                new Date(administration.timestamp).getTime() >=
+                  new Date(withdrawal.timestamp).getTime() - 300000 &&
                 !administration.reconciled
               );
             }
-          );
+
+            return (
+              administration.medication === withdrawal.medication &&
+              administration.mrn === withdrawal.mrn &&
+              withdrawal.amount * withdrawal.strength === administration.dose &&
+              new Date(administration.timestamp).getTime() >=
+                new Date(withdrawal.timestamp).getTime() - 300000 &&
+              !administration.reconciled
+            );
+          });
 
           if (administrations[administrationIndex]) {
-            withdrawal.dispositionProvider =
-              administrations[administrationIndex].provider;
-            withdrawal.dispositionTimestamp =
-              administrations[administrationIndex].timestamp;
+            withdrawal.dispositionProvider = administrations[administrationIndex].provider;
+            withdrawal.dispositionTimestamp = administrations[administrationIndex].timestamp;
             withdrawal.dispositionType = 'Administration';
             administrations[administrationIndex].reconciled = true;
           } else {
             const otherTransactionIndex = otherTransactions.findIndex(
               otherTransaction =>
                 otherTransaction.mrn === withdrawal.mrn &&
-                otherTransaction.medicationProductId ===
-                  withdrawal.medicationProductId &&
+                otherTransaction.medicationProductId === withdrawal.medicationProductId &&
                 otherTransaction.timestamp >= withdrawal.timestamp &&
-                !otherTransaction.reconciled
+                !otherTransaction.reconciled,
             );
 
             if (otherTransactions[otherTransactionIndex]) {
-              withdrawal.dispositionProvider =
-                otherTransactions[otherTransactionIndex].provider;
-              withdrawal.dispositionTimestamp =
-                otherTransactions[otherTransactionIndex].timestamp;
-              withdrawal.dispositionType =
-                otherTransactions[otherTransactionIndex].type;
+              withdrawal.dispositionProvider = otherTransactions[otherTransactionIndex].provider;
+              withdrawal.dispositionTimestamp = otherTransactions[otherTransactionIndex].timestamp;
+              withdrawal.dispositionType = otherTransactions[otherTransactionIndex].type;
               otherTransactions[otherTransactionIndex].reconciled = true;
             }
           }
         } else {
           const nextWithdrawal = withdrawals.find(
             otherWithdrawal =>
-              otherWithdrawal.medicationOrderId ===
-                withdrawal.medicationOrderId &&
-              otherWithdrawal.timestamp > withdrawal.timestamp
+              otherWithdrawal.medicationOrderId === withdrawal.medicationOrderId &&
+              otherWithdrawal.timestamp > withdrawal.timestamp,
           );
 
-          const wasteIndex = wastes.findIndex(waste => {
+          const wasteIndex = wastes.findIndex((waste) => {
             if (nextWithdrawal) {
               return (
                 waste.medicationOrderId === withdrawal.medicationOrderId &&
@@ -1125,63 +1182,52 @@ process.on('message', data => {
             wastes[wasteIndex].reconciled = true;
           }
 
-          const administrationIndex = administrations.findIndex(
-            administration => {
+          const administrationIndex = administrations.findIndex((administration) => {
+            if (nextWithdrawal) {
+              return (
+                administration.medicationOrderId === withdrawal.medicationOrderId &&
+                new Date(administration.timestamp).getTime() >=
+                  new Date(withdrawal.timestamp).getTime() - 300000 &&
+                administration.timestamp < nextWithdrawal.timestamp &&
+                !administration.reconciled
+              );
+            }
+
+            return (
+              administration.medicationOrderId === withdrawal.medicationOrderId &&
+              new Date(administration.timestamp).getTime() >=
+                new Date(withdrawal.timestamp).getTime() - 300000 &&
+              !administration.reconciled
+            );
+          });
+
+          if (administrations[administrationIndex]) {
+            withdrawal.dispositionProvider = administrations[administrationIndex].provider;
+            withdrawal.dispositionTimestamp = administrations[administrationIndex].timestamp;
+            withdrawal.dispositionType = 'Administration';
+            administrations[administrationIndex].reconciled = true;
+          } else {
+            const otherTransactionIndex = otherTransactions.findIndex((otherTransaction) => {
               if (nextWithdrawal) {
                 return (
-                  administration.medicationOrderId ===
-                    withdrawal.medicationOrderId &&
-                  administration.timestamp >= withdrawal.timestamp &&
-                  administration.timestamp < nextWithdrawal.timestamp &&
-                  !administration.reconciled
+                  otherTransaction.medicationOrderId === withdrawal.medicationOrderId &&
+                  otherTransaction.timestamp >= withdrawal.timestamp &&
+                  otherTransaction.timestamp < nextWithdrawal.timestamp &&
+                  !otherTransaction.reconciled
                 );
               }
 
               return (
-                administration.medicationOrderId ===
-                  withdrawal.medicationOrderId &&
-                administration.timestamp >= withdrawal.timestamp &&
-                !administration.reconciled
+                otherTransaction.medicationOrderId === withdrawal.medicationOrderId &&
+                otherTransaction.timestamp >= withdrawal.timestamp &&
+                !otherTransaction.reconciled
               );
-            }
-          );
-
-          if (administrations[administrationIndex]) {
-            withdrawal.dispositionProvider =
-              administrations[administrationIndex].provider;
-            withdrawal.dispositionTimestamp =
-              administrations[administrationIndex].timestamp;
-            withdrawal.dispositionType = 'Administration';
-            administrations[administrationIndex].reconciled = true;
-          } else {
-            const otherTransactionIndex = otherTransactions.findIndex(
-              otherTransaction => {
-                if (nextWithdrawal) {
-                  return (
-                    otherTransaction.medicationOrderId ===
-                      withdrawal.medicationOrderId &&
-                    otherTransaction.timestamp >= withdrawal.timestamp &&
-                    otherTransaction.timestamp < nextWithdrawal.timestamp &&
-                    !otherTransaction.reconciled
-                  );
-                }
-
-                return (
-                  otherTransaction.medicationOrderId ===
-                    withdrawal.medicationOrderId &&
-                  otherTransaction.timestamp >= withdrawal.timestamp &&
-                  !otherTransaction.reconciled
-                );
-              }
-            );
+            });
 
             if (otherTransactions[otherTransactionIndex]) {
-              withdrawal.dispositionProvider =
-                otherTransactions[otherTransactionIndex].provider;
-              withdrawal.dispositionTimestamp =
-                otherTransactions[otherTransactionIndex].timestamp;
-              withdrawal.dispositionType =
-                otherTransactions[otherTransactionIndex].type;
+              withdrawal.dispositionProvider = otherTransactions[otherTransactionIndex].provider;
+              withdrawal.dispositionTimestamp = otherTransactions[otherTransactionIndex].timestamp;
+              withdrawal.dispositionType = otherTransactions[otherTransactionIndex].type;
               otherTransactions[otherTransactionIndex].reconciled = true;
             }
           }
@@ -1213,37 +1259,35 @@ process.on('message', data => {
         : null;
 
       const transactionTypes = data.body.transactionTypes
-        ? data.body.transactionTypes.map(transactionType => {
-            return {
-              column: 'adcTransactionType.name',
-              operator: '=',
-              value: transactionType,
-            };
-          })
+        ? data.body.transactionTypes.map(transactionType => ({
+          column: 'adcTransactionType.name',
+          operator: '=',
+          value: transactionType,
+        }))
         : null;
 
       const provider = data.body.provider
         ? {
-            column: 'provider',
-            operator: 'LIKE',
-            value: `%${data.body.provider}%`,
-          }
+          column: 'provider',
+          operator: 'LIKE',
+          value: `%${data.body.provider}%`,
+        }
         : null;
 
       const product = data.body.product
         ? {
-            column: 'product',
-            operator: 'LIKE',
-            value: `%${data.body.product}%`,
-          }
+          column: 'product',
+          operator: 'LIKE',
+          value: `%${data.body.product}%`,
+        }
         : null;
 
       const medicationOrderId = data.body.medicationOrderId
         ? {
-            column: 'medicationOrderId',
-            operator: 'LIKE',
-            value: `%${data.body.medicationOrderId}%`,
-          }
+          column: 'medicationOrderId',
+          operator: 'LIKE',
+          value: `%${data.body.medicationOrderId}%`,
+        }
         : null;
 
       const result = db.read('adcTransaction', {
@@ -1320,10 +1364,10 @@ process.on('message', data => {
 
       const datetimeStart = data.body.datetimeStart
         ? {
-            column: 'timestamp',
-            operator: '>',
-            value: data.body.datetimeStart,
-          }
+          column: 'timestamp',
+          operator: '>',
+          value: data.body.datetimeStart,
+        }
         : null;
 
       const datetimeEnd = data.body.datetimeEnd
@@ -1332,26 +1376,26 @@ process.on('message', data => {
 
       const provider = data.body.provider
         ? {
-            column: 'provider',
-            operator: 'LIKE',
-            value: `%${data.body.provider}%`,
-          }
+          column: 'provider',
+          operator: 'LIKE',
+          value: `%${data.body.provider}%`,
+        }
         : null;
 
       const medication = data.body.medication
         ? {
-            column: 'medication',
-            operator: 'LIKE',
-            value: `%${data.body.medication}%`,
-          }
+          column: 'medication',
+          operator: 'LIKE',
+          value: `%${data.body.medication}%`,
+        }
         : null;
 
       const medicationOrderId = data.body.medicationOrderId
         ? {
-            column: 'medicationOrderId',
-            operator: 'LIKE',
-            value: `%${data.body.medicationOrderId}%`,
-          }
+          column: 'medicationOrderId',
+          operator: 'LIKE',
+          value: `%${data.body.medicationOrderId}%`,
+        }
         : null;
 
       const result = db.read('emarAdministration', {
@@ -1364,13 +1408,7 @@ process.on('message', data => {
           'medicationOrderId',
         ],
 
-        wheres: [
-          datetimeStart,
-          datetimeEnd,
-          provider,
-          medication,
-          medicationOrderId,
-        ],
+        wheres: [datetimeStart, datetimeEnd, provider, medication, medicationOrderId],
 
         joins: [
           {
@@ -1421,42 +1459,42 @@ process.on('message', data => {
 
       const lastName = data.body.lastName
         ? {
-            column: 'lastName',
-            operator: 'LIKE',
-            value: `%${data.body.lastName}%`,
-          }
+          column: 'lastName',
+          operator: 'LIKE',
+          value: `%${data.body.lastName}%`,
+        }
         : null;
 
       const firstName = data.body.firstName
         ? {
-            column: 'firstName',
-            operator: 'LIKE',
-            value: `%${data.body.firstName}%`,
-          }
+          column: 'firstName',
+          operator: 'LIKE',
+          value: `%${data.body.firstName}%`,
+        }
         : null;
 
       const middleInitial = data.body.middleInitial
         ? {
-            column: 'middleInitial',
-            operator: 'LIKE',
-            value: `%${data.body.middleInitial}%`,
-          }
+          column: 'middleInitial',
+          operator: 'LIKE',
+          value: `%${data.body.middleInitial}%`,
+        }
         : null;
 
       const adcId = data.body.adcId
         ? {
-            column: 'providerAdc.name',
-            operator: 'LIKE',
-            value: `%${data.body.adcId}%`,
-          }
+          column: 'providerAdc.name',
+          operator: 'LIKE',
+          value: `%${data.body.adcId}%`,
+        }
         : null;
 
       const emarId = data.body.emarId
         ? {
-            column: 'providerEmar.name',
-            operator: 'LIKE',
-            value: `%${data.body.emarId}%`,
-          }
+          column: 'providerEmar.name',
+          operator: 'LIKE',
+          value: `%${data.body.emarId}%`,
+        }
         : null;
 
       const result = db.read('provider', {

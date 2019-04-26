@@ -1,84 +1,122 @@
 import { ipcRenderer } from 'electron';
 import React from 'react';
 
-class Dashboard extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      datetimeEnd: '',
-      datetimeStart: '',
-      medicationOrderId: '',
-      medicationProduct: '',
-      provider: '',
-
-      results: [],
-    };
-
-    this.handleChange = this.handleChange.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
-  }
-
-  handleChange(event) {
-    const target = event.target;
-    const name = target.name;
-    const value = target.value;
-
-    this.setState({ [name]: value });
-  }
-
-  handleSubmit(event) {
-    event.preventDefault();
-
-    const datetimeEnd = this.state.datetimeEnd;
-    const datetimeStart = this.state.datetimeStart;
-    const medicationOrderId = this.state.medicationOrderId;
-    const medicationProduct = this.state.medicationProduct;
-    const provider = this.state.provider;
-
-    ipcRenderer.send('database', {
-      header: 'query',
-      body: {
-        table: 'administration',
-        parameters: {
-          columns: ['providerAdcId', 'medicationProductId', 'amount', 'timestamp'],
-          where: {
-            timestamp: [
-              { operator: '>', value: datetimeStart },
-              { operator: '<', value: datetimeEnd },
-            ],
-            providerAdcId: { operator: '=', value: provider },
-            medicationOrderId: { operator: 'LIKE', value: `%${medicationOrderId}%` },
-            medicationProductId: { operator: '=', value: medicationProduct },
-          },
-        },
-      },
-    });
-
-    ipcRenderer.once('database', (event, data) => {
-      if (data.header === 'query') {
-        this.setState({ results: data.body.results });
-      }
-    });
-  }
-
-  render() {
-    const tableBodyRows = this.state.results.map(record => (
-      <tr key={record.id}>
-        <td>{record.timestamp}</td>
-        <td>{record.providerAdcId}</td>
-        <td>{record.medicationProductId}</td>
-        <td>{record.amount}</td>
-        <td>{record.medicationOrderId}</td>
-      </tr>
-    ));
-
-    return (
-      <React.Fragment>
+const DashboardView = () => (
+  <React.Fragment>
+    <div className="row flex-shrink-0">
+      <header className="col">
         <h1 className="text-center">Dashboard</h1>
-      </React.Fragment>
-    );
-  }
-}
+      </header>
+    </div>
+    <div className="row">
+      <div className="col">
+        <section>
+          <header>
+            <h2>Unassigned IDs</h2>
+            <p>Assigning and maintaining IDs will give you more accurate results.</p>
+            <table className="table table-sm table-bordered">
+              <thead>
+                <tr>
+                  <th>ADC IDs</th>
+                  <th>EMAR IDs</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>#</td>
+                  <td>#</td>
+                </tr>
+              </tbody>
+            </table>
+          </header>
+        </section>
+        <section>
+          <header>
+            <h2>Earliest and latest data imports</h2>
+            <p>Earliest and latest dates for which data was imported.</p>
+            <table className="table table-sm table-bordered">
+              <thead>
+                <tr>
+                  <th />
+                  <th>ADC</th>
+                  <th>EMAR</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th>Earliest</th>
+                  <td>#</td>
+                  <td>#</td>
+                </tr>
+                <tr>
+                  <th>Latest</th>
+                  <td>#</td>
+                  <td>#</td>
+                </tr>
+              </tbody>
+            </table>
+          </header>
+        </section>
+        <section>
+          <header>
+            <h2>Past year</h2>
+            <p>Presence of imported data over the past year.</p>
+            <table className="table table-sm table-bordered">
+              <thead>
+                <tr>
+                  <th />
+                  <th>Jan</th>
+                  <th>Feb</th>
+                  <th>Mar</th>
+                  <th>Apr</th>
+                  <th>May</th>
+                  <th>Jun</th>
+                  <th>Jul</th>
+                  <th>Aug</th>
+                  <th>Sep</th>
+                  <th>Oct</th>
+                  <th>Nov</th>
+                  <th>Dec</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th>ADC</th>
+                  <td>#</td>
+                  <td>#</td>
+                  <td>#</td>
+                  <td>#</td>
+                  <td>#</td>
+                  <td>#</td>
+                  <td>#</td>
+                  <td>#</td>
+                  <td>#</td>
+                  <td>#</td>
+                  <td>#</td>
+                  <td>#</td>
+                </tr>
+                <tr>
+                  <th>EMAR</th>
+                  <td>#</td>
+                  <td>#</td>
+                  <td>#</td>
+                  <td>#</td>
+                  <td>#</td>
+                  <td>#</td>
+                  <td>#</td>
+                  <td>#</td>
+                  <td>#</td>
+                  <td>#</td>
+                  <td>#</td>
+                  <td>#</td>
+                </tr>
+              </tbody>
+            </table>
+          </header>
+        </section>
+      </div>
+    </div>
+  </React.Fragment>
+);
 
-export default Dashboard;
+export default DashboardView;

@@ -5,7 +5,21 @@ import Modal from '../components/Modal';
 import RecordsTableSection from '../components/RecordsTableSection';
 import SearchFormSection from '../components/SearchFormSection';
 
-class ProviderView extends React.Component {
+const ProviderView = () => (
+  <React.Fragment>
+    <div className="row flex-shrink-0">
+      <header className="col">
+        <h1 className="text-center">Providers</h1>
+      </header>
+    </div>
+    <div className="row">
+      <SearchForm />
+      <RecordsTable />
+    </div>
+  </React.Fragment>
+);
+
+class SearchForm extends React.PureComponent {
   constructor(props) {
     super(props);
 
@@ -15,6 +29,94 @@ class ProviderView extends React.Component {
       middleInitial: '',
       adcId: '',
       emarId: '',
+      isSubmitted: false,
+    };
+
+    this.handleChange = this.handleChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
+  }
+
+  handleChange(event) {
+    const target = event.target;
+
+    this.setState({ [target.name]: target.value });
+  }
+
+  handleSubmit(event) {
+    if (event) {
+      event.preventDefault();
+    }
+
+    ipcRenderer.send('database', {
+      header: {
+        type: 'provider',
+        response: 'provider',
+      },
+
+      body: {
+        lastName: this.state.lastName,
+        firstName: this.state.firstName,
+        middleInitial: this.state.middleInitial,
+        adcId: this.state.adcId,
+        emarId: this.state.emarId,
+      },
+    });
+
+    if (event) {
+      this.setState({ isSubmitted: true });
+
+      ipcRenderer.once('provider', () => this.setState({ isSubmitted: false }));
+    }
+  }
+
+  render() {
+    return (
+      <SearchFormSection isSubmitted={this.state.isSubmitted} handleSubmit={this.handleSubmit}>
+        <Input
+          type="text"
+          name="lastName"
+          value={this.state.lastName}
+          label="Last name"
+          handleChange={this.handleChange}
+        />
+        <Input
+          type="text"
+          name="firstName"
+          value={this.state.firstName}
+          label="First name"
+          handleChange={this.handleChange}
+        />
+        <Input
+          type="text"
+          name="middleInitial"
+          value={this.state.middleInitial}
+          label="Middle initial"
+          handleChange={this.handleChange}
+        />
+        <Input
+          type="text"
+          name="adcId"
+          value={this.state.adcId}
+          label="ADC ID"
+          handleChange={this.handleChange}
+        />
+        <Input
+          type="text"
+          name="emarId"
+          value={this.state.emarId}
+          label="EMAR ID"
+          handleChange={this.handleChange}
+        />
+      </SearchFormSection>
+    );
+  }
+}
+
+class RecordsTable extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
       records: [],
       sortColumn: '',
       sortDirection: '',
@@ -22,14 +124,17 @@ class ProviderView extends React.Component {
 
     this.modalRef = React.createRef();
 
-    this.handleChange = this.handleChange.bind(this);
     this.handleClick = this.handleClick.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
   }
 
-  handleChange(event) {
-    const target = event.target;
-    this.setState({ [target.name]: target.value });
+  componentDidMount() {
+    ipcRenderer.on('provider', (event, data) => {
+      this.setState({ records: data.body, sortColumn: '', sortDirection: '' });
+    });
+  }
+
+  componentWillUnmount() {
+    ipcRenderer.removeAllListeners('provider');
   }
 
   handleClick(event) {
@@ -40,19 +145,15 @@ class ProviderView extends React.Component {
 
       this.setState(
         { selectedProviderId: currentTarget.dataset.providerId },
-        this.modalRef.current.handleShow
+        this.modalRef.current.handleShow,
       );
-    } else {
-      if (this.state.records.length === 0) {
-        return;
-      }
-
+    } else if (this.state.records.length > 0) {
       const targetSortColumn = event.target.dataset.sortColumn;
 
-      this.setState(state => {
+      this.setState((state) => {
         const records = [...state.records];
 
-        if (targetSortColumn !== this.state.sortColumn) {
+        if (targetSortColumn !== state.sortColumn) {
           records.sort((recordA, recordB) => {
             if (typeof recordA[targetSortColumn] === 'number') {
               return recordA[targetSortColumn] - recordB[targetSortColumn];
@@ -99,29 +200,6 @@ class ProviderView extends React.Component {
     }
   }
 
-  handleSubmit(event) {
-    event.preventDefault();
-
-    ipcRenderer.send('database', {
-      header: {
-        type: 'provider',
-        response: 'provider',
-      },
-
-      body: {
-        lastName: this.state.lastName,
-        firstName: this.state.firstName,
-        middleInitial: this.state.middleInitial,
-        adcId: this.state.adcId,
-        emarId: this.state.emarId,
-      },
-    });
-
-    ipcRenderer.once('provider', (event, data) => {
-      this.setState({ records: data.body, sortColumn: '', sortDirection: '' })
-    });
-  }
-
   render() {
     const columnHeadings = [
       {
@@ -148,23 +226,21 @@ class ProviderView extends React.Component {
 
     const tableBodyRows =
       this.state.records.length > 0 ? (
-        this.state.records.map(record => {
-          return (
-            <tr
-              key={record.id}
-              data-provider-id={record.id}
-              data-toggle="modal"
-              data-target="#modal"
-              onClick={this.handleClick}
-            >
-              <td className="border-right">{record.lastName}</td>
-              <td className="border-right">{record.firstName}</td>
-              <td className="border-right">{record.middleInitial}</td>
-              <td className="border-right">{record.adcId}</td>
-              <td className="border-right">{record.emarId}</td>
-            </tr>
-          );
-        })
+        this.state.records.map(record => (
+          <tr
+            key={record.id}
+            data-provider-id={record.id}
+            data-toggle="modal"
+            data-target="#modal"
+            onClick={this.handleClick}
+          >
+            <td className="border-right">{record.lastName}</td>
+            <td className="border-right">{record.firstName}</td>
+            <td className="border-right">{record.middleInitial}</td>
+            <td className="border-right">{record.adcId}</td>
+            <td className="border-right">{record.emarId}</td>
+          </tr>
+        ))
       ) : (
         <tr>
           <td className="font-italic text-center border-right" colSpan={5}>
@@ -175,58 +251,14 @@ class ProviderView extends React.Component {
 
     return (
       <React.Fragment>
-        <div className="row flex-shrink-0">
-          <header className="col">
-            <h1 className="text-center">Providers</h1>
-          </header>
-        </div>
-        <div className="row">
-          <SearchFormSection handleSubmit={this.handleSubmit}>
-            <Input
-              type="text"
-              name="lastName"
-              value={this.state.lastName}
-              label="Last name"
-              handleChange={this.handleChange}
-            />
-            <Input
-              type="text"
-              name="firstName"
-              value={this.state.firstName}
-              label="First name"
-              handleChange={this.handleChange}
-            />
-            <Input
-              type="text"
-              name="middleInitial"
-              value={this.state.middleInitial}
-              label="Middle initial"
-              handleChange={this.handleChange}
-            />
-            <Input
-              type="text"
-              name="adcId"
-              value={this.state.adcId}
-              label="ADC ID"
-              handleChange={this.handleChange}
-            />
-            <Input
-              type="text"
-              name="emarId"
-              value={this.state.emarId}
-              label="EMAR ID"
-              handleChange={this.handleChange}
-            />
-          </SearchFormSection>
-          <RecordsTableSection
-            sortColumn={this.state.sortColumn}
-            sortDirection={this.state.sortDirection}
-            columnHeadings={columnHeadings}
-            tableBodyRows={tableBodyRows}
-            handleClick={this.handleClick}
-            className="table-hover"
-          />
-        </div>
+        <RecordsTableSection
+          sortColumn={this.state.sortColumn}
+          sortDirection={this.state.sortDirection}
+          columnHeadings={columnHeadings}
+          tableBodyRows={tableBodyRows}
+          handleClick={this.handleClick}
+          className="table-hover"
+        />
         <Modal
           ref={this.modalRef}
           providerId={this.state.selectedProviderId}

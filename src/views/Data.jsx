@@ -2,7 +2,7 @@ import { ipcRenderer } from 'electron';
 import React from 'react';
 import path from 'path';
 import PropTypes from 'prop-types';
-import IconButton from '../components/IconButton';
+import Button from '../components/Button';
 import SVGIcon from '../components/SVGIcon';
 
 const DataView = () => (
@@ -14,12 +14,10 @@ const DataView = () => (
         <p>Use the filepickers below to add data to the database.</p>
         <ol>
           <li>
-            Download these reports from BICC and RxAuditor for the same time
-            period:
+            Download these reports from BICC and RxAuditor for the same time period:
             <ul>
               <li>
-                Medication Order Task Status Summary (
-                <span className="font-italic">as CSV</span>)
+                Medication Order Task Status Summary (<span className="font-italic">as CSV</span>)
               </li>
               <li>
                 C2 Activity (<span className="font-italic">as XLSX</span>){' '}
@@ -132,7 +130,7 @@ class DataImportForm extends React.Component {
         </div>
         <div className="form-row">
           <div className="col">
-            <IconButton
+            <Button
               type="submit"
               text="Import"
               icon="file-import"
