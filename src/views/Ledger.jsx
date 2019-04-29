@@ -252,7 +252,7 @@ class RecordsTable extends React.Component {
             </td>
             <td className="border-right">{record.product}</td>
             <td className="border-right">{record.amount}</td>
-            <td className="border-right">{record.waste ? record.waste : ''}</td>
+            <td className="border-right">{record.waste ? `${record.waste} ${record.units}` : ''}</td>
             <td className="border-right">{record.dispositionType ? record.dispositionType : ''}</td>
             <td className="border-right">
               {record.dispositionProvider ? record.dispositionProvider : ''}

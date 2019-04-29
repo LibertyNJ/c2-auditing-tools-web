@@ -323,7 +323,7 @@ db.initialize = () => {
       },
     });
 
-    // db.createProviders();
+    db.createProviders();
     db.updateStatus('Ready');
   } catch (error) {
     console.error(error);
@@ -756,7 +756,7 @@ process.on('message', (data) => {
   if (data.header.type === 'import') {
     db.updateStatus('Importing data…');
     Promise.all([
-      // db.parseAdc(data.body.adcPath),
+      db.parseAdc(data.body.adcPath),
       db.parseEmar(data.body.emarPath),
     ])
       .then(() => db.updateStatus('Ready'))
@@ -841,6 +841,7 @@ process.on('message', (data) => {
           "medication.name || ', ' || medicationProduct.strength || ' ' || medicationProduct.units || ' ' || medicationProduct.form AS product",
           'medication.name AS medication',
           'medicationProduct.strength',
+          'medicationProduct.units',
           'medicationProductId',
           'mrn',
           'amount',
@@ -910,8 +911,9 @@ process.on('message', (data) => {
           'adcTransaction.id',
           'timestamp',
           'provider.id AS providerId',
+          "provider.lastName || ', ' || provider.firstName || ifnull(' ' || provider.middleInitial, '') AS provider",
           'medicationProductId',
-          "amount || ' ' || medicationProduct.units AS amount",
+          'amount',
           'medicationOrderId',
           'mrn',
         ],
@@ -1090,12 +1092,15 @@ process.on('message', (data) => {
         ],
       });
 
-      const result = [...withdrawals].reverse(); // Withdrawals must be run in reverse or later administrations may be assigned as dispositions for earlier diversions.
+      const result = [...withdrawals].reverse(); // Withdrawals are run in reverse so that later administrations are not assigned as dispositions for earlier diversions.
 
       // Adjustments are present for administration to adc transaction time comparisons. Emar and Adc time are not coordinated, and Emar time is only precise to the minute. Adc is precise to the second.
 
       result.forEach((withdrawal) => {
         if (withdrawal.medicationOrderId === 'OVERRIDE') {
+          // I cannot think of a way to reliably identify multiple wastes for an overridden withdrawal programmatically.
+          // For the time being, I am accepting up to one waste for an overridden withdrawal.
+
           const wasteIndex = wastes.findIndex(
             waste =>
               waste.mrn === withdrawal.mrn &&
@@ -1160,75 +1165,92 @@ process.on('message', (data) => {
               otherWithdrawal.timestamp > withdrawal.timestamp,
           );
 
-          const wasteIndex = wastes.findIndex((waste) => {
+          // There can be multiple wastes for a single withdrawal. What follows finds all those wastes, and if the entire withdrawal is wasted, marks the last waste as disposition.
+          const totalStrength = withdrawal.amount * withdrawal.strength;
+          let totalWaste = 0;
+          let lastWasteIndex = 0;
+
+          for (let i = 0; i < wastes.length && totalWaste < totalStrength; i++) {
+            const waste = wastes[i];
+
             if (nextWithdrawal) {
-              return (
+              if (
                 waste.medicationOrderId === withdrawal.medicationOrderId &&
                 waste.timestamp >= withdrawal.timestamp &&
                 waste.timestamp < nextWithdrawal.timestamp &&
                 !waste.reconciled
-              );
-            }
-
-            return (
+              ) {
+                wastes[i].reconciled = true;
+                totalWaste += waste.amount;
+                lastWasteIndex = i;
+              }
+            } else if (
               waste.medicationOrderId === withdrawal.medicationOrderId &&
               waste.timestamp >= withdrawal.timestamp &&
               !waste.reconciled
-            );
-          });
-
-          if (wastes[wasteIndex]) {
-            withdrawal.waste = wastes[wasteIndex].amount;
-            wastes[wasteIndex].reconciled = true;
+            ) {
+              wastes[i].reconciled = true;
+              totalWaste += waste.amount;
+              lastWasteIndex = i;
+            }
           }
 
-          const administrationIndex = administrations.findIndex((administration) => {
-            if (nextWithdrawal) {
-              return (
-                administration.medicationOrderId === withdrawal.medicationOrderId &&
-                new Date(administration.timestamp).getTime() >=
-                  new Date(withdrawal.timestamp).getTime() - 300000 &&
-                administration.timestamp < nextWithdrawal.timestamp &&
-                !administration.reconciled
-              );
-            }
+          withdrawal.waste = totalWaste;
 
-            return (
-              administration.medicationOrderId === withdrawal.medicationOrderId &&
-              new Date(administration.timestamp).getTime() >=
-                new Date(withdrawal.timestamp).getTime() - 300000 &&
-              !administration.reconciled
-            );
-          });
-
-          if (administrations[administrationIndex]) {
-            withdrawal.dispositionProvider = administrations[administrationIndex].provider;
-            withdrawal.dispositionTimestamp = administrations[administrationIndex].timestamp;
-            withdrawal.dispositionType = 'Administration';
-            administrations[administrationIndex].reconciled = true;
+          if (totalWaste >= totalStrength) {
+            withdrawal.dispositionType = 'Waste';
+            withdrawal.dispositionProvider = wastes[lastWasteIndex].provider;
+            withdrawal.dispositionTimestamp = wastes[lastWasteIndex].timestamp;
           } else {
-            const otherTransactionIndex = otherTransactions.findIndex((otherTransaction) => {
+            const administrationIndex = administrations.findIndex((administration) => {
               if (nextWithdrawal) {
                 return (
-                  otherTransaction.medicationOrderId === withdrawal.medicationOrderId &&
-                  otherTransaction.timestamp >= withdrawal.timestamp &&
-                  otherTransaction.timestamp < nextWithdrawal.timestamp &&
-                  !otherTransaction.reconciled
+                  administration.medicationOrderId === withdrawal.medicationOrderId &&
+                  new Date(administration.timestamp).getTime() >=
+                    new Date(withdrawal.timestamp).getTime() - 300000 &&
+                  administration.timestamp < nextWithdrawal.timestamp &&
+                  !administration.reconciled
                 );
               }
 
               return (
-                otherTransaction.medicationOrderId === withdrawal.medicationOrderId &&
-                otherTransaction.timestamp >= withdrawal.timestamp &&
-                !otherTransaction.reconciled
+                administration.medicationOrderId === withdrawal.medicationOrderId &&
+                new Date(administration.timestamp).getTime() >=
+                  new Date(withdrawal.timestamp).getTime() - 300000 &&
+                !administration.reconciled
               );
             });
 
-            if (otherTransactions[otherTransactionIndex]) {
-              withdrawal.dispositionProvider = otherTransactions[otherTransactionIndex].provider;
-              withdrawal.dispositionTimestamp = otherTransactions[otherTransactionIndex].timestamp;
-              withdrawal.dispositionType = otherTransactions[otherTransactionIndex].type;
-              otherTransactions[otherTransactionIndex].reconciled = true;
+            if (administrations[administrationIndex]) {
+              withdrawal.dispositionProvider = administrations[administrationIndex].provider;
+              withdrawal.dispositionTimestamp = administrations[administrationIndex].timestamp;
+              withdrawal.dispositionType = 'Administration';
+              administrations[administrationIndex].reconciled = true;
+            } else {
+              const otherTransactionIndex = otherTransactions.findIndex((otherTransaction) => {
+                if (nextWithdrawal) {
+                  return (
+                    otherTransaction.medicationOrderId === withdrawal.medicationOrderId &&
+                    otherTransaction.timestamp >= withdrawal.timestamp &&
+                    otherTransaction.timestamp < nextWithdrawal.timestamp &&
+                    !otherTransaction.reconciled
+                  );
+                }
+
+                return (
+                  otherTransaction.medicationOrderId === withdrawal.medicationOrderId &&
+                  otherTransaction.timestamp >= withdrawal.timestamp &&
+                  !otherTransaction.reconciled
+                );
+              });
+
+              if (otherTransactions[otherTransactionIndex]) {
+                withdrawal.dispositionProvider = otherTransactions[otherTransactionIndex].provider;
+                withdrawal.dispositionTimestamp =
+                  otherTransactions[otherTransactionIndex].timestamp;
+                withdrawal.dispositionType = otherTransactions[otherTransactionIndex].type;
+                otherTransactions[otherTransactionIndex].reconciled = true;
+              }
             }
           }
         }
