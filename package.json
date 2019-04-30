@@ -1,8 +1,8 @@
 {
-  "name": "c2-auditing-tools-3",
-  "productName": "c2-auditing-tools-3",
+  "name": "c2-auditing-tools",
+  "productName": "C2-auditing-tools",
   "version": "0.0.0",
-  "description": "My Electron application description",
+  "description": "Tools for auditing select C2 medications at North Shore Univeristy Hospital.",
   "main": "src/main.js",
   "scripts": {
     "start": "electron-forge start",
@@ -12,7 +12,7 @@
     "lint": "eslint --cache --color --ext .jsx,.js src"
   },
   "keywords": [],
-  "author": "liber",
+  "author": "Nathaniel J. Liberty",
   "license": "MIT",
   "config": {
     "forge": {
@@ -29,10 +29,19 @@
         ]
       },
       "electronPackagerConfig": {
-        "packageManager": "npm"
+        "packageManager": "npm",
+        "appCopyright": ".",
+        "asar": true,
+        "executableName": "c2-auditing-tools",
+        "name": "c2-auditing-tools",
+        "icon": "src/assets/images/icon.ico",
+        "win32metadata": {
+          "CompanyName": ".",
+          "FileDescription": "Tools for auditing select C2 medications at North Shore Univeristy Hospital."
+        }
       },
       "electronWinstallerConfig": {
-        "name": "c2_auditing_tools_3"
+        "name": "c2_auditing_tools"
       },
       "electronInstallerDebian": {},
       "electronInstallerRedhat": {},
@@ -42,7 +51,7 @@
       },
       "windowsStoreConfig": {
         "packageName": "",
-        "name": "c2auditingtools3"
+        "name": "c2auditingtools"
       }
     }
   },
@@ -53,6 +62,7 @@
     "electron-devtools-installer": "^2.2.4",
     "electron-squirrel-startup": "^1.0.0",
     "exceljs": "^1.9.0",
+    "fix-path": "^2.1.0",
     "jquery": "^3.4.0",
     "popper.js": "^1.14.7",
     "prop-types": "^15.7.2",

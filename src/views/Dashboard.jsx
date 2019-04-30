@@ -6,6 +6,7 @@ const DashboardView = () => (
     <div className="row flex-shrink-0">
       <header className="col">
         <h1 className="text-center">Dashboard</h1>
+        <p>{__dirname}</p>
       </header>
     </div>
     <div className="row">
@@ -13,7 +14,9 @@ const DashboardView = () => (
         <section>
           <header>
             <h2>Unassigned IDs</h2>
-            <p>Assigning and maintaining IDs will give you more accurate results.</p>
+            <p>
+              Assigning and maintaining IDs will give you more accurate results.
+            </p>
             <table className="table table-sm table-bordered">
               <thead>
                 <tr>
