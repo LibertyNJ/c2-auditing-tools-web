@@ -6,7 +6,6 @@ const DashboardView = () => (
     <div className="row flex-shrink-0">
       <header className="col">
         <h1 className="text-center">Dashboard</h1>
-        <p>{__dirname}</p>
       </header>
     </div>
     <div className="row">

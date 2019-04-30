@@ -192,88 +192,96 @@ db.updateStatus = status => {
 };
 
 db.createProviders = () => {
-  const providerEmars = db.read('providerEmar', {
-    isDistinct: true,
-    wheres: [],
-    columns: ['id', 'name'],
-  });
+  return new Promise((resolve, reject) => {
+    try {
+      const providerEmars = db.read('providerEmar', {
+        isDistinct: true,
+        wheres: [],
+        columns: ['id', 'name'],
+      });
 
-  providerEmars.forEach(({ id, name, providerId }) => {
-    if (providerId) {
-      return;
+      providerEmars.forEach(({ id, name, providerId }) => {
+        if (providerId) {
+          return;
+        }
+
+        const [lastName, remainder] = name.split(', ');
+        const middleInitial = /\s\w$/.test(remainder)
+          ? remainder.match(/\w$/)[0]
+          : null;
+        const firstName = middleInitial
+          ? remainder.slice(0, remainder.length - 2)
+          : remainder;
+
+        db.create('provider', {
+          onConflict: 'ignore',
+          data: {
+            lastName,
+            firstName,
+            middleInitial,
+          },
+        });
+
+        const newProviderId = db.read('provider', {
+          columns: ['id'],
+          wheres: [
+            {
+              column: 'lastName',
+              operator: '=',
+              value: lastName,
+            },
+            {
+              column: 'firstName',
+              operator: '=',
+              value: firstName,
+            },
+            {
+              column: 'middleInitial',
+              operator: 'IS',
+              value: middleInitial,
+            },
+          ],
+        });
+
+        db.update('providerEmar', {
+          sets: [
+            {
+              column: 'providerId',
+              value: newProviderId,
+            },
+          ],
+
+          wheres: [
+            {
+              column: 'id',
+              operator: '=',
+              value: id,
+            },
+          ],
+        });
+
+        db.update('providerAdc', {
+          sets: [
+            {
+              column: 'providerId',
+              value: newProviderId,
+            },
+          ],
+
+          wheres: [
+            {
+              column: 'name',
+              operator: '=',
+              value: `${lastName.toUpperCase()}, ${firstName.toUpperCase()}`,
+            },
+          ],
+        });
+      });
+
+      resolve();
+    } catch (error) {
+      reject(error);
     }
-
-    const [lastName, remainder] = name.split(', ');
-    const middleInitial = /\s\w$/.test(remainder)
-      ? remainder.match(/\w$/)[0]
-      : null;
-    const firstName = middleInitial
-      ? remainder.slice(0, remainder.length - 2)
-      : remainder;
-
-    db.create('provider', {
-      onConflict: 'ignore',
-      data: {
-        lastName,
-        firstName,
-        middleInitial,
-      },
-    });
-
-    const newProviderId = db.read('provider', {
-      columns: ['id'],
-      wheres: [
-        {
-          column: 'lastName',
-          operator: '=',
-          value: lastName,
-        },
-        {
-          column: 'firstName',
-          operator: '=',
-          value: firstName,
-        },
-        {
-          column: 'middleInitial',
-          operator: 'IS',
-          value: middleInitial,
-        },
-      ],
-    });
-
-    db.update('providerEmar', {
-      sets: [
-        {
-          column: 'providerId',
-          value: newProviderId,
-        },
-      ],
-
-      wheres: [
-        {
-          column: 'id',
-          operator: '=',
-          value: id,
-        },
-      ],
-    });
-
-    db.update('providerAdc', {
-      sets: [
-        {
-          column: 'providerId',
-          value: newProviderId,
-        },
-      ],
-
-      wheres: [
-        {
-          column: 'name',
-          operator: '=',
-          value: `${lastName.toUpperCase()}, ${firstName.toUpperCase()}`,
-        },
-      ],
-    });
   });
 };
 
@@ -339,7 +347,6 @@ db.initialize = () => {
       },
     });
 
-    db.createProviders();
     db.updateStatus('Ready');
   } catch (error) {
     console.error(error);
@@ -781,6 +788,7 @@ process.on('message', data => {
     Promise.all([
       db.parseAdc(data.body.adcPath),
       db.parseEmar(data.body.emarPath),
+      db.createProviders(),
     ])
       .then(() => db.updateStatus('Ready'))
       .catch(error => {
