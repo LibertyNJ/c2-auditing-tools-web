@@ -1,6 +1,5 @@
 import { fork } from 'child_process';
 import path from 'path';
-
 import { app, BrowserWindow, ipcMain } from 'electron';
 import installExtension, {
   REACT_DEVELOPER_TOOLS,
@@ -16,6 +15,7 @@ if (isDevMode) enableLiveReload({ strategy: 'react-hmr' });
 const createWindow = async () => {
   mainWindow = new BrowserWindow({
     show: false,
+    webPreferences: { nodeIntegration: true },
   });
 
   mainWindow.loadURL(`file://${__dirname}/index.html`);

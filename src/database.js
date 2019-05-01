@@ -1,13 +1,16 @@
-const path = require('path');
-const fs = require('fs');
-
 const Database = require('better-sqlite3');
 const Excel = require('exceljs');
+const fs = require('fs');
+const path = require('path');
+const adcTransactionTypes = require('./scripts/adc-transaction-types');
+const databaseSchema = require('./scripts/database-schema.js');
+const medications = require('./scripts/medications');
 
-const schema = require('./schema.js');
-
-const dbPath = path.join(__dirname, '..', '..', 'database.db');
-const db = new Database(dbPath, { verbose: console.log });
+const isDevMode = process.execPath.match(/[\\/]electron/);
+const databasePath = path.join(__dirname, '..', '..', 'database.db');
+const db = isDevMode
+  ? new Database(databasePath, { verbose: console.log })
+  : new Database(databasePath);
 
 db.create = (table, parameters) => {
   const onConflict = parameters.onConflict
@@ -17,25 +20,23 @@ db.create = (table, parameters) => {
   const values = Object.values(parameters.data);
   const valuePlaceholders = values.map(() => '?').join(', ');
 
-  const stmt = db.prepare(`
+  db.prepare(
+    `
     INSERT ${onConflict}INTO ${table} (${columns})
-    VALUES (${valuePlaceholders});
-    `);
-
-  stmt.run(...values);
+    VALUES (${valuePlaceholders});   
+    `
+  ).run(...values);
 };
 
 db.read = (table, parameters) => {
   const isDistinct = parameters.isDistinct ? 'DISTINCT ' : '';
   const columns = parameters.columns.join(', ');
-
   const whereValues = parameters.wheres
     ? parameters.wheres
         .filter(where => where)
         .reduce((flattenedWheres, where) => flattenedWheres.concat(where), [])
         .map(({ value }) => value)
     : null;
-
   const wheres =
     whereValues.length > 0
       ? `WHERE ${parameters.wheres
@@ -57,48 +58,44 @@ db.read = (table, parameters) => {
           })
           .join(' AND ')}`
       : '';
-
   const joins = parameters.joins
     ? parameters.joins
         .map(join => `${join.type} JOIN ${join.table} ON ${join.predicate}`)
         .join(' ')
     : '';
-
   const orderBys = parameters.orderBys
     ? `ORDER BY ${parameters.orderBys
         .map(({ column, direction }) => `${column} ${direction}`)
         .join(', ')}`
     : '';
-
   const limit = parameters.limit ? `LIMIT ${parameters.limit}` : '';
 
-  const stmt = db.prepare(`
+  const stmt = db.prepare(
+    `
     SELECT ${isDistinct}${columns}
     FROM ${table}
     ${joins}
     ${wheres}
     ${orderBys}
     ${limit};
-  `);
+    `
+  );
 
   if (parameters.columns.length === 1 && /id/i.test(parameters.columns[0])) {
     const record = stmt.get(...whereValues);
     return record ? record.id : null;
   }
 
-  const records = stmt.all(...whereValues);
-  return records || null;
+  return stmt.all(...whereValues) || null;
 };
 
 db.update = (table, parameters) => {
   const onConflict = parameters.onConflict
     ? `OR ${parameters.onConflict.toUpperCase()} `
     : '';
-
   const setValues = parameters.sets
     ? parameters.sets.filter(set => set).map(({ value }) => value)
     : null;
-
   const sets =
     setValues.length > 0
       ? `SET ${parameters.sets
@@ -106,14 +103,12 @@ db.update = (table, parameters) => {
           .map(({ column }) => `${column} = ?`)
           .join(', ')}`
       : '';
-
   const whereValues = parameters.wheres
     ? parameters.wheres
         .filter(where => where)
         .reduce((flattenedWheres, where) => flattenedWheres.concat(where), [])
         .map(({ value }) => value)
     : null;
-
   const wheres =
     whereValues.length > 0
       ? `WHERE ${parameters.wheres
@@ -136,13 +131,13 @@ db.update = (table, parameters) => {
           .join(' AND ')}`
       : '';
 
-  const stmt = db.prepare(`
-  UPDATE ${onConflict}${table}
-  ${sets}
-  ${wheres};
-  `);
-
-  stmt.run(...setValues, ...whereValues);
+  db.prepare(
+    `
+    UPDATE ${onConflict}${table}
+    ${sets}
+    ${wheres};
+    `
+  ).run(...setValues, ...whereValues);
 };
 
 db.delete = (table, parameters) => {
@@ -152,7 +147,6 @@ db.delete = (table, parameters) => {
         .reduce((flattenedWheres, where) => flattenedWheres.concat(where), [])
         .map(({ value }) => value)
     : null;
-
   const wheres =
     whereValues.length > 0
       ? `WHERE ${parameters.wheres
@@ -175,12 +169,12 @@ db.delete = (table, parameters) => {
           .join(' AND ')}`
       : '';
 
-  const stmt = db.prepare(`
-  DELETE FROM ${table}
-  ${wheres};
-  `);
-
-  stmt.run(...whereValues);
+  db.prepare(
+    `
+    DELETE FROM ${table}
+    ${wheres};
+    `
+  ).run(...whereValues);
 };
 
 db.updateStatus = status => {
@@ -191,19 +185,17 @@ db.updateStatus = status => {
   });
 };
 
-db.createProviders = () => {
-  return new Promise((resolve, reject) => {
+db.createProviders = () =>
+  new Promise((resolve, reject) => {
     try {
       const providerEmars = db.read('providerEmar', {
         isDistinct: true,
+        columns: ['id', 'name', 'providerId'],
         wheres: [],
-        columns: ['id', 'name'],
       });
 
       providerEmars.forEach(({ id, name, providerId }) => {
-        if (providerId) {
-          return;
-        }
+        if (providerId) return;
 
         const [lastName, remainder] = name.split(', ');
         const middleInitial = /\s\w$/.test(remainder)
@@ -283,39 +275,27 @@ db.createProviders = () => {
       reject(error);
     }
   });
-};
 
 db.initialize = () => {
   try {
     db.updateStatus('Initializing…');
-
-    Object.entries(schema).forEach(([table, parameters]) => {
+    Object.entries(databaseSchema).forEach(([table, parameters]) => {
       const columns = Object.entries(parameters.columns)
         .map(([column, constraint]) => `${column} ${constraint}`)
         .join(', ');
-
       const unique = parameters.unique
         ? `, UNIQUE (${parameters.unique.columns.join(
-            ', '
+            ', ' // Ugly
           )}) ON CONFLICT ${parameters.unique.onConflict.toUpperCase()}`
         : '';
 
-      const stmt = db.prepare(`
+      db.prepare(
+        `
         CREATE TABLE IF NOT EXISTS ${table}
         (${columns}${unique});
-        `);
-
-      stmt.run();
+        `
+      ).run();
     });
-
-    const medications = [
-      'Fentanyl',
-      'Hydrocodone–Homatropine',
-      'Hydromorphone',
-      'Morphine',
-      'Oxycodone',
-      'Oxycodone–Acetaminophen',
-    ];
 
     medications.forEach(medication => {
       db.create('medication', {
@@ -323,8 +303,6 @@ db.initialize = () => {
         data: { name: medication },
       });
     });
-
-    const adcTransactionTypes = ['Restock', 'Return', 'Waste', 'Withdrawal'];
 
     adcTransactionTypes.forEach(adcTransactionType => {
       db.create('adcTransactionType', {
@@ -349,7 +327,7 @@ db.initialize = () => {
 
     db.updateStatus('Ready');
   } catch (error) {
-    console.error(error);
+    if (isDevMode) console.error(error);
     db.updateStatus('Error');
   }
 };
@@ -484,8 +462,8 @@ const getAdcTransactionType = string => {
   }
 };
 
-db.parseAdc = function parseAdc(filePath) {
-  return new Promise((resolve, reject) => {
+db.parseAdc = filePath =>
+  new Promise((resolve, reject) => {
     const readStream = fs.createReadStream(filePath);
 
     const workbook = new Excel.Workbook();
@@ -659,10 +637,9 @@ db.parseAdc = function parseAdc(filePath) {
       })
       .catch(error => reject(error));
   });
-};
 
-db.parseEmar = function parseEmar(filePath) {
-  return new Promise((resolve, reject) => {
+db.parseEmar = filePath =>
+  new Promise((resolve, reject) => {
     const readStream = fs.createReadStream(filePath);
 
     const workbook = new Excel.Workbook();
@@ -670,9 +647,7 @@ db.parseEmar = function parseEmar(filePath) {
       .read(readStream)
       .then(worksheet => {
         const getTimestamp = string => {
-          if (!string) {
-            return null;
-          }
+          if (!string) return null;
 
           const [date, time, meridian] = string.split(/\s/);
 
@@ -692,7 +667,6 @@ db.parseEmar = function parseEmar(filePath) {
         };
 
         let isPastHeaderRow = false;
-
         worksheet.eachRow((row, rowNumber) => {
           if (isPastHeaderRow) {
             const visitId = row.getCell('F').value;
@@ -771,498 +745,405 @@ db.parseEmar = function parseEmar(filePath) {
       })
       .catch(error => reject(error));
   });
-};
 
 process.on('message', data => {
-  if (data.header.type === 'status') {
-    if (data.header.response) {
-      process.send({
-        header: { type: data.header.response },
-        body: db.status,
-      });
-    }
-  }
+  switch (data.header.type) {
+    case 'status':
+      if (data.header.response) {
+        process.send({
+          header: { type: data.header.response },
+          body: db.status,
+        });
+      }
 
-  if (data.header.type === 'import') {
-    db.updateStatus('Importing data…');
-    Promise.all([
-      db.parseAdc(data.body.adcPath),
-      db.parseEmar(data.body.emarPath),
-      db.createProviders(),
-    ])
-      .then(() => db.updateStatus('Ready'))
-      .catch(error => {
+      break;
+    case 'import':
+      db.updateStatus('Importing data…');
+      Promise.all([
+        db.parseAdc(data.body.adcPath),
+        db.parseEmar(data.body.emarPath),
+        db.createProviders(),
+      ])
+        .then(() => {
+          process.send({ header: { type: data.header.response } });
+          db.updateStatus('Ready');
+        })
+        .catch(error => {
+          if (isDevMode) console.error(error);
+          db.updateStatus('Error');
+        });
+
+      break;
+    case 'query':
+      try {
+        db.updateStatus('Querying…');
+        const records = db.read(data.body.table, data.body.parameters);
+
+        if (data.header.response) {
+          process.send({
+            header: { type: data.header.response },
+            body: records,
+          });
+        }
+
+        db.updateStatus('Ready');
+      } catch (error) {
+        if (isDevMode) console.error(error);
         db.updateStatus('Error');
-        console.error(error);
-      });
-  }
-
-  if (data.header.type === 'query') {
-    try {
-      db.updateStatus('Querying…');
-      const records = db.read(data.body.table, data.body.parameters);
-
-      if (data.header.response) {
-        process.send({
-          header: { type: data.header.response },
-          body: records,
-        });
       }
 
-      db.updateStatus('Ready');
-    } catch (error) {
-      db.updateStatus('Error');
-      console.error(error);
-    }
-  }
+      break;
 
-  if (data.header.type === 'update') {
-    try {
-      db.updateStatus('Updating…');
-      db.update(data.body.table, data.body.parameters);
+    case 'update':
+      try {
+        db.updateStatus('Updating…');
+        db.update(data.body.table, data.body.parameters);
 
-      if (data.header.response) {
-        process.send({
-          header: { type: data.header.response },
-          body: 'Updated successfully.',
-        });
+        if (data.header.response) {
+          process.send({
+            header: { type: data.header.response },
+            body: 'Updated successfully.',
+          });
+        }
+
+        db.updateStatus('Ready');
+      } catch (error) {
+        if (isDevMode) console.error(error);
+        db.updateStatus('Error');
       }
 
-      db.updateStatus('Ready');
-    } catch (error) {
-      db.updateStatus('Error');
-      console.error(error);
-    }
-  }
+      break;
 
-  if (data.header.type === 'ledger') {
-    try {
-      db.updateStatus('Creating ledger…');
+    case 'ledger':
+      try {
+        db.updateStatus('Creating ledger…');
 
-      const providerWhere = data.body.provider
-        ? {
-            column: 'provider',
-            operator: 'LIKE',
-            value: `%${data.body.provider}%`,
-          }
-        : null;
+        const providerWhere = data.body.provider
+          ? {
+              column: 'provider',
+              operator: 'LIKE',
+              value: `%${data.body.provider}%`,
+            }
+          : null;
 
-      const productWhere = data.body.product
-        ? {
-            column: 'product',
-            operator: 'LIKE',
-            value: `%${data.body.product}%`,
-          }
-        : null;
+        const productWhere = data.body.product
+          ? {
+              column: 'product',
+              operator: 'LIKE',
+              value: `%${data.body.product}%`,
+            }
+          : null;
 
-      const medicationOrderIdWhere = data.body.medicationOrderId
-        ? {
-            column: 'medicationOrderId',
-            operator: 'LIKE',
-            value: `%${data.body.medicationOrderId}%`,
-          }
-        : null;
+        const medicationOrderIdWhere = data.body.medicationOrderId
+          ? {
+              column: 'medicationOrderId',
+              operator: 'LIKE',
+              value: `%${data.body.medicationOrderId}%`,
+            }
+          : null;
 
-      const withdrawals = db.read('adcTransaction', {
-        columns: [
-          'adcTransaction.id',
-          'timestamp',
-          'provider.id AS providerId',
-          "provider.lastName || ', ' || provider.firstName || ifnull(' ' || provider.middleInitial, '') AS provider",
-          "medication.name || ', ' || medicationProduct.strength || ' ' || medicationProduct.units || ' ' || medicationProduct.form AS product",
-          'medication.name AS medication',
-          'medicationProduct.strength',
-          'medicationProduct.units',
-          'medicationProductId',
-          'mrn',
-          'amount',
-          'medicationOrderId',
-        ],
+        const withdrawals = db.read('adcTransaction', {
+          columns: [
+            'adcTransaction.id',
+            'timestamp',
+            'provider.id AS providerId',
+            "provider.lastName || ', ' || provider.firstName || ifnull(' ' || provider.middleInitial, '') AS provider",
+            "medication.name || ', ' || medicationProduct.strength || ' ' || medicationProduct.units || ' ' || medicationProduct.form AS product",
+            'medication.name AS medication',
+            'medicationProduct.strength',
+            'medicationProduct.units',
+            'medicationProductId',
+            'mrn',
+            'amount',
+            'medicationOrderId',
+          ],
 
-        wheres: [
-          {
-            column: 'timestamp',
-            operator: '>',
-            value: data.body.datetimeStart,
-          },
-          {
-            column: 'timestamp',
-            operator: '<',
-            value: data.body.datetimeEnd,
-          },
-          {
-            column: 'adcTransactionType.name',
-            operator: '=',
-            value: 'Withdrawal',
-          },
-          providerWhere,
-          productWhere,
-          medicationOrderIdWhere,
-        ],
-
-        joins: [
-          {
-            type: 'LEFT',
-            table: 'providerAdc',
-            predicate: 'providerAdcId = providerAdc.id',
-          },
-          {
-            type: 'LEFT',
-            table: 'provider',
-            predicate: 'providerAdc.providerId = provider.id',
-          },
-          {
-            type: '',
-            table: 'medicationProduct',
-            predicate: 'medicationProductId = medicationProduct.id',
-          },
-          {
-            type: '',
-            table: 'medication',
-            predicate: 'medicationProduct.medicationId = medication.id',
-          },
-
-          {
-            type: 'LEFT',
-            table: 'adcTransactionType',
-            predicate: 'typeId = adcTransactionType.id',
-          },
-        ],
-
-        orderBys: [
-          {
-            column: 'timestamp',
-            direction: 'ASC',
-          },
-        ],
-      });
-
-      const wastes = db.read('adcTransaction', {
-        columns: [
-          'adcTransaction.id',
-          'timestamp',
-          'provider.id AS providerId',
-          "provider.lastName || ', ' || provider.firstName || ifnull(' ' || provider.middleInitial, '') AS provider",
-          'medicationProductId',
-          'amount',
-          'medicationOrderId',
-          'mrn',
-        ],
-
-        wheres: [
-          {
-            column: 'timestamp',
-            operator: '<',
-            value: data.body.datetimeEnd,
-          },
-          {
-            column: 'timestamp',
-            operator: '>',
-            value: data.body.datetimeStart,
-          },
-          {
-            column: 'adcTransactionType.name',
-            operator: '=',
-            value: 'Waste',
-          },
-        ],
-
-        joins: [
-          {
-            type: 'LEFT',
-            table: 'providerAdc',
-            predicate: 'providerAdcId = providerAdc.id',
-          },
-          {
-            type: 'LEFT',
-            table: 'provider',
-            predicate: 'providerAdc.providerId = provider.id',
-          },
-          {
-            type: '',
-            table: 'medicationProduct',
-            predicate: 'medicationProductId = medicationProduct.id',
-          },
-          {
-            type: 'LEFT',
-            table: 'adcTransactionType',
-            predicate: 'typeId = adcTransactionType.id',
-          },
-        ],
-
-        orderBys: [
-          {
-            column: 'timestamp',
-            direction: 'ASC',
-          },
-        ],
-      });
-
-      const otherTransactions = db.read('adcTransaction', {
-        columns: [
-          'adcTransaction.id',
-          'adcTransactionType.name AS type',
-          'timestamp',
-          'provider.id AS providerId',
-          "provider.lastName || ', ' || provider.firstName || ifnull(' ' || provider.middleInitial, '') AS provider",
-          'medicationProductId',
-          'amount',
-          'medicationOrderId',
-          'mrn',
-        ],
-
-        wheres: [
-          {
-            column: 'timestamp',
-            operator: '<',
-            value: data.body.datetimeEnd,
-          },
-          {
-            column: 'timestamp',
-            operator: '>',
-            value: data.body.datetimeStart,
-          },
-          [
+          wheres: [
             {
-              column: 'adcTransactionType.name',
-              operator: '=',
-              value: 'Restock',
+              column: 'timestamp',
+              operator: '>',
+              value: data.body.datetimeStart,
+            },
+            {
+              column: 'timestamp',
+              operator: '<',
+              value: data.body.datetimeEnd,
             },
             {
               column: 'adcTransactionType.name',
               operator: '=',
-              value: 'Return',
+              value: 'Withdrawal',
+            },
+            providerWhere,
+            productWhere,
+            medicationOrderIdWhere,
+          ],
+
+          joins: [
+            {
+              type: 'LEFT',
+              table: 'providerAdc',
+              predicate: 'providerAdcId = providerAdc.id',
+            },
+            {
+              type: 'LEFT',
+              table: 'provider',
+              predicate: 'providerAdc.providerId = provider.id',
+            },
+            {
+              type: '',
+              table: 'medicationProduct',
+              predicate: 'medicationProductId = medicationProduct.id',
+            },
+            {
+              type: '',
+              table: 'medication',
+              predicate: 'medicationProduct.medicationId = medication.id',
+            },
+
+            {
+              type: 'LEFT',
+              table: 'adcTransactionType',
+              predicate: 'typeId = adcTransactionType.id',
             },
           ],
-        ],
 
-        joins: [
-          {
-            type: 'LEFT',
-            table: 'providerAdc',
-            predicate: 'providerAdcId = providerAdc.id',
-          },
-          {
-            type: 'LEFT',
-            table: 'provider',
-            predicate: 'providerAdc.providerId = provider.id',
-          },
-          {
-            type: 'LEFT',
-            table: 'adcTransactionType',
-            predicate: 'typeId = adcTransactionType.id',
-          },
-        ],
+          orderBys: [
+            {
+              column: 'timestamp',
+              direction: 'ASC',
+            },
+          ],
+        });
 
-        orderBys: [
-          {
-            column: 'timestamp',
-            direction: 'ASC',
-          },
-        ],
-      });
+        const wastes = db.read('adcTransaction', {
+          columns: [
+            'adcTransaction.id',
+            'timestamp',
+            'provider.id AS providerId',
+            "provider.lastName || ', ' || provider.firstName || ifnull(' ' || provider.middleInitial, '') AS provider",
+            'medicationProductId',
+            'amount',
+            'medicationOrderId',
+            'mrn',
+          ],
 
-      const administrations = db.read('emarAdministration', {
-        columns: [
-          'emarAdministration.id',
-          'timestamp',
-          'provider.id AS providerId',
-          "provider.lastName || ', ' || provider.firstName || ifnull(' ' || provider.middleInitial, '') AS provider",
-          'medicationOrderId',
-          'mrn',
-          'medicationOrder.dose',
-          'medication.name AS medication',
-        ],
+          wheres: [
+            {
+              column: 'timestamp',
+              operator: '<',
+              value: data.body.datetimeEnd,
+            },
+            {
+              column: 'timestamp',
+              operator: '>',
+              value: data.body.datetimeStart,
+            },
+            {
+              column: 'adcTransactionType.name',
+              operator: '=',
+              value: 'Waste',
+            },
+          ],
 
-        wheres: [
-          {
-            column: 'timestamp',
-            operator: '<',
-            value: data.body.datetimeEnd,
-          },
-          {
-            column: 'timestamp',
-            operator: '>',
-            value: data.body.datetimeStart,
-          },
-        ],
+          joins: [
+            {
+              type: 'LEFT',
+              table: 'providerAdc',
+              predicate: 'providerAdcId = providerAdc.id',
+            },
+            {
+              type: 'LEFT',
+              table: 'provider',
+              predicate: 'providerAdc.providerId = provider.id',
+            },
+            {
+              type: '',
+              table: 'medicationProduct',
+              predicate: 'medicationProductId = medicationProduct.id',
+            },
+            {
+              type: 'LEFT',
+              table: 'adcTransactionType',
+              predicate: 'typeId = adcTransactionType.id',
+            },
+          ],
 
-        joins: [
-          {
-            type: 'LEFT',
-            table: 'providerEmar',
-            predicate: 'providerEmarId = providerEmar.id',
-          },
-          {
-            type: 'LEFT',
-            table: 'provider',
-            predicate: 'providerEmar.providerId = provider.id',
-          },
-          {
-            type: 'LEFT',
-            table: 'medicationOrder',
-            predicate: 'medicationOrderId = medicationOrder.id',
-          },
-          {
-            type: 'LEFT',
-            table: 'medication',
-            predicate: 'medicationOrder.medicationId = medication.id',
-          },
-          {
-            type: 'LEFT',
-            table: 'visit',
-            predicate: 'medicationOrder.visitId = visit.id',
-          },
-        ],
+          orderBys: [
+            {
+              column: 'timestamp',
+              direction: 'ASC',
+            },
+          ],
+        });
 
-        orderBys: [
-          {
-            column: 'timestamp',
-            direction: 'ASC',
-          },
-        ],
-      });
+        const otherTransactions = db.read('adcTransaction', {
+          columns: [
+            'adcTransaction.id',
+            'adcTransactionType.name AS type',
+            'timestamp',
+            'provider.id AS providerId',
+            "provider.lastName || ', ' || provider.firstName || ifnull(' ' || provider.middleInitial, '') AS provider",
+            'medicationProductId',
+            'amount',
+            'medicationOrderId',
+            'mrn',
+          ],
 
-      const result = [...withdrawals].reverse(); // Withdrawals are run in reverse so that later administrations are not assigned as dispositions for earlier diversions.
+          wheres: [
+            {
+              column: 'timestamp',
+              operator: '<',
+              value: data.body.datetimeEnd,
+            },
+            {
+              column: 'timestamp',
+              operator: '>',
+              value: data.body.datetimeStart,
+            },
+            [
+              {
+                column: 'adcTransactionType.name',
+                operator: '=',
+                value: 'Restock',
+              },
+              {
+                column: 'adcTransactionType.name',
+                operator: '=',
+                value: 'Return',
+              },
+            ],
+          ],
 
-      // Adjustments are present for administration to adc transaction time comparisons. Emar and Adc time are not coordinated, and Emar time is only precise to the minute. Adc is precise to the second.
+          joins: [
+            {
+              type: 'LEFT',
+              table: 'providerAdc',
+              predicate: 'providerAdcId = providerAdc.id',
+            },
+            {
+              type: 'LEFT',
+              table: 'provider',
+              predicate: 'providerAdc.providerId = provider.id',
+            },
+            {
+              type: 'LEFT',
+              table: 'adcTransactionType',
+              predicate: 'typeId = adcTransactionType.id',
+            },
+          ],
 
-      result.forEach(withdrawal => {
-        if (withdrawal.medicationOrderId === 'OVERRIDE') {
-          // I cannot think of a way to reliably identify multiple wastes for an overridden withdrawal programmatically.
-          // For the time being, I am accepting up to one waste for an overridden withdrawal.
+          orderBys: [
+            {
+              column: 'timestamp',
+              direction: 'ASC',
+            },
+          ],
+        });
 
-          const wasteIndex = wastes.findIndex(
-            waste =>
-              waste.mrn === withdrawal.mrn &&
-              waste.medicationProductId === withdrawal.medicationProductId &&
-              waste.timestamp >= withdrawal.timestamp &&
-              !waste.reconciled
-          );
+        const administrations = db.read('emarAdministration', {
+          columns: [
+            'emarAdministration.id',
+            'timestamp',
+            'provider.id AS providerId',
+            "provider.lastName || ', ' || provider.firstName || ifnull(' ' || provider.middleInitial, '') AS provider",
+            'medicationOrderId',
+            'mrn',
+            'medicationOrder.dose',
+            'medication.name AS medication',
+          ],
 
-          if (wastes[wasteIndex]) {
-            withdrawal.waste = wastes[wasteIndex].amount;
-            wastes[wasteIndex].reconciled = true;
-          }
+          wheres: [
+            {
+              column: 'timestamp',
+              operator: '<',
+              value: data.body.datetimeEnd,
+            },
+            {
+              column: 'timestamp',
+              operator: '>',
+              value: data.body.datetimeStart,
+            },
+          ],
 
-          const administrationIndex = administrations.findIndex(
-            administration => {
-              if (withdrawal.waste) {
-                return (
-                  administration.medication === withdrawal.medication &&
-                  administration.mrn === withdrawal.mrn &&
-                  withdrawal.amount * withdrawal.strength - withdrawal.waste ===
-                    administration.dose &&
-                  new Date(administration.timestamp).getTime() >=
-                    new Date(withdrawal.timestamp).getTime() - 300000 &&
-                  !administration.reconciled
-                );
-              }
+          joins: [
+            {
+              type: 'LEFT',
+              table: 'providerEmar',
+              predicate: 'providerEmarId = providerEmar.id',
+            },
+            {
+              type: 'LEFT',
+              table: 'provider',
+              predicate: 'providerEmar.providerId = provider.id',
+            },
+            {
+              type: 'LEFT',
+              table: 'medicationOrder',
+              predicate: 'medicationOrderId = medicationOrder.id',
+            },
+            {
+              type: 'LEFT',
+              table: 'medication',
+              predicate: 'medicationOrder.medicationId = medication.id',
+            },
+            {
+              type: 'LEFT',
+              table: 'visit',
+              predicate: 'medicationOrder.visitId = visit.id',
+            },
+          ],
 
-              return (
-                administration.medication === withdrawal.medication &&
-                administration.mrn === withdrawal.mrn &&
-                withdrawal.amount * withdrawal.strength ===
-                  administration.dose &&
-                new Date(administration.timestamp).getTime() >=
-                  new Date(withdrawal.timestamp).getTime() - 300000 &&
-                !administration.reconciled
-              );
-            }
-          );
+          orderBys: [
+            {
+              column: 'timestamp',
+              direction: 'ASC',
+            },
+          ],
+        });
 
-          if (administrations[administrationIndex]) {
-            withdrawal.dispositionProvider =
-              administrations[administrationIndex].provider;
-            withdrawal.dispositionTimestamp =
-              administrations[administrationIndex].timestamp;
-            withdrawal.dispositionType = 'Administration';
-            administrations[administrationIndex].reconciled = true;
-          } else {
-            const otherTransactionIndex = otherTransactions.findIndex(
-              otherTransaction =>
-                otherTransaction.mrn === withdrawal.mrn &&
-                otherTransaction.medicationProductId ===
-                  withdrawal.medicationProductId &&
-                otherTransaction.timestamp >= withdrawal.timestamp &&
-                !otherTransaction.reconciled
+        const result = [...withdrawals].reverse(); // Withdrawals are run in reverse so that later administrations are not assigned as dispositions for earlier diversions.
+
+        // Adjustments are present for administration to adc transaction time comparisons. Emar and Adc time are not coordinated, and Emar time is only precise to the minute. Adc is precise to the second.
+
+        result.forEach(withdrawal => {
+          if (withdrawal.medicationOrderId === 'OVERRIDE') {
+            // I cannot think of a way to reliably identify multiple wastes for an overridden withdrawal programmatically.
+            // For the time being, I am accepting up to one waste for an overridden withdrawal.
+
+            const wasteIndex = wastes.findIndex(
+              waste =>
+                waste.mrn === withdrawal.mrn &&
+                waste.medicationProductId === withdrawal.medicationProductId &&
+                waste.timestamp >= withdrawal.timestamp &&
+                !waste.reconciled
             );
 
-            if (otherTransactions[otherTransactionIndex]) {
-              withdrawal.dispositionProvider =
-                otherTransactions[otherTransactionIndex].provider;
-              withdrawal.dispositionTimestamp =
-                otherTransactions[otherTransactionIndex].timestamp;
-              withdrawal.dispositionType =
-                otherTransactions[otherTransactionIndex].type;
-              otherTransactions[otherTransactionIndex].reconciled = true;
+            if (wastes[wasteIndex]) {
+              withdrawal.waste = wastes[wasteIndex].amount;
+              wastes[wasteIndex].reconciled = true;
             }
-          }
-        } else {
-          const nextWithdrawal = withdrawals.find(
-            otherWithdrawal =>
-              otherWithdrawal.medicationOrderId ===
-                withdrawal.medicationOrderId &&
-              otherWithdrawal.timestamp > withdrawal.timestamp
-          );
 
-          // There can be multiple wastes for a single withdrawal. What follows finds all those wastes, and if the entire withdrawal is wasted, marks the last waste as disposition.
-          const totalStrength = withdrawal.amount * withdrawal.strength;
-          let totalWaste = 0;
-          let lastWasteIndex = 0;
-
-          for (
-            let i = 0;
-            i < wastes.length && totalWaste < totalStrength;
-            i++
-          ) {
-            const waste = wastes[i];
-
-            if (nextWithdrawal) {
-              if (
-                waste.medicationOrderId === withdrawal.medicationOrderId &&
-                waste.timestamp >= withdrawal.timestamp &&
-                waste.timestamp < nextWithdrawal.timestamp &&
-                !waste.reconciled
-              ) {
-                wastes[i].reconciled = true;
-                totalWaste += waste.amount;
-                lastWasteIndex = i;
-              }
-            } else if (
-              waste.medicationOrderId === withdrawal.medicationOrderId &&
-              waste.timestamp >= withdrawal.timestamp &&
-              !waste.reconciled
-            ) {
-              wastes[i].reconciled = true;
-              totalWaste += waste.amount;
-              lastWasteIndex = i;
-            }
-          }
-
-          withdrawal.waste = totalWaste;
-
-          if (totalWaste >= totalStrength) {
-            withdrawal.dispositionType = 'Waste';
-            withdrawal.dispositionProvider = wastes[lastWasteIndex].provider;
-            withdrawal.dispositionTimestamp = wastes[lastWasteIndex].timestamp;
-          } else {
             const administrationIndex = administrations.findIndex(
               administration => {
-                if (nextWithdrawal) {
+                if (withdrawal.waste) {
                   return (
-                    administration.medicationOrderId ===
-                      withdrawal.medicationOrderId &&
+                    administration.medication === withdrawal.medication &&
+                    administration.mrn === withdrawal.mrn &&
+                    withdrawal.amount * withdrawal.strength -
+                      withdrawal.waste ===
+                      administration.dose &&
                     new Date(administration.timestamp).getTime() >=
                       new Date(withdrawal.timestamp).getTime() - 300000 &&
-                    administration.timestamp < nextWithdrawal.timestamp &&
                     !administration.reconciled
                   );
                 }
 
                 return (
-                  administration.medicationOrderId ===
-                    withdrawal.medicationOrderId &&
+                  administration.medication === withdrawal.medication &&
+                  administration.mrn === withdrawal.mrn &&
+                  withdrawal.amount * withdrawal.strength ===
+                    administration.dose &&
                   new Date(administration.timestamp).getTime() >=
                     new Date(withdrawal.timestamp).getTime() - 300000 &&
                   !administration.reconciled
@@ -1279,24 +1160,12 @@ process.on('message', data => {
               administrations[administrationIndex].reconciled = true;
             } else {
               const otherTransactionIndex = otherTransactions.findIndex(
-                otherTransaction => {
-                  if (nextWithdrawal) {
-                    return (
-                      otherTransaction.medicationOrderId ===
-                        withdrawal.medicationOrderId &&
-                      otherTransaction.timestamp >= withdrawal.timestamp &&
-                      otherTransaction.timestamp < nextWithdrawal.timestamp &&
-                      !otherTransaction.reconciled
-                    );
-                  }
-
-                  return (
-                    otherTransaction.medicationOrderId ===
-                      withdrawal.medicationOrderId &&
-                    otherTransaction.timestamp >= withdrawal.timestamp &&
-                    !otherTransaction.reconciled
-                  );
-                }
+                otherTransaction =>
+                  otherTransaction.mrn === withdrawal.mrn &&
+                  otherTransaction.medicationProductId ===
+                    withdrawal.medicationProductId &&
+                  otherTransaction.timestamp >= withdrawal.timestamp &&
+                  !otherTransaction.reconciled
               );
 
               if (otherTransactions[otherTransactionIndex]) {
@@ -1309,331 +1178,452 @@ process.on('message', data => {
                 otherTransactions[otherTransactionIndex].reconciled = true;
               }
             }
+          } else {
+            const nextWithdrawal = withdrawals.find(
+              otherWithdrawal =>
+                otherWithdrawal.medicationOrderId ===
+                  withdrawal.medicationOrderId &&
+                otherWithdrawal.timestamp > withdrawal.timestamp
+            );
+
+            // There can be multiple wastes for a single withdrawal. What follows finds all those wastes, and if the entire withdrawal is wasted, marks the last waste as disposition.
+            const totalStrength = withdrawal.amount * withdrawal.strength;
+            let totalWaste = 0;
+            let lastWasteIndex = 0;
+
+            for (
+              let i = 0;
+              i < wastes.length && totalWaste < totalStrength;
+              i++
+            ) {
+              const waste = wastes[i];
+
+              if (nextWithdrawal) {
+                if (
+                  waste.medicationOrderId === withdrawal.medicationOrderId &&
+                  waste.timestamp >= withdrawal.timestamp &&
+                  waste.timestamp < nextWithdrawal.timestamp &&
+                  !waste.reconciled
+                ) {
+                  wastes[i].reconciled = true;
+                  totalWaste += waste.amount;
+                  lastWasteIndex = i;
+                }
+              } else if (
+                waste.medicationOrderId === withdrawal.medicationOrderId &&
+                waste.timestamp >= withdrawal.timestamp &&
+                !waste.reconciled
+              ) {
+                wastes[i].reconciled = true;
+                totalWaste += waste.amount;
+                lastWasteIndex = i;
+              }
+            }
+
+            withdrawal.waste = totalWaste;
+
+            if (totalWaste >= totalStrength) {
+              withdrawal.dispositionType = 'Waste';
+              withdrawal.dispositionProvider = wastes[lastWasteIndex].provider;
+              withdrawal.dispositionTimestamp =
+                wastes[lastWasteIndex].timestamp;
+            } else {
+              const administrationIndex = administrations.findIndex(
+                administration => {
+                  if (nextWithdrawal) {
+                    return (
+                      administration.medicationOrderId ===
+                        withdrawal.medicationOrderId &&
+                      new Date(administration.timestamp).getTime() >=
+                        new Date(withdrawal.timestamp).getTime() - 300000 &&
+                      administration.timestamp < nextWithdrawal.timestamp &&
+                      !administration.reconciled
+                    );
+                  }
+
+                  return (
+                    administration.medicationOrderId ===
+                      withdrawal.medicationOrderId &&
+                    new Date(administration.timestamp).getTime() >=
+                      new Date(withdrawal.timestamp).getTime() - 300000 &&
+                    !administration.reconciled
+                  );
+                }
+              );
+
+              if (administrations[administrationIndex]) {
+                withdrawal.dispositionProvider =
+                  administrations[administrationIndex].provider;
+                withdrawal.dispositionTimestamp =
+                  administrations[administrationIndex].timestamp;
+                withdrawal.dispositionType = 'Administration';
+                administrations[administrationIndex].reconciled = true;
+              } else {
+                const otherTransactionIndex = otherTransactions.findIndex(
+                  otherTransaction => {
+                    if (nextWithdrawal) {
+                      return (
+                        otherTransaction.medicationOrderId ===
+                          withdrawal.medicationOrderId &&
+                        otherTransaction.timestamp >= withdrawal.timestamp &&
+                        otherTransaction.timestamp < nextWithdrawal.timestamp &&
+                        !otherTransaction.reconciled
+                      );
+                    }
+
+                    return (
+                      otherTransaction.medicationOrderId ===
+                        withdrawal.medicationOrderId &&
+                      otherTransaction.timestamp >= withdrawal.timestamp &&
+                      !otherTransaction.reconciled
+                    );
+                  }
+                );
+
+                if (otherTransactions[otherTransactionIndex]) {
+                  withdrawal.dispositionProvider =
+                    otherTransactions[otherTransactionIndex].provider;
+                  withdrawal.dispositionTimestamp =
+                    otherTransactions[otherTransactionIndex].timestamp;
+                  withdrawal.dispositionType =
+                    otherTransactions[otherTransactionIndex].type;
+                  otherTransactions[otherTransactionIndex].reconciled = true;
+                }
+              }
+            }
           }
-        }
-      });
+        });
 
-      process.send({
-        header: { type: data.header.response },
-        body: result.reverse(),
-      });
+        process.send({
+          header: { type: data.header.response },
+          body: result.reverse(),
+        });
 
-      db.updateStatus('Ready');
-    } catch (error) {
-      console.error(error);
+        db.updateStatus('Ready');
+      } catch (error) {
+        if (isDevMode) console.error(error);
+        db.updateStatus('Error');
+      }
+      break;
+
+    case 'transaction':
+      try {
+        db.updateStatus('Reading…');
+
+        const datetimeStart = data.body.datetimeStart
+          ? {
+              column: 'timestamp',
+              operator: '>',
+              value: data.body.datetimeStart,
+            }
+          : null;
+
+        const datetimeEnd = data.body.datetimeEnd
+          ? { column: 'timestamp', operator: '<', value: data.body.datetimeEnd }
+          : null;
+
+        const transactionTypes = data.body.transactionTypes
+          ? data.body.transactionTypes.map(transactionType => ({
+              column: 'adcTransactionType.name',
+              operator: '=',
+              value: transactionType,
+            }))
+          : null;
+
+        const provider = data.body.provider
+          ? {
+              column: 'provider',
+              operator: 'LIKE',
+              value: `%${data.body.provider}%`,
+            }
+          : null;
+
+        const product = data.body.product
+          ? {
+              column: 'product',
+              operator: 'LIKE',
+              value: `%${data.body.product}%`,
+            }
+          : null;
+
+        const medicationOrderId = data.body.medicationOrderId
+          ? {
+              column: 'medicationOrderId',
+              operator: 'LIKE',
+              value: `%${data.body.medicationOrderId}%`,
+            }
+          : null;
+
+        const result = db.read('adcTransaction', {
+          columns: [
+            'adcTransaction.id',
+            'timestamp',
+            "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS provider",
+            'adcTransactionType.name AS transactionType',
+            "medication.name || ', ' || medicationProduct.strength || ' ' || medicationProduct.units || ' ' || medicationProduct.form AS product",
+            'amount',
+            'medicationOrderId',
+          ],
+
+          wheres: [
+            datetimeStart,
+            datetimeEnd,
+            transactionTypes,
+            provider,
+            product,
+            medicationOrderId,
+          ],
+
+          joins: [
+            {
+              type: '',
+              table: 'providerAdc',
+              predicate: 'providerAdcId = providerAdc.id',
+            },
+            {
+              type: '',
+              table: 'provider',
+              predicate: 'providerAdc.providerId = provider.id',
+            },
+            {
+              type: '',
+              table: 'medicationProduct',
+              predicate: 'medicationProductId = medicationProduct.id',
+            },
+            {
+              type: '',
+              table: 'medication',
+              predicate: 'medicationProduct.medicationId = medication.id',
+            },
+            {
+              type: '',
+              table: 'adcTransactionType',
+              predicate: 'typeId = adcTransactionType.id',
+            },
+          ],
+
+          orderBys: [
+            {
+              column: 'timestamp',
+              direction: 'ASC',
+            },
+          ],
+        });
+
+        process.send({
+          header: { type: data.header.response },
+          body: result,
+        });
+
+        db.updateStatus('Ready');
+      } catch (error) {
+        if (isDevMode) console.error(error);
+        db.updateStatus('Error');
+      }
+
+      break;
+
+    case 'administration':
+      try {
+        db.updateStatus('Reading…');
+
+        const datetimeStart = data.body.datetimeStart
+          ? {
+              column: 'timestamp',
+              operator: '>',
+              value: data.body.datetimeStart,
+            }
+          : null;
+
+        const datetimeEnd = data.body.datetimeEnd
+          ? { column: 'timestamp', operator: '<', value: data.body.datetimeEnd }
+          : null;
+
+        const provider = data.body.provider
+          ? {
+              column: 'provider',
+              operator: 'LIKE',
+              value: `%${data.body.provider}%`,
+            }
+          : null;
+
+        const medication = data.body.medication
+          ? {
+              column: 'medication',
+              operator: 'LIKE',
+              value: `%${data.body.medication}%`,
+            }
+          : null;
+
+        const medicationOrderId = data.body.medicationOrderId
+          ? {
+              column: 'medicationOrderId',
+              operator: 'LIKE',
+              value: `%${data.body.medicationOrderId}%`,
+            }
+          : null;
+
+        const result = db.read('emarAdministration', {
+          columns: [
+            'emarAdministration.id',
+            'timestamp',
+            "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS provider",
+            "medication.name || ', ' || medicationOrder.form AS medication",
+            "medicationOrder.dose || ' ' || medicationOrder.units AS dose",
+            'medicationOrderId',
+          ],
+
+          wheres: [
+            datetimeStart,
+            datetimeEnd,
+            provider,
+            medication,
+            medicationOrderId,
+          ],
+
+          joins: [
+            {
+              type: '',
+              table: 'providerEmar',
+              predicate: 'providerEmarId = providerEmar.id',
+            },
+            {
+              type: '',
+              table: 'provider',
+              predicate: 'providerEmar.providerId = provider.id',
+            },
+            {
+              type: '',
+              table: 'medicationOrder',
+              predicate: 'medicationOrderId = medicationOrder.id',
+            },
+            {
+              type: '',
+              table: 'medication',
+              predicate: 'medicationOrder.medicationId = medication.id',
+            },
+          ],
+
+          orderBys: [
+            {
+              column: 'timestamp',
+              direction: 'ASC',
+            },
+          ],
+        });
+
+        process.send({
+          header: { type: data.header.response },
+          body: result,
+        });
+
+        db.updateStatus('Ready');
+      } catch (error) {
+        if (isDevMode) console.error(error);
+        db.updateStatus('Error');
+      }
+
+      break;
+    case 'provider':
+      try {
+        db.updateStatus('Reading…');
+
+        const lastName = data.body.lastName
+          ? {
+              column: 'lastName',
+              operator: 'LIKE',
+              value: `%${data.body.lastName}%`,
+            }
+          : null;
+
+        const firstName = data.body.firstName
+          ? {
+              column: 'firstName',
+              operator: 'LIKE',
+              value: `%${data.body.firstName}%`,
+            }
+          : null;
+
+        const middleInitial = data.body.middleInitial
+          ? {
+              column: 'middleInitial',
+              operator: 'LIKE',
+              value: `%${data.body.middleInitial}%`,
+            }
+          : null;
+
+        const adcId = data.body.adcId
+          ? {
+              column: 'providerAdc.name',
+              operator: 'LIKE',
+              value: `%${data.body.adcId}%`,
+            }
+          : null;
+
+        const emarId = data.body.emarId
+          ? {
+              column: 'providerEmar.name',
+              operator: 'LIKE',
+              value: `%${data.body.emarId}%`,
+            }
+          : null;
+
+        const result = db.read('provider', {
+          isDistinct: true,
+
+          columns: [
+            'provider.id',
+            'lastName',
+            'firstName',
+            'middleInitial',
+            "(SELECT group_concat(name, '; ') FROM providerAdc WHERE providerId = provider.id) AS adcId",
+            "(SELECT group_concat(name, '; ') FROM providerEmar WHERE providerId = provider.id) AS emarId",
+          ],
+
+          wheres: [lastName, firstName, middleInitial, adcId, emarId],
+          joins: [
+            {
+              type: 'LEFT',
+              table: 'providerAdc',
+              predicate: 'provider.id = providerAdc.providerId',
+            },
+            {
+              type: 'LEFT',
+              table: 'providerEmar',
+              predicate: 'provider.id = providerEmar.providerId',
+            },
+          ],
+
+          orderBys: [
+            {
+              column: 'lastName',
+              direction: 'ASC',
+            },
+            {
+              column: 'firstName',
+              direction: 'ASC',
+            },
+            {
+              column: 'middleInitial',
+              direction: 'ASC',
+            },
+          ],
+        });
+
+        process.send({
+          header: { type: data.header.response },
+          body: result,
+        });
+
+        db.updateStatus('Ready');
+      } catch (error) {
+        if (isDevMode) console.error(error);
+        db.updateStatus('Error');
+      }
+
+      break;
+
+    default:
       db.updateStatus('Error');
-    }
-  }
-
-  if (data.header.type === 'transaction') {
-    try {
-      db.updateStatus('Reading…');
-
-      const datetimeStart = data.body.datetimeStart
-        ? { column: 'timestamp', operator: '>', value: data.body.datetimeStart }
-        : null;
-
-      const datetimeEnd = data.body.datetimeEnd
-        ? { column: 'timestamp', operator: '<', value: data.body.datetimeEnd }
-        : null;
-
-      const transactionTypes = data.body.transactionTypes
-        ? data.body.transactionTypes.map(transactionType => ({
-            column: 'adcTransactionType.name',
-            operator: '=',
-            value: transactionType,
-          }))
-        : null;
-
-      const provider = data.body.provider
-        ? {
-            column: 'provider',
-            operator: 'LIKE',
-            value: `%${data.body.provider}%`,
-          }
-        : null;
-
-      const product = data.body.product
-        ? {
-            column: 'product',
-            operator: 'LIKE',
-            value: `%${data.body.product}%`,
-          }
-        : null;
-
-      const medicationOrderId = data.body.medicationOrderId
-        ? {
-            column: 'medicationOrderId',
-            operator: 'LIKE',
-            value: `%${data.body.medicationOrderId}%`,
-          }
-        : null;
-
-      const result = db.read('adcTransaction', {
-        columns: [
-          'adcTransaction.id',
-          'timestamp',
-          "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS provider",
-          'adcTransactionType.name AS transactionType',
-          "medication.name || ', ' || medicationProduct.strength || ' ' || medicationProduct.units || ' ' || medicationProduct.form AS product",
-          'amount',
-          'medicationOrderId',
-        ],
-
-        wheres: [
-          datetimeStart,
-          datetimeEnd,
-          transactionTypes,
-          provider,
-          product,
-          medicationOrderId,
-        ],
-
-        joins: [
-          {
-            type: '',
-            table: 'providerAdc',
-            predicate: 'providerAdcId = providerAdc.id',
-          },
-          {
-            type: '',
-            table: 'provider',
-            predicate: 'providerAdc.providerId = provider.id',
-          },
-          {
-            type: '',
-            table: 'medicationProduct',
-            predicate: 'medicationProductId = medicationProduct.id',
-          },
-          {
-            type: '',
-            table: 'medication',
-            predicate: 'medicationProduct.medicationId = medication.id',
-          },
-          {
-            type: '',
-            table: 'adcTransactionType',
-            predicate: 'typeId = adcTransactionType.id',
-          },
-        ],
-
-        orderBys: [
-          {
-            column: 'timestamp',
-            direction: 'ASC',
-          },
-        ],
-      });
-
-      process.send({
-        header: { type: data.header.response },
-        body: result,
-      });
-
-      db.updateStatus('Ready');
-    } catch (error) {
-      console.error(error);
-      db.updateStatus('Error');
-    }
-  }
-
-  if (data.header.type === 'administration') {
-    try {
-      db.updateStatus('Reading…');
-
-      const datetimeStart = data.body.datetimeStart
-        ? {
-            column: 'timestamp',
-            operator: '>',
-            value: data.body.datetimeStart,
-          }
-        : null;
-
-      const datetimeEnd = data.body.datetimeEnd
-        ? { column: 'timestamp', operator: '<', value: data.body.datetimeEnd }
-        : null;
-
-      const provider = data.body.provider
-        ? {
-            column: 'provider',
-            operator: 'LIKE',
-            value: `%${data.body.provider}%`,
-          }
-        : null;
-
-      const medication = data.body.medication
-        ? {
-            column: 'medication',
-            operator: 'LIKE',
-            value: `%${data.body.medication}%`,
-          }
-        : null;
-
-      const medicationOrderId = data.body.medicationOrderId
-        ? {
-            column: 'medicationOrderId',
-            operator: 'LIKE',
-            value: `%${data.body.medicationOrderId}%`,
-          }
-        : null;
-
-      const result = db.read('emarAdministration', {
-        columns: [
-          'emarAdministration.id',
-          'timestamp',
-          "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS provider",
-          "medication.name || ', ' || medicationOrder.form AS medication",
-          "medicationOrder.dose || ' ' || medicationOrder.units AS dose",
-          'medicationOrderId',
-        ],
-
-        wheres: [
-          datetimeStart,
-          datetimeEnd,
-          provider,
-          medication,
-          medicationOrderId,
-        ],
-
-        joins: [
-          {
-            type: '',
-            table: 'providerEmar',
-            predicate: 'providerEmarId = providerEmar.id',
-          },
-          {
-            type: '',
-            table: 'provider',
-            predicate: 'providerEmar.providerId = provider.id',
-          },
-          {
-            type: '',
-            table: 'medicationOrder',
-            predicate: 'medicationOrderId = medicationOrder.id',
-          },
-          {
-            type: '',
-            table: 'medication',
-            predicate: 'medicationOrder.medicationId = medication.id',
-          },
-        ],
-
-        orderBys: [
-          {
-            column: 'timestamp',
-            direction: 'ASC',
-          },
-        ],
-      });
-
-      process.send({
-        header: { type: data.header.response },
-        body: result,
-      });
-
-      db.updateStatus('Ready');
-    } catch (error) {
-      console.error(error);
-      db.updateStatus('Error');
-    }
-  }
-
-  if (data.header.type === 'provider') {
-    try {
-      db.updateStatus('Reading…');
-
-      const lastName = data.body.lastName
-        ? {
-            column: 'lastName',
-            operator: 'LIKE',
-            value: `%${data.body.lastName}%`,
-          }
-        : null;
-
-      const firstName = data.body.firstName
-        ? {
-            column: 'firstName',
-            operator: 'LIKE',
-            value: `%${data.body.firstName}%`,
-          }
-        : null;
-
-      const middleInitial = data.body.middleInitial
-        ? {
-            column: 'middleInitial',
-            operator: 'LIKE',
-            value: `%${data.body.middleInitial}%`,
-          }
-        : null;
-
-      const adcId = data.body.adcId
-        ? {
-            column: 'providerAdc.name',
-            operator: 'LIKE',
-            value: `%${data.body.adcId}%`,
-          }
-        : null;
-
-      const emarId = data.body.emarId
-        ? {
-            column: 'providerEmar.name',
-            operator: 'LIKE',
-            value: `%${data.body.emarId}%`,
-          }
-        : null;
-
-      const result = db.read('provider', {
-        isDistinct: true,
-
-        columns: [
-          'provider.id',
-          'lastName',
-          'firstName',
-          'middleInitial',
-          "(SELECT group_concat(name, '; ') FROM providerAdc WHERE providerId = provider.id) AS adcId",
-          "(SELECT group_concat(name, '; ') FROM providerEmar WHERE providerId = provider.id) AS emarId",
-        ],
-
-        wheres: [lastName, firstName, middleInitial, adcId, emarId],
-
-        joins: [
-          {
-            type: 'LEFT',
-            table: 'providerAdc',
-            predicate: 'provider.id = providerAdc.providerId',
-          },
-          {
-            type: 'LEFT',
-            table: 'providerEmar',
-            predicate: 'provider.id = providerEmar.providerId',
-          },
-        ],
-
-        orderBys: [
-          {
-            column: 'lastName',
-            direction: 'ASC',
-          },
-          {
-            column: 'firstName',
-            direction: 'ASC',
-          },
-          {
-            column: 'middleInitial',
-            direction: 'ASC',
-          },
-        ],
-      });
-
-      process.send({
-        header: { type: data.header.response },
-        body: result,
-      });
-
-      db.updateStatus('Ready');
-    } catch (error) {
-      console.error(error);
-      db.updateStatus('Error');
-    }
   }
 });

@@ -14,10 +14,12 @@ const DataView = () => (
         <p>Use the filepickers below to add data to the database.</p>
         <ol>
           <li>
-            Download these reports from BICC and RxAuditor for the same time period:
+            Download these reports from BICC and RxAuditor for the same time
+            period:
             <ul>
               <li>
-                Medication Order Task Status Summary (<span className="font-italic">as CSV</span>)
+                Medication Order Task Status Summary (
+                <span className="font-italic">as CSV</span>)
               </li>
               <li>
                 C2 Activity (<span className="font-italic">as XLSX</span>){' '}
@@ -42,6 +44,7 @@ class DataImportForm extends React.Component {
       emarPath: '',
       adc: '',
       adcPath: '',
+      isSubmitted: false,
     };
 
     this.handleChange = this.handleChange.bind(this);
@@ -65,14 +68,16 @@ class DataImportForm extends React.Component {
 
   handleSubmit(event) {
     event.preventDefault();
-
     ipcRenderer.send('database', {
-      header: { type: 'import' },
+      header: { type: 'import', response: 'import' },
       body: {
         adcPath: this.state.adcPath,
         emarPath: this.state.emarPath,
       },
     });
+
+    this.setState({ isSubmitted: true });
+    ipcRenderer.once('import', () => this.setState({ isSubmitted: false }));
   }
 
   render() {
@@ -135,6 +140,7 @@ class DataImportForm extends React.Component {
               text="Import"
               icon="file-import"
               color="primary"
+              disabled={this.state.isSubmitted}
               className="d-block mb-3 ml-auto"
             />
           </div>
