@@ -9,7 +9,7 @@ const TransactionView = () => (
   <React.Fragment>
     <div className="row flex-shrink-0">
       <header className="col">
-        <h1 className="text-center">Transactions</h1>
+        <h1 className="text-primary text-center">Transactions</h1>
       </header>
     </div>
     <div className="row">
@@ -243,44 +243,36 @@ class RecordsTable extends React.Component {
   }
 
   render() {
-    console.log(this.state.records);
-
     const columns = [
       {
         label: 'Time',
         dataKey: 'timestamp',
-        width: 0,
-        minWidth: 0,
+        maxWidth: 120,
       },
       {
         label: 'Provider',
         dataKey: 'provider',
-        width: 0,
-        minWidth: 0,
+        maxWidth: 0,
       },
       {
         label: 'Transaction',
         dataKey: 'transactionType',
-        width: 0,
-        minWidth: 0,
+        maxWidth: 130,
       },
       {
         label: 'Product',
         dataKey: 'product',
-        width: 0,
-        minWidth: 0,
+        maxWidth: 0,
       },
       {
         label: 'Amount',
         dataKey: 'amount',
-        width: 0,
-        minWidth: 0,
+        maxWidth: 110,
       },
       {
         label: 'Order ID',
         dataKey: 'medicationOrderId',
-        width: 0,
-        minWidth: 0,
+        maxWidth: 110,
       },
     ];
 

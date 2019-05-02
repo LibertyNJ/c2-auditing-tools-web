@@ -5,9 +5,12 @@ import Button from './Button';
 const SearchFormSection = props => (
   <section className="col-3 d-flex flex-column">
     <header>
-      <h2>Search</h2>
+      <h2 className="text-primary">Search</h2>
     </header>
-    <form className="form overflow-auto px-3 pb-3 ml-n3" onSubmit={props.handleSubmit}>
+    <form
+      className="form overflow-auto px-3 pb-3 ml-n3"
+      onSubmit={props.handleSubmit}
+    >
       {props.children}
       <Button
         type="submit"

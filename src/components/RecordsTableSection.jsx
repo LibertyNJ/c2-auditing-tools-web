@@ -47,7 +47,7 @@ const RecordsTableSection = (props) => {
 
   return (
     <section className="col-9 d-flex flex-column">
-      <h2>Records</h2>
+      <h2 className="text-primary">Records</h2>
       <div className="overflow-auto border-top">
         <table className={tableClassName}>
           <thead>
