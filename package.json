@@ -5,11 +5,12 @@
   "description": "Tools for auditing select C2 medications at North Shore Univeristy Hospital.",
   "main": "src/main.js",
   "scripts": {
-    "start": "electron-forge start",
+    "start": "start electron-forge start && start npm run node-sass",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "lint": "eslint --cache --color --ext .jsx,.js src"
+    "lint": "eslint --cache --color --ext .jsx,.js src",
+    "node-sass": "node-sass --watch --output-style=compressed ./src/styles/scss/style.scss ./src/styles/style.css"
   },
   "keywords": [],
   "author": "Nathaniel J. Liberty",
@@ -70,7 +71,7 @@
     "react-dom": "^16.8.6",
     "react-hot-loader": "^4.8.2",
     "react-router-dom": "^5.0.0",
-    "react-window": "^1.8.1"
+    "react-virtualized": "^9.21.0"
   },
   "devDependencies": {
     "babel-plugin-transform-async-to-generator": "^6.24.1",
@@ -83,6 +84,7 @@
     "eslint-config-airbnb": "^15.1.0",
     "eslint-plugin-import": "^2.16.0",
     "eslint-plugin-jsx-a11y": "^5.1.1",
-    "eslint-plugin-react": "^7.12.4"
+    "eslint-plugin-react": "^7.12.4",
+    "node-sass": "^4.12.0"
   }
 }

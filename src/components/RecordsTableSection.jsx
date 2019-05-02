@@ -1,10 +1,9 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 import SVGIcon from './SVGIcon';
-import { FixedSizeList } from 'react-window';
 
-const RecordsTableSection = props => {
-  const tableHeadHeadings = props.columnHeadings.map(columnHeading => {
+const RecordsTableSection = (props) => {
+  const tableHeadHeadings = props.columnHeadings.map((columnHeading) => {
     const getSortIconType = () => {
       if (columnHeading.sortColumn === props.sortColumn) {
         switch (props.sortDirection) {
@@ -44,9 +43,7 @@ const RecordsTableSection = props => {
     );
   });
 
-  const tableClassName = `table table-sm mb-3 border-bottom border-left ${
-    props.className
-  }`;
+  const tableClassName = `table table-sm mb-3 border-bottom border-left ${props.className}`;
 
   return (
     <section className="col-9 d-flex flex-column">
@@ -70,7 +67,7 @@ RecordsTableSection.propTypes = {
     PropTypes.shape({
       name: PropTypes.string.isRequired,
       sortColumn: PropTypes.string.isRequired,
-    })
+    }),
   ).isRequired,
   tableBodyRows: PropTypes.node.isRequired,
   handleClick: PropTypes.func.isRequired,

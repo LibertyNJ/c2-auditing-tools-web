@@ -7,7 +7,9 @@ const databaseSchema = require('./scripts/database-schema.js');
 const medications = require('./scripts/medications');
 
 const isDevMode = process.execPath.match(/[\\/]electron/);
-const databasePath = path.join(__dirname, '..', '..', 'database.db');
+const databasePath = isDevMode
+  ? path.join(__dirname, '..', 'database.db')
+  : path.join(__dirname, '..', '..', 'database.db');
 const db = isDevMode
   ? new Database(databasePath, { verbose: console.log })
   : new Database(databasePath);
@@ -86,6 +88,7 @@ db.read = (table, parameters) => {
     return record ? record.id : null;
   }
 
+  console.log(stmt.all(...whereValues));
   return stmt.all(...whereValues) || null;
 };
 
@@ -1409,6 +1412,8 @@ process.on('message', data => {
             },
           ],
         });
+
+        console.log(result);
 
         process.send({
           header: { type: data.header.response },

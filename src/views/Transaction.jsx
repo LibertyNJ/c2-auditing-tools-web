@@ -1,7 +1,7 @@
 import { ipcRenderer } from 'electron';
 import React from 'react';
 import Input from '../components/Input';
-import RecordsTableSection from '../components/RecordsTableSection';
+import RecordsTableSection from '../components/NewRecordsTableSection';
 import SearchFormSection from '../components/SearchFormSection';
 import Select from '../components/Select';
 
@@ -72,7 +72,9 @@ class SearchForm extends React.Component {
 
       this.setState({ isSubmitted: true });
 
-      ipcRenderer.once('transaction', () => this.setState({ isSubmitted: false }));
+      ipcRenderer.once('transaction', () =>
+        this.setState({ isSubmitted: false })
+      );
     }
   }
 
@@ -97,7 +99,10 @@ class SearchForm extends React.Component {
     ];
 
     return (
-      <SearchFormSection isSubmitted={this.state.isSubmitted} handleSubmit={this.handleSubmit}>
+      <SearchFormSection
+        isSubmitted={this.state.isSubmitted}
+        handleSubmit={this.handleSubmit}
+      >
         <Input
           type="datetime-local"
           name="datetimeStart"
@@ -187,7 +192,7 @@ class RecordsTable extends React.Component {
     if (this.state.records.length > 0) {
       const targetSortColumn = event.target.dataset.sortColumn;
 
-      this.setState((state) => {
+      this.setState(state => {
         const records = [...state.records];
 
         if (targetSortColumn !== state.sortColumn) {
@@ -238,69 +243,53 @@ class RecordsTable extends React.Component {
   }
 
   render() {
-    const columnHeadings = [
+    console.log(this.state.records);
+
+    const columns = [
       {
-        name: 'Time',
-        sortColumn: 'timestamp',
+        label: 'Time',
+        dataKey: 'timestamp',
+        width: 0,
+        minWidth: 0,
       },
       {
-        name: 'Provider',
-        sortColumn: 'provider',
+        label: 'Provider',
+        dataKey: 'provider',
+        width: 0,
+        minWidth: 0,
       },
       {
-        name: 'Transaction',
-        sortColumn: 'transactionType',
+        label: 'Transaction',
+        dataKey: 'transactionType',
+        width: 0,
+        minWidth: 0,
       },
       {
-        name: 'Product',
-        sortColumn: 'product',
+        label: 'Product',
+        dataKey: 'product',
+        width: 0,
+        minWidth: 0,
       },
       {
-        name: 'Amount',
-        sortColumn: 'amount',
+        label: 'Amount',
+        dataKey: 'amount',
+        width: 0,
+        minWidth: 0,
       },
       {
-        name: 'Order ID',
-        sortColumn: 'medicationOrderId',
+        label: 'Order ID',
+        dataKey: 'medicationOrderId',
+        width: 0,
+        minWidth: 0,
       },
     ];
-
-    const tableBodyRows =
-      this.state.records.length > 0 ? (
-        this.state.records.map(record => (
-          <tr key={record.id}>
-            <td className="border-right">
-              {new Date(record.timestamp).toLocaleString('en-US', {
-                month: '2-digit',
-                day: '2-digit',
-                year: 'numeric',
-                hour: 'numeric',
-                minute: 'numeric',
-                second: 'numeric',
-                hour12: false,
-              })}
-            </td>
-            <td className="border-right">{record.provider}</td>
-            <td className="border-right">{record.transactionType}</td>
-            <td className="border-right">{record.product}</td>
-            <td className="border-right">{record.amount}</td>
-            <td className="border-right">{record.medicationOrderId}</td>
-          </tr>
-        ))
-      ) : (
-        <tr>
-          <td className="font-italic text-center border-right" colSpan={6}>
-            No records found!
-          </td>
-        </tr>
-      );
 
     return (
       <RecordsTableSection
         sortColumn={this.state.sortColumn}
         sortDirection={this.state.sortDirection}
-        columnHeadings={columnHeadings}
-        tableBodyRows={tableBodyRows}
+        columns={columns}
+        records={this.state.records}
         handleClick={this.handleClick}
       />
     );
