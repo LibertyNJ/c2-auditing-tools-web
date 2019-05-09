@@ -4,19 +4,52 @@ import Input from '../components/Input';
 import RecordsTableSection from '../components/RecordsTableSection';
 import SearchFormSection from '../components/SearchFormSection';
 
-const AdministrationView = () => (
-  <React.Fragment>
-    <div className="row flex-shrink-0">
-      <header className="col">
-        <h1 className="text-center">Administrations</h1>
-      </header>
-    </div>
-    <div className="row">
-      <SearchForm />
-      <RecordsTable />
-    </div>
-  </React.Fragment>
-);
+const AdministrationView = () => {
+  const columnDefinitions = [
+    {
+      label: 'Time',
+      dataKey: 'timestamp',
+      maxWidth: 120,
+    },
+    {
+      label: 'Provider',
+      dataKey: 'provider',
+      maxWidth: 0,
+    },
+    {
+      label: 'Medication',
+      dataKey: 'medication',
+      maxWidth: 0,
+    },
+    {
+      label: 'Dose',
+      dataKey: 'dose',
+      maxWidth: 100,
+    },
+    {
+      label: 'Order ID',
+      dataKey: 'medicationOrderId',
+      maxWidth: 110,
+    },
+  ];
+
+  return (
+    <React.Fragment>
+      <div className="row flex-shrink-0">
+        <header className="col">
+          <h1 className="text-primary text-center">Administrations</h1>
+        </header>
+      </div>
+      <div className="row">
+        <SearchForm />
+        <RecordsTableSection
+          columnDefinitions={columnDefinitions}
+          ipcChannel="administration"
+        />
+      </div>
+    </React.Fragment>
+  );
+};
 
 class SearchForm extends React.PureComponent {
   constructor(props) {
@@ -59,13 +92,18 @@ class SearchForm extends React.PureComponent {
 
       this.setState({ isSubmitted: true });
 
-      ipcRenderer.once('administration', () => this.setState({ isSubmitted: false }));
+      ipcRenderer.once('administration', () =>
+        this.setState({ isSubmitted: false })
+      );
     }
   }
 
   render() {
     return (
-      <SearchFormSection isSubmitted={this.state.isSubmitted} handleSubmit={this.handleSubmit}>
+      <SearchFormSection
+        isSubmitted={this.state.isSubmitted}
+        handleSubmit={this.handleSubmit}
+      >
         <Input
           type="datetime-local"
           name="datetimeStart"
@@ -143,7 +181,7 @@ class RecordsTable extends React.Component {
     if (this.state.records.length > 0) {
       const targetSortColumn = event.target.dataset.sortColumn;
 
-      this.setState((state) => {
+      this.setState(state => {
         const records = [...state.records];
 
         if (targetSortColumn !== state.sortColumn) {
@@ -194,29 +232,6 @@ class RecordsTable extends React.Component {
   }
 
   render() {
-    const columnHeadings = [
-      {
-        name: 'Time',
-        sortColumn: 'timestamp',
-      },
-      {
-        name: 'Provider',
-        sortColumn: 'provider',
-      },
-      {
-        name: 'Medication',
-        sortColumn: 'medication',
-      },
-      {
-        name: 'Dose',
-        sortColumn: 'dose',
-      },
-      {
-        name: 'Order ID',
-        sortColumn: 'medicationOrderId',
-      },
-    ];
-
     const tableBodyRows =
       this.state.records.length > 0 ? (
         this.state.records.map(record => (

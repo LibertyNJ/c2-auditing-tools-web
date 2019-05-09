@@ -1,23 +1,60 @@
 import { ipcRenderer } from 'electron';
 import React from 'react';
+
 import Input from '../components/Input';
-import Modal from '../components/Modal';
 import RecordsTableSection from '../components/RecordsTableSection';
 import SearchFormSection from '../components/SearchFormSection';
 
-const ProviderView = () => (
-  <React.Fragment>
-    <div className="row flex-shrink-0">
-      <header className="col">
-        <h1 className="text-center">Providers</h1>
-      </header>
-    </div>
-    <div className="row">
-      <SearchForm />
-      <RecordsTable />
-    </div>
-  </React.Fragment>
-);
+const formRef = React.createRef();
+
+const ProviderView = () => {
+  const columnDefinitions = [
+    {
+      label: 'Last name',
+      dataKey: 'lastName',
+      maxWidth: 0,
+    },
+    {
+      label: 'First name',
+      dataKey: 'firstName',
+      maxWidth: 0,
+    },
+    {
+      label: 'MI',
+      dataKey: 'middleInitial',
+      maxWidth: 70,
+    },
+    {
+      label: 'ADC IDs',
+      dataKey: 'adcId',
+      maxWidth: 0,
+    },
+    {
+      label: 'EMAR IDs',
+      dataKey: 'emarId',
+      maxWidth: 0,
+    },
+  ];
+
+  return (
+    <React.Fragment>
+      <div className="row flex-shrink-0">
+        <header className="col">
+          <h1 className="text-primary text-center">Providers</h1>
+        </header>
+      </div>
+      <div className="row">
+        <SearchForm ref={formRef} />
+        <RecordsTableSection
+          columnDefinitions={columnDefinitions}
+          ipcChannel="provider"
+          modalIsEnabled
+          formRef={formRef}
+        />
+      </div>
+    </React.Fragment>
+  );
+};
 
 class SearchForm extends React.PureComponent {
   constructor(props) {
@@ -38,7 +75,6 @@ class SearchForm extends React.PureComponent {
 
   handleChange(event) {
     const target = event.target;
-
     this.setState({ [target.name]: target.value });
   }
 
@@ -71,7 +107,10 @@ class SearchForm extends React.PureComponent {
 
   render() {
     return (
-      <SearchFormSection isSubmitted={this.state.isSubmitted} handleSubmit={this.handleSubmit}>
+      <SearchFormSection
+        isSubmitted={this.state.isSubmitted}
+        handleSubmit={this.handleSubmit}
+      >
         <Input
           type="text"
           name="lastName"
@@ -108,163 +147,6 @@ class SearchForm extends React.PureComponent {
           handleChange={this.handleChange}
         />
       </SearchFormSection>
-    );
-  }
-}
-
-class RecordsTable extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      records: [],
-      sortColumn: '',
-      sortDirection: '',
-    };
-
-    this.modalRef = React.createRef();
-
-    this.handleClick = this.handleClick.bind(this);
-  }
-
-  componentDidMount() {
-    ipcRenderer.on('provider', (event, data) => {
-      this.setState({ records: data.body, sortColumn: '', sortDirection: '' });
-    });
-  }
-
-  componentWillUnmount() {
-    ipcRenderer.removeAllListeners('provider');
-  }
-
-  handleClick(event) {
-    const target = event.target;
-
-    if (target.tagName === 'TD') {
-      const currentTarget = event.currentTarget;
-
-      this.setState(
-        { selectedProviderId: currentTarget.dataset.providerId },
-        this.modalRef.current.handleShow,
-      );
-    } else if (this.state.records.length > 0) {
-      const targetSortColumn = event.target.dataset.sortColumn;
-
-      this.setState((state) => {
-        const records = [...state.records];
-
-        if (targetSortColumn !== state.sortColumn) {
-          records.sort((recordA, recordB) => {
-            if (typeof recordA[targetSortColumn] === 'number') {
-              return recordA[targetSortColumn] - recordB[targetSortColumn];
-            }
-
-            const recordAString = recordA[targetSortColumn]
-              ? recordA[targetSortColumn].toLowerCase()
-              : '';
-
-            const recordBString = recordB[targetSortColumn]
-              ? recordB[targetSortColumn].toLowerCase()
-              : '';
-
-            if (recordAString > recordBString) {
-              return 1;
-            }
-
-            if (recordAString < recordBString) {
-              return -1;
-            }
-
-            return 0;
-          });
-
-          return {
-            sortColumn: targetSortColumn,
-            sortDirection: 'ASC',
-            records,
-          };
-        }
-
-        if (state.sortDirection === 'ASC') {
-          return {
-            sortDirection: 'DESC',
-            records: records.reverse(),
-          };
-        }
-
-        return {
-          sortDirection: 'ASC',
-          records: records.reverse(),
-        };
-      });
-    }
-  }
-
-  render() {
-    const columnHeadings = [
-      {
-        name: 'Last name',
-        sortColumn: 'lastName',
-      },
-      {
-        name: 'First name',
-        sortColumn: 'firstName',
-      },
-      {
-        name: 'MI',
-        sortColumn: 'middleInitial',
-      },
-      {
-        name: 'ADC IDs',
-        sortColumn: 'adcId',
-      },
-      {
-        name: 'EMAR IDs',
-        sortColumn: 'emarId',
-      },
-    ];
-
-    const tableBodyRows =
-      this.state.records.length > 0 ? (
-        this.state.records.map(record => (
-          <tr
-            key={record.id}
-            data-provider-id={record.id}
-            data-toggle="modal"
-            data-target="#modal"
-            onClick={this.handleClick}
-          >
-            <td className="border-right">{record.lastName}</td>
-            <td className="border-right">{record.firstName}</td>
-            <td className="border-right">{record.middleInitial}</td>
-            <td className="border-right">{record.adcId}</td>
-            <td className="border-right">{record.emarId}</td>
-          </tr>
-        ))
-      ) : (
-        <tr>
-          <td className="font-italic text-center border-right" colSpan={5}>
-            No records found!
-          </td>
-        </tr>
-      );
-
-    return (
-      <React.Fragment>
-        <RecordsTableSection
-          sortColumn={this.state.sortColumn}
-          sortDirection={this.state.sortDirection}
-          columnHeadings={columnHeadings}
-          tableBodyRows={tableBodyRows}
-          handleClick={this.handleClick}
-          className="table-hover"
-        />
-        <Modal
-          ref={this.modalRef}
-          providerId={this.state.selectedProviderId}
-          refreshView={this.handleSubmit}
-        />
-      </React.Fragment>
     );
   }
 }

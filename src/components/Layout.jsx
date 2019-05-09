@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import React from 'react';
 import SVGIcon from '../components/SVGIcon';
@@ -20,41 +20,64 @@ const Layout = props => {
 
   return (
     <div className="d-flex flex-column vh-100">
-      <header className="container-fluid flex-shrink-0 sticky-top bg-white p-0 mb-3 shadow-sm">
-        <nav className="navbar navbar-expand navbar-light">
-          <Link className="navbar-brand" to="/">
-            C2 Auditing Tools
-          </Link>
-          <ul className="navbar-nav ml-auto">
+      <header className="container-fluid flex-shrink-0 sticky-top bg-white p-0 mb-3">
+        <nav className="d-flex justify-content-between">
+          <div className="border-bottom flex-grow-1">
+            <Link className="navbar-brand px-3" to="/">
+              C2 Auditing Tools
+            </Link>
+          </div>
+          <ul className="nav nav-tabs d-flex justify-content-end">
             <li className="nav-item">
-              <Link className="nav-link" to="/">
+              <NavLink
+                className="nav-link"
+                activeClassName="active"
+                exact
+                to="/"
+              >
                 Dashboard
-              </Link>
+              </NavLink>
             </li>
             <li className="nav-item">
-              <Link className="nav-link" to="/ledger">
+              <NavLink
+                className="nav-link"
+                activeClassName="active"
+                to="/ledger"
+              >
                 Ledger
-              </Link>
+              </NavLink>
             </li>
             <li className="nav-item">
-              <Link className="nav-link" to="/transaction">
+              <NavLink
+                className="nav-link"
+                activeClassName="active"
+                to="/transaction"
+              >
                 Transactions
-              </Link>
+              </NavLink>
             </li>
             <li className="nav-item">
-              <Link className="nav-link" to="/administration">
+              <NavLink
+                className="nav-link"
+                activeClassName="active"
+                to="/administration"
+              >
                 Administrations
-              </Link>
+              </NavLink>
             </li>
             <li className="nav-item">
-              <Link className="nav-link" to="/provider">
+              <NavLink
+                className="nav-link"
+                activeClassName="active"
+                to="/provider"
+              >
                 Providers
-              </Link>
+              </NavLink>
             </li>
             <li className="nav-item">
-              <Link className="nav-link" to="/data">
+              <NavLink className="nav-link" activeClassName="active" to="/data">
                 Data
-              </Link>
+              </NavLink>
             </li>
           </ul>
         </nav>

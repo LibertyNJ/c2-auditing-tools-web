@@ -1,11 +1,14 @@
 import { ipcRenderer } from 'electron';
 import PropTypes from 'prop-types';
 import React from 'react';
+import $ from 'jquery';
 
 import Button from './Button';
 import Input from './Input';
 import Select from './Select';
 import SVGIcon from './SVGIcon';
+
+import '../../node_modules/bootstrap/js/dist/modal';
 
 class Modal extends React.Component {
   constructor(props) {
@@ -35,10 +38,28 @@ class Modal extends React.Component {
 
     this.handleChange = this.handleChange.bind(this);
     this.handleClick = this.handleClick.bind(this);
-    this.handleClose = this.handleClose.bind(this);
     this.handleReset = this.handleReset.bind(this);
-    this.handleShow = this.handleShow.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
+    this.closeModal = this.closeModal.bind(this);
+  }
+
+  componentDidMount() {
+    $('#modal').modal({
+      show: false,
+    });
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.providerId !== this.props.providerId) {
+      this.getProviderData();
+      this.getUnassignedIds();
+    }
+
+    if (!prevProps.isShown && this.props.isShown) {
+      $('#modal').modal('show');
+    } else if (prevProps.isShown && !this.props.isShown) {
+      $('#modal').modal('hide');
+    }
   }
 
   getProviderData() {
@@ -88,7 +109,9 @@ class Modal extends React.Component {
 
     ipcRenderer.once('modal', (event, data) => {
       const adcIds = data.body[0].adcIds ? data.body[0].adcIds.split('; ') : [];
-      const emarIds = data.body[0].emarIds ? data.body[0].emarIds.split('; ') : [];
+      const emarIds = data.body[0].emarIds
+        ? data.body[0].emarIds.split('; ')
+        : [];
 
       this.setState({
         lastName: data.body[0].lastName,
@@ -113,7 +136,7 @@ class Modal extends React.Component {
   getUnassignedIds() {
     const tables = ['providerAdc', 'providerEmar'];
 
-    tables.forEach((table) => {
+    tables.forEach(table => {
       ipcRenderer.send('database', {
         header: {
           type: 'query',
@@ -154,17 +177,13 @@ class Modal extends React.Component {
     const name = `remove${target.dataset.idType}Ids`;
     const value = target.dataset.id;
 
-    this.setState((state) => {
+    this.setState(state => {
       if (state[name].includes(value)) {
         return { [name]: [...state[name].filter(item => item !== value)] };
       }
 
       return { [name]: [...state[name], value] };
     });
-  }
-
-  handleClose() {
-    this.handleReset();
   }
 
   handleReset(event) {
@@ -183,11 +202,6 @@ class Modal extends React.Component {
       removeAdcIds: [],
       removeEmarIds: [],
     });
-  }
-
-  handleShow() {
-    this.getProviderData();
-    this.getUnassignedIds();
   }
 
   handleSubmit(event) {
@@ -210,10 +224,10 @@ class Modal extends React.Component {
 
     const id = this.props.providerId
       ? {
-        column: 'id',
-        operator: '=',
-        value: this.props.providerId,
-      }
+          column: 'id',
+          operator: '=',
+          value: this.props.providerId,
+        }
       : null;
 
     if (this.state.addAdcId > 0) {
@@ -226,7 +240,9 @@ class Modal extends React.Component {
           table: 'providerAdc',
           parameters: {
             sets: [{ column: 'providerId', value: this.props.providerId }],
-            wheres: [{ column: 'id', operator: '=', value: this.state.addAdcId }],
+            wheres: [
+              { column: 'id', operator: '=', value: this.state.addAdcId },
+            ],
           },
         },
       });
@@ -242,7 +258,9 @@ class Modal extends React.Component {
           table: 'providerEmar',
           parameters: {
             sets: [{ column: 'providerId', value: this.props.providerId }],
-            wheres: [{ column: 'id', operator: '=', value: this.state.addEmarId }],
+            wheres: [
+              { column: 'id', operator: '=', value: this.state.addEmarId },
+            ],
           },
         },
       });
@@ -311,15 +329,20 @@ class Modal extends React.Component {
       this.getProviderData();
       this.getUnassignedIds();
       this.handleReset();
-      this.props.refreshView();
     });
+  }
+
+  closeModal() {
+    this.handleReset();
+    this.props.formRef.current.handleSubmit();
+    this.props.toggleModal();
   }
 
   render() {
     const adcIds = this.state.adcIds.map(adcId => (
       <li key={adcId} className="list-group-item list-group-item-action">
         <button
-          className="btn btn-link stretched-link text-reset text-decoration-none p-0"
+          className="btn btn-link stretched-link text-reset text-decoration-none p-0 shadow-none"
           type="button"
           data-id={adcId}
           data-id-type="Adc"
@@ -345,13 +368,13 @@ class Modal extends React.Component {
     const emarIds = this.state.emarIds.map(emarId => (
       <li key={emarId} className="list-group-item list-group-item-action">
         <button
-          className="btn btn-link stretched-link text-reset text-decoration-none p-0"
+          className="btn btn-link stretched-link text-reset text-decoration-none p-0 shadow-none"
           type="button"
           data-id={emarId}
           data-id-type="Emar"
           onClick={this.handleClick}
         >
-          {emarId}{' '}
+          {emarId}
           {this.state.removeEmarIds.includes(emarId) && (
             <React.Fragment>
               {' '}
@@ -398,11 +421,20 @@ class Modal extends React.Component {
         aria-hidden="true"
       >
         <div className="modal-dialog modal-dialog-centered" role="document">
-          <form className="modal-content" onSubmit={this.handleSubmit} onReset={this.handleReset}>
+          <form
+            className="modal-content"
+            onSubmit={this.handleSubmit}
+            onReset={this.handleReset}
+          >
             <header className="modal-header">
-              <h3 className="modal-title">Edit provider</h3>
+              <h3 className="text-primary modal-title">Edit Provider</h3>
               <div className="p-3">
-                <button type="button" className="close p-0" data-dismiss="modal" aria-label="Close">
+                <button
+                  type="button"
+                  className="close p-0"
+                  aria-label="Close"
+                  onClick={this.closeModal}
+                >
                   <SVGIcon
                     className="align-baseline"
                     type="window-close"
@@ -415,11 +447,12 @@ class Modal extends React.Component {
             </header>
             <div className="modal-body">
               <p className="lead">
-                {this.state.lastName}, {this.state.firstName} {this.state.middleInitial}
+                {this.state.lastName}, {this.state.firstName}{' '}
+                {this.state.middleInitial}
               </p>
               <div className="form-row">
                 <section className="col">
-                  <h4>Name</h4>
+                  <h4 className="text-primary">Name</h4>
                   <div className="form-row">
                     <div className="col-5">
                       <Input
@@ -451,46 +484,74 @@ class Modal extends React.Component {
                   </div>
                 </section>
               </div>
-              <div className="form-row">
-                <section className="col">
-                  <h4>ADC IDs</h4>
-                  {adcIds.length > 0 ? (
-                    <ul className="list-group mb-1">{adcIds}</ul>
-                  ) : (
-                    <p className="font-italic">No assigned ADC IDs found!</p>
-                  )}
-                  {providerAdcs.length > 1 ? (
-                    <Select
-                      name="addAdcId"
-                      value={this.state.addAdcId}
-                      label="Add ADC ID"
-                      options={providerAdcs}
-                      handleChange={this.handleChange}
-                    />
-                  ) : (
-                    <p className="font-italic">No unassigned ADC IDs found!</p>
-                  )}
-                </section>
-                <section className="col">
-                  <h4>EMAR IDs</h4>
-                  {emarIds.length > 0 ? (
-                    <ul className="list-group mb-1">{emarIds}</ul>
-                  ) : (
-                    <p className="font-italic">No assigned EMAR IDs found!</p>
-                  )}
-                  {providerEmars.length > 1 ? (
-                    <Select
-                      name="addEmarId"
-                      value={this.state.addEmarId}
-                      label="Add EMAR ID"
-                      options={providerEmars}
-                      handleChange={this.handleChange}
-                    />
-                  ) : (
-                    <p className="font-italic">No unassigned EMAR IDs found!</p>
-                  )}
-                </section>
-              </div>
+              <section>
+                <header className="form-row">
+                  <div className="col">
+                    <h4 className="text-primary">Remove IDs</h4>
+                  </div>
+                </header>
+                <div className="form-row">
+                  <section className="col">
+                    <h5>ADC IDs</h5>
+                    {adcIds.length > 0 ? (
+                      <ul className="list-group mb-1">{adcIds}</ul>
+                    ) : (
+                      <div className="alert alert-warning">
+                        No assigned ADC IDs found!
+                      </div>
+                    )}
+                  </section>
+                  <section className="col">
+                    <h5>EMAR IDs</h5>
+                    {emarIds.length > 0 ? (
+                      <ul className="list-group mb-1">{emarIds}</ul>
+                    ) : (
+                      <div className="alert alert-info">
+                        No assigned EMAR IDs found!
+                      </div>
+                    )}
+                  </section>
+                </div>
+              </section>
+              <section>
+                <header className="form-row">
+                  <div className="col">
+                    <h4 className="text-primary">Add IDs</h4>
+                  </div>
+                </header>
+                <div className="form-row">
+                  <section className="col">
+                    {providerAdcs.length > 1 ? (
+                      <Select
+                        name="addAdcId"
+                        value={this.state.addAdcId}
+                        label="Add ADC ID"
+                        options={providerAdcs}
+                        handleChange={this.handleChange}
+                      />
+                    ) : (
+                      <div className="alert alert-info">
+                        No unassigned ADC IDs found!
+                      </div>
+                    )}
+                  </section>
+                  <section className="col">
+                    {providerEmars.length > 1 ? (
+                      <Select
+                        name="addEmarId"
+                        value={this.state.addEmarId}
+                        label="Add EMAR ID"
+                        options={providerEmars}
+                        handleChange={this.handleChange}
+                      />
+                    ) : (
+                      <div className="alert alert-info">
+                        No unassigned EMAR IDs found!
+                      </div>
+                    )}
+                  </section>
+                </div>
+              </section>
             </div>
             <footer className="modal-footer">
               <Button type="submit" text="Save" color="primary" icon="save" />
@@ -502,10 +563,5 @@ class Modal extends React.Component {
     );
   }
 }
-
-Modal.propTypes = {
-  providerId: PropTypes.number.isRequired,
-  refreshView: PropTypes.func.isRequired,
-};
 
 export default Modal;

@@ -1,81 +1,223 @@
+import { AutoSizer, Column, Table } from 'react-virtualized';
+import { ipcRenderer } from 'electron';
 import PropTypes from 'prop-types';
 import React from 'react';
+
+import Modal from './Modal';
 import SVGIcon from './SVGIcon';
 
-const RecordsTableSection = (props) => {
-  const tableHeadHeadings = props.columnHeadings.map((columnHeading) => {
-    const getSortIconType = () => {
-      if (columnHeading.sortColumn === props.sortColumn) {
-        switch (props.sortDirection) {
-          case 'ASC':
-            return 'sort-up';
-          case 'DESC':
-            return 'sort-down';
-          default:
-            return 'sort';
-        }
-      }
+class RecordsTableSection extends React.Component {
+  constructor(props) {
+    super(props);
 
-      return 'sort';
+    this.state = {
+      records: [],
+      sortBy: '',
     };
 
-    return (
-      <th
-        key={columnHeading.name}
-        className="sticky-top text-nowrap bg-white p-0 border-top-0 border-bottom-0 border-right"
-        scope="col"
-      >
-        <button
-          className="btn btn-link stretched-link text-reset font-weight-bold d-block w-100 h-100 border-bottom rounded-0"
-          type="button"
-          data-sort-column={columnHeading.sortColumn}
-          onClick={props.handleClick}
+    this.handleClick = this.handleClick.bind(this);
+    this.sort = this.sort.bind(this);
+    this.toggleModal = this.toggleModal.bind(this);
+  }
+
+  componentDidMount() {
+    ipcRenderer.on(this.props.ipcChannel, (event, data) => {
+      this.setState({ records: data.body, sortBy: '', sortDirection: null });
+    });
+  }
+
+  componentWillUnmount() {
+    ipcRenderer.removeAllListeners(this.props.ipcChannel);
+  }
+
+  sort({ sortBy, sortDirection }) {
+    if (!this.state.records.length > 0) {
+      return;
+    }
+
+    const records = [...this.state.records];
+    records.sort((recordA, recordB) => {
+      if (typeof recordA[sortBy] === 'number') {
+        return recordA[sortBy] - recordB[sortBy];
+      }
+
+      const recordAString = recordA[sortBy]
+        ? recordA[sortBy].toUpperCase()
+        : '';
+      const recordBString = recordB[sortBy]
+        ? recordB[sortBy].toUpperCase()
+        : '';
+
+      if (recordAString > recordBString) {
+        return 1;
+      }
+
+      if (recordAString < recordBString) {
+        return -1;
+      }
+
+      return 0;
+    });
+
+    this.setState({
+      sortBy,
+      sortDirection,
+      records: sortDirection === 'DESC' ? records.reverse() : records,
+    });
+  }
+
+  toggleModal() {
+    this.setState(state => {
+      return { modalIsShown: !state.modalIsShown };
+    });
+  }
+
+  handleClick(rowData) {
+    this.setState({ selectedProviderId: rowData.id }, this.toggleModal);
+  }
+
+  render() {
+    const getCellData = (rowData, dataKey) => {
+      const cellData = rowData[dataKey];
+      if (/timestamp/i.test(dataKey)) {
+        return cellData
+          ? new Date(cellData).toLocaleString('en-US', {
+              month: '2-digit',
+              day: '2-digit',
+              year: 'numeric',
+              hour: 'numeric',
+              minute: 'numeric',
+              second: 'numeric',
+              hour12: false,
+            })
+          : null;
+      }
+
+      return cellData;
+    };
+
+    const renderHeader = (sortBy, sortDirection, label, dataKey) => {
+      const getSortIconType = () => {
+        if (sortBy === dataKey) {
+          switch (sortDirection) {
+            case 'ASC':
+              return 'sort-up';
+            case 'DESC':
+              return 'sort-down';
+            default:
+              return 'sort';
+          }
+        }
+
+        return 'sort';
+      };
+
+      return (
+        <span
+          className="ReactVirtualized__Table__headerTruncatedText"
+          title={label}
         >
-          {columnHeading.name}&nbsp;
+          {label}
+          &nbsp;
           <SVGIcon
             className="align-baseline"
             type={getSortIconType()}
-            width={'1em'}
-            height={'1em'}
+            width="1em"
+            height="1em"
+            fill="#53565a"
           />
-        </button>
-      </th>
-    );
-  });
+        </span>
+      );
+    };
 
-  const tableClassName = `table table-sm mb-3 border-bottom border-left ${props.className}`;
-
-  return (
-    <section className="col-9 d-flex flex-column">
-      <h2 className="text-primary">Records</h2>
-      <div className="overflow-auto border-top">
-        <table className={tableClassName}>
-          <thead>
-            <tr className="border-0">{tableHeadHeadings}</tr>
-          </thead>
-          <tbody>{props.tableBodyRows}</tbody>
-        </table>
+    const renderNoRows = () => (
+      <div
+        className="alert alert-info text-center w-50 mx-auto mt-5"
+        role="alert"
+      >
+        <span className="font-weight-bold">No records found!</span>
+        <br />
+        Use the form on the left to begin a new search.
       </div>
-    </section>
-  );
-};
+    );
+
+    const columns = this.props.columnDefinitions.map(
+      ({ label, dataKey, maxWidth }) => (
+        <Column
+          key={dataKey}
+          label={label}
+          dataKey={dataKey}
+          width={1}
+          maxWidth={maxWidth}
+          flexGrow={1}
+          flexShrink={1}
+          cellDataGetter={({ rowData }) => getCellData(rowData, dataKey)}
+          headerRenderer={({ sortBy, sortDirection }) =>
+            renderHeader(sortBy, sortDirection, label, dataKey)
+          }
+        />
+      )
+    );
+
+    return (
+      <section className="col-9 d-flex flex-column">
+        <header>
+          <h2 className="text-primary">Records</h2>
+        </header>
+        <div className="h-100">
+          <AutoSizer>
+            {({ width, height }) => (
+              <Table
+                width={width}
+                height={height}
+                headerHeight={38}
+                noRowsRenderer={renderNoRows}
+                rowHeight={68}
+                rowClassName={this.props.modalIsEnabled ? 'hover' : null}
+                rowCount={this.state.records.length}
+                rowGetter={({ index }) => this.state.records[index]}
+                sort={this.sort}
+                sortBy={this.state.sortBy}
+                sortDirection={this.state.sortDirection}
+                onRowClick={
+                  this.props.modalIsEnabled
+                    ? ({ rowData }) => this.handleClick(rowData)
+                    : null
+                }
+              >
+                {columns}
+              </Table>
+            )}
+          </AutoSizer>
+        </div>
+        {this.props.modalIsEnabled && (
+          <Modal
+            providerId={this.state.selectedProviderId}
+            isShown={this.state.modalIsShown}
+            toggleModal={this.toggleModal}
+            formRef={this.props.formRef}
+          />
+        )}
+      </section>
+    );
+  }
+}
 
 RecordsTableSection.propTypes = {
-  sortColumn: PropTypes.string.isRequired,
-  sortDirection: PropTypes.string.isRequired,
-  columnHeadings: PropTypes.arrayOf(
+  columnDefinitions: PropTypes.arrayOf(
     PropTypes.shape({
-      name: PropTypes.string.isRequired,
-      sortColumn: PropTypes.string.isRequired,
-    }),
+      label: PropTypes.string,
+      dataKey: PropTypes.string,
+      maxWidth: PropTypes.number,
+    })
   ).isRequired,
-  tableBodyRows: PropTypes.node.isRequired,
-  handleClick: PropTypes.func.isRequired,
-  className: PropTypes.string,
+
+  ipcChannel: PropTypes.string.isRequired,
+  modalIsEnabled: PropTypes.bool,
 };
 
 RecordsTableSection.defaultProps = {
-  className: '',
+  modalIsEnabled: false,
 };
 
 export default RecordsTableSection;

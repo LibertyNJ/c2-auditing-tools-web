@@ -1,23 +1,61 @@
 import { ipcRenderer } from 'electron';
 import React from 'react';
 import Input from '../components/Input';
-import RecordsTableSection from '../components/NewRecordsTableSection';
+import RecordsTableSection from '../components/RecordsTableSection';
 import SearchFormSection from '../components/SearchFormSection';
 import Select from '../components/Select';
 
-const TransactionView = () => (
-  <React.Fragment>
-    <div className="row flex-shrink-0">
-      <header className="col">
-        <h1 className="text-primary text-center">Transactions</h1>
-      </header>
-    </div>
-    <div className="row">
-      <SearchForm />
-      <RecordsTable />
-    </div>
-  </React.Fragment>
-);
+const TransactionView = () => {
+  const columnDefinitions = [
+    {
+      label: 'Time',
+      dataKey: 'timestamp',
+      maxWidth: 120,
+    },
+    {
+      label: 'Provider',
+      dataKey: 'provider',
+      maxWidth: 0,
+    },
+    {
+      label: 'Transaction',
+      dataKey: 'transactionType',
+      maxWidth: 130,
+    },
+    {
+      label: 'Product',
+      dataKey: 'product',
+      maxWidth: 0,
+    },
+    {
+      label: 'Amount',
+      dataKey: 'amount',
+      maxWidth: 110,
+    },
+    {
+      label: 'Order ID',
+      dataKey: 'medicationOrderId',
+      maxWidth: 110,
+    },
+  ];
+
+  return (
+    <React.Fragment>
+      <div className="row flex-shrink-0">
+        <header className="col">
+          <h1 className="text-primary text-center">Transactions</h1>
+        </header>
+      </div>
+      <div className="row">
+        <SearchForm />
+        <RecordsTableSection
+          columnDefinitions={columnDefinitions}
+          ipcChannel="transaction"
+        />
+      </div>
+    </React.Fragment>
+  );
+};
 
 class SearchForm extends React.Component {
   constructor(props) {
@@ -161,129 +199,6 @@ class SearchForm extends React.Component {
           handleChange={this.handleChange}
         />
       </SearchFormSection>
-    );
-  }
-}
-
-class RecordsTable extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      records: [],
-      sortColumn: '',
-      sortDirection: '',
-    };
-
-    this.handleClick = this.handleClick.bind(this);
-  }
-
-  componentDidMount() {
-    ipcRenderer.on('transaction', (event, data) => {
-      this.setState({ records: data.body, sortColumn: '', sortDirection: '' });
-    });
-  }
-
-  componentWillUnmount() {
-    ipcRenderer.removeAllListeners('transaction');
-  }
-
-  handleClick(event) {
-    if (this.state.records.length > 0) {
-      const targetSortColumn = event.target.dataset.sortColumn;
-
-      this.setState(state => {
-        const records = [...state.records];
-
-        if (targetSortColumn !== state.sortColumn) {
-          records.sort((recordA, recordB) => {
-            if (typeof recordA[targetSortColumn] === 'number') {
-              return recordA[targetSortColumn] - recordB[targetSortColumn];
-            }
-
-            const recordAString = recordA[targetSortColumn]
-              ? recordA[targetSortColumn].toLowerCase()
-              : '';
-
-            const recordBString = recordB[targetSortColumn]
-              ? recordB[targetSortColumn].toLowerCase()
-              : '';
-
-            if (recordAString > recordBString) {
-              return 1;
-            }
-
-            if (recordAString < recordBString) {
-              return -1;
-            }
-
-            return 0;
-          });
-
-          return {
-            sortColumn: targetSortColumn,
-            sortDirection: 'ASC',
-            records,
-          };
-        }
-
-        if (state.sortDirection === 'ASC') {
-          return {
-            sortDirection: 'DESC',
-            records: records.reverse(),
-          };
-        }
-
-        return {
-          sortDirection: 'ASC',
-          records: records.reverse(),
-        };
-      });
-    }
-  }
-
-  render() {
-    const columns = [
-      {
-        label: 'Time',
-        dataKey: 'timestamp',
-        maxWidth: 120,
-      },
-      {
-        label: 'Provider',
-        dataKey: 'provider',
-        maxWidth: 0,
-      },
-      {
-        label: 'Transaction',
-        dataKey: 'transactionType',
-        maxWidth: 130,
-      },
-      {
-        label: 'Product',
-        dataKey: 'product',
-        maxWidth: 0,
-      },
-      {
-        label: 'Amount',
-        dataKey: 'amount',
-        maxWidth: 110,
-      },
-      {
-        label: 'Order ID',
-        dataKey: 'medicationOrderId',
-        maxWidth: 110,
-      },
-    ];
-
-    return (
-      <RecordsTableSection
-        sortColumn={this.state.sortColumn}
-        sortDirection={this.state.sortDirection}
-        columns={columns}
-        records={this.state.records}
-        handleClick={this.handleClick}
-      />
     );
   }
 }

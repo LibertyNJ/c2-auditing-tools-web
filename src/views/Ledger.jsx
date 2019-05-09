@@ -4,19 +4,72 @@ import Input from '../components/Input';
 import RecordsTableSection from '../components/RecordsTableSection';
 import SearchFormSection from '../components/SearchFormSection';
 
-const LedgerView = () => (
-  <React.Fragment>
-    <div className="row flex-shrink-0">
-      <header className="col">
-        <h1 className="text-center">Ledger</h1>
-      </header>
-    </div>
-    <div className="row">
-      <SearchForm />
-      <RecordsTable />
-    </div>
-  </React.Fragment>
-);
+const LedgerView = () => {
+  const columnDefinitions = [
+    {
+      label: 'Withdrawn by',
+      dataKey: 'provider',
+      maxWidth: 0,
+    },
+    {
+      label: 'Time',
+      dataKey: 'timestamp',
+      maxWidth: 120,
+    },
+    {
+      label: 'Product',
+      dataKey: 'product',
+      maxWidth: 0,
+    },
+    {
+      label: 'Amount',
+      dataKey: 'amount',
+      maxWidth: 110,
+    },
+    {
+      label: 'Waste',
+      dataKey: 'waste',
+      maxWidth: 110,
+    },
+    {
+      label: 'Disposition',
+      dataKey: 'dispositionType',
+      maxWidth: 130,
+    },
+    {
+      label: 'Disposed by',
+      dataKey: 'dispositionProvider',
+      maxWidth: 0,
+    },
+    {
+      label: 'Time',
+      dataKey: 'dispositionTimestamp',
+      maxWidth: 120,
+    },
+    {
+      label: 'Order ID',
+      dataKey: 'medicationOrderId',
+      maxWidth: 110,
+    },
+  ];
+
+  return (
+    <React.Fragment>
+      <div className="row flex-shrink-0">
+        <header className="col">
+          <h1 className="text-primary text-center">Ledger</h1>
+        </header>
+      </div>
+      <div className="row">
+        <SearchForm />
+        <RecordsTableSection
+          columnDefinitions={columnDefinitions}
+          ipcChannel="ledger"
+        />
+      </div>
+    </React.Fragment>
+  );
+};
 
 class SearchForm extends React.PureComponent {
   constructor(props) {
@@ -66,7 +119,10 @@ class SearchForm extends React.PureComponent {
 
   render() {
     return (
-      <SearchFormSection handleSubmit={this.handleSubmit} isSubmitted={this.state.isSubmitted}>
+      <SearchFormSection
+        handleSubmit={this.handleSubmit}
+        isSubmitted={this.state.isSubmitted}
+      >
         <Input
           type="datetime-local"
           name="datetimeStart"
@@ -113,182 +169,6 @@ class SearchForm extends React.PureComponent {
           handleChange={this.handleChange}
         />
       </SearchFormSection>
-    );
-  }
-}
-
-class RecordsTable extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      records: [],
-      sortColumn: '',
-      sortDirection: '',
-    };
-
-    this.handleClick = this.handleClick.bind(this);
-  }
-
-  componentDidMount() {
-    ipcRenderer.on('ledger', (event, data) => {
-      this.setState({ records: data.body, sortColumn: '', sortDirection: '' });
-    });
-  }
-
-  componentWillUnmount() {
-    ipcRenderer.removeAllListeners('ledger');
-  }
-
-  handleClick(event) {
-    if (this.state.records.length > 0) {
-      const targetSortColumn = event.target.dataset.sortColumn;
-
-      this.setState((state) => {
-        const records = [...state.records];
-
-        if (targetSortColumn !== this.state.sortColumn) {
-          records.sort((recordA, recordB) => {
-            if (typeof recordA[targetSortColumn] === 'number') {
-              return recordA[targetSortColumn] - recordB[targetSortColumn];
-            }
-
-            const recordAString = recordA[targetSortColumn]
-              ? recordA[targetSortColumn].toLowerCase()
-              : '';
-
-            const recordBString = recordB[targetSortColumn]
-              ? recordB[targetSortColumn].toLowerCase()
-              : '';
-
-            if (recordAString > recordBString) {
-              return 1;
-            }
-
-            if (recordAString < recordBString) {
-              return -1;
-            }
-
-            return 0;
-          });
-
-          return {
-            sortColumn: targetSortColumn,
-            sortDirection: 'ASC',
-            records,
-          };
-        }
-
-        if (state.sortDirection === 'ASC') {
-          return {
-            sortDirection: 'DESC',
-            records: records.reverse(),
-          };
-        }
-
-        return {
-          sortDirection: 'ASC',
-          records: records.reverse(),
-        };
-      });
-    }
-  }
-
-  render() {
-    const columnHeadings = [
-      {
-        name: 'Withdrawn by',
-        sortColumn: 'provider',
-      },
-      {
-        name: 'Time withdrawn',
-        sortColumn: 'timestamp',
-      },
-      {
-        name: 'Product',
-        sortColumn: 'product',
-      },
-      {
-        name: 'Amount',
-        sortColumn: 'amount',
-      },
-      {
-        name: 'Waste',
-        sortColumn: 'waste',
-      },
-      {
-        name: 'Disposition',
-        sortColumn: 'dispositionType',
-      },
-      {
-        name: 'Disposed by',
-        sortColumn: 'dispositionProvider',
-      },
-      {
-        name: 'Time disposed',
-        sortColumn: 'dispositionTimestamp',
-      },
-      {
-        name: 'Order ID',
-        sortColumn: 'medicationOrderId',
-      },
-    ];
-
-    const tableBodyRows =
-      this.state.records.length > 0 ? (
-        this.state.records.map(record => (
-          <tr key={record.id}>
-            <td className="border-right">{record.provider}</td>
-            <td className="border-right">
-              {new Date(record.timestamp).toLocaleString('en-US', {
-                month: '2-digit',
-                day: '2-digit',
-                year: 'numeric',
-                hour: 'numeric',
-                minute: 'numeric',
-                second: 'numeric',
-                hour12: false,
-              })}
-            </td>
-            <td className="border-right">{record.product}</td>
-            <td className="border-right">{record.amount}</td>
-            <td className="border-right">{record.waste ? `${record.waste} ${record.units}` : ''}</td>
-            <td className="border-right">{record.dispositionType ? record.dispositionType : ''}</td>
-            <td className="border-right">
-              {record.dispositionProvider ? record.dispositionProvider : ''}
-            </td>
-            <td className="border-right">
-              {record.dispositionTimestamp
-                ? new Date(record.dispositionTimestamp).toLocaleString('en-US', {
-                  month: '2-digit',
-                  day: '2-digit',
-                  year: 'numeric',
-                  hour: 'numeric',
-                  minute: 'numeric',
-                  second: 'numeric',
-                  hour12: false,
-                })
-                : ''}
-            </td>
-            <td className="border-right">{record.medicationOrderId}</td>
-          </tr>
-        ))
-      ) : (
-        <tr>
-          <td className="font-italic text-center border-right" colSpan={9}>
-            No records found!
-          </td>
-        </tr>
-      );
-
-    return (
-      <RecordsTableSection
-        sortColumn={this.state.sortColumn}
-        sortDirection={this.state.sortDirection}
-        columnHeadings={columnHeadings}
-        tableBodyRows={tableBodyRows}
-        handleClick={this.handleClick}
-      />
     );
   }
 }

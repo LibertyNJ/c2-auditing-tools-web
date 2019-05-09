@@ -1,110 +1,105 @@
 @import 'config';
 @import '../../../node_modules/bootstrap/scss/bootstrap.scss';
 
-/* React Virtualized component styles */
-/* Collection theme */
+.ReactVirtualized {
+  &__Collection {
+    &__innerScrollContainer {
+    }
+  }
 
-.ReactVirtualized__Collection {
-}
+  &__Grid {
+    &__innerScrollContainer {
+      margin-bottom: $spacer;
+    }
+  }
 
-.ReactVirtualized__Collection__innerScrollContainer {
-}
+  &__Table {
+    &__Grid {
+    }
 
-/* Grid theme */
+    &__headerRow {
+      border-top: $table-border-width solid $table-border-color;
+      border-bottom: (2 * $table-border-width) solid $table-border-color;
+      font-weight: 700;
+      display: -webkit-box;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-orient: horizontal;
+      -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+      flex-direction: row;
+      -webkit-box-align: center;
+      -ms-flex-align: center;
+      align-items: center;
+    }
 
-.ReactVirtualized__Grid {
-}
+    &__row {
+      border-bottom: $table-border-width solid $table-border-color;
+      display: -webkit-box;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-orient: horizontal;
+      -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+      flex-direction: row;
+      -webkit-box-align: center;
+      -ms-flex-align: center;
+      align-items: center;
 
-.ReactVirtualized__Grid__innerScrollContainer {
-  margin-bottom: $spacer;
-}
+      &:last-of-type {
+        border: none;
+      }
 
-/* Table theme */
+      &.hover {
+        @include hover {
+          color: $table-hover-color;
+          background-color: $table-hover-bg;
+        }
+      }
+    }
 
-.ReactVirtualized__Table {
-}
+    &__headerTruncatedText {
+      display: block;
+      max-width: 100%;
+      white-space: nowrap;
+      text-align: center;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
 
-.ReactVirtualized__Table__Grid {
-}
+    &__headerColumn,
+    &__rowColumn {
+      padding: 0 $table-cell-padding;
+      min-width: 0px;
+    }
 
-.ReactVirtualized__Table__headerRow {
-  border-top: $table-border-width solid $table-border-color;
-  border-bottom: (2 * $table-border-width) solid $table-border-color;
-  font-weight: 700;
-  display: -webkit-box;
-  display: -ms-flexbox;
-  display: flex;
-  -webkit-box-orient: horizontal;
-  -webkit-box-direction: normal;
-  -ms-flex-direction: row;
-  flex-direction: row;
-  -webkit-box-align: center;
-  -ms-flex-align: center;
-  align-items: center;
-}
-.ReactVirtualized__Table__row {
-  border-bottom: $table-border-width solid $table-border-color;
-  display: -webkit-box;
-  display: -ms-flexbox;
-  display: flex;
-  -webkit-box-orient: horizontal;
-  -webkit-box-direction: normal;
-  -ms-flex-direction: row;
-  flex-direction: row;
-  -webkit-box-align: center;
-  -ms-flex-align: center;
-  align-items: center;
-}
+    &__rowColumn {
+      text-overflow: ellipsis;
+    }
 
-.ReactVirtualized__Table__row:last-of-type {
-  border: none;
-}
+    &__sortableHeaderColumn {
+      cursor: pointer;
+    }
 
-.ReactVirtualized__Table__headerTruncatedText {
-  display: block;
-  max-width: 100%;
-  white-space: nowrap;
-  text-align: center;
-  text-overflow: ellipsis;
-  overflow: hidden;
-}
+    &__sortableHeaderIconContainer {
+      display: -webkit-box;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -ms-flex-align: center;
+      align-items: center;
+    }
 
-.ReactVirtualized__Table__headerColumn,
-.ReactVirtualized__Table__rowColumn {
-  padding: $table-cell-padding;
-  min-width: 0px;
-}
-.ReactVirtualized__Table__rowColumn {
-  text-overflow: ellipsis;
-  // white-space: nowrap;
-}
+    &__sortableHeaderIcon {
+      -webkit-box-flex: 0;
+      -ms-flex: 0 0 24px;
+      flex: 0 0 24px;
+      height: 1em;
+      width: 1em;
+      fill: currentColor;
+    }
+  }
 
-.ReactVirtualized__Table__headerColumn:first-of-type,
-.ReactVirtualized__Table__rowColumn:first-of-type {
-}
-
-.ReactVirtualized__Table__sortableHeaderColumn {
-  cursor: pointer;
-}
-
-.ReactVirtualized__Table__sortableHeaderIconContainer {
-  display: -webkit-box;
-  display: -ms-flexbox;
-  display: flex;
-  -webkit-box-align: center;
-  -ms-flex-align: center;
-  align-items: center;
-}
-.ReactVirtualized__Table__sortableHeaderIcon {
-  -webkit-box-flex: 0;
-  -ms-flex: 0 0 24px;
-  flex: 0 0 24px;
-  height: 1em;
-  width: 1em;
-  fill: currentColor;
-}
-
-/* List theme */
-
-.ReactVirtualized__List {
+  &__List {
+  }
 }

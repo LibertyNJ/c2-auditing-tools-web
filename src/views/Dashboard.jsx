@@ -4,14 +4,14 @@ const DashboardView = () => (
   <React.Fragment>
     <div className="row flex-shrink-0">
       <header className="col">
-        <h1 className="text-center">Dashboard</h1>
+        <h1 className="text-primary text-center">Dashboard</h1>
       </header>
     </div>
     <div className="row">
       <div className="col">
         <section>
           <header>
-            <h2>Unassigned IDs</h2>
+            <h2 className="text-primary">Unassigned IDs</h2>
             <p>
               Assigning and maintaining IDs will give you more accurate results.
             </p>
@@ -33,7 +33,7 @@ const DashboardView = () => (
         </section>
         <section>
           <header>
-            <h2>Earliest and latest data imports</h2>
+            <h2 className="text-primary">Earliest and latest data imports</h2>
             <p>Earliest and latest dates for which data was imported.</p>
             <table className="table table-sm table-bordered">
               <thead>
@@ -60,7 +60,7 @@ const DashboardView = () => (
         </section>
         <section>
           <header>
-            <h2>Past year</h2>
+            <h2 className="text-primary">Past year</h2>
             <p>Presence of imported data over the past year.</p>
             <table className="table table-sm table-bordered">
               <thead>

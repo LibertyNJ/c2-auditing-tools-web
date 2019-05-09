@@ -7,7 +7,7 @@ import SVGIcon from '../components/SVGIcon';
 
 const DataView = () => (
   <React.Fragment>
-    <h1 className="text-center">Data</h1>
+    <h1 className="text-primary text-center">Data</h1>
     <div className="row">
       <div className="col mx-auto" style={{ maxWidth: '33em' }}>
         <p className="lead">Import data to the database.</p>

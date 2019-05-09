@@ -927,6 +927,7 @@ process.on('message', data => {
             "provider.lastName || ', ' || provider.firstName || ifnull(' ' || provider.middleInitial, '') AS provider",
             'medicationProductId',
             'amount',
+            'medicationProduct.units AS units',
             'medicationOrderId',
             'mrn',
           ],
@@ -1123,7 +1124,10 @@ process.on('message', data => {
             );
 
             if (wastes[wasteIndex]) {
-              withdrawal.waste = wastes[wasteIndex].amount;
+              withdrawal.waste = `${wastes[wasteIndex].amount} ${
+                wastes[wasteIndex].units
+              }`;
+              withdrawal.wasteAmount = wastes[wasteIndex].amount;
               wastes[wasteIndex].reconciled = true;
             }
 
@@ -1134,7 +1138,7 @@ process.on('message', data => {
                     administration.medication === withdrawal.medication &&
                     administration.mrn === withdrawal.mrn &&
                     withdrawal.amount * withdrawal.strength -
-                      withdrawal.waste ===
+                      withdrawal.wasteAmount ===
                       administration.dose &&
                     new Date(administration.timestamp).getTime() >=
                       new Date(withdrawal.timestamp).getTime() - 300000 &&
@@ -1223,7 +1227,11 @@ process.on('message', data => {
               }
             }
 
-            withdrawal.waste = totalWaste;
+            withdrawal.wasteAmount = totalWaste;
+            withdrawal.waste =
+              totalWaste > 0
+                ? `${totalWaste} ${wastes[lastWasteIndex].units}`
+                : null;
 
             if (totalWaste >= totalStrength) {
               withdrawal.dispositionType = 'Waste';
