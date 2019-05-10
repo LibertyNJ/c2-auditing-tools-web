@@ -32,16 +32,6 @@ const Layout = props => {
               <NavLink
                 className="nav-link"
                 activeClassName="active"
-                exact
-                to="/"
-              >
-                Dashboard
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink
-                className="nav-link"
-                activeClassName="active"
                 to="/ledger"
               >
                 Ledger

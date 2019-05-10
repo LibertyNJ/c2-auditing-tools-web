@@ -40,7 +40,7 @@ const Select = props => {
 
 Select.propTypes = {
   name: PropTypes.string.isRequired,
-  value: PropTypes.oneOfType([PropTypes.string, PropTypes.array]).isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.array]),
   label: PropTypes.string,
   options: PropTypes.arrayOf(PropTypes.object).isRequired,
   handleChange: PropTypes.func.isRequired,
@@ -54,6 +54,7 @@ Select.defaultProps = {
   label: null,
   info: null,
   attributes: null,
+  value: [],
 };
 
 export default Select;

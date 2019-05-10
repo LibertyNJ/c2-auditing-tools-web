@@ -32,7 +32,7 @@ const Input = props => (
 Input.propTypes = {
   type: PropTypes.string.isRequired,
   name: PropTypes.string.isRequired,
-  value: PropTypes.string.isRequired,
+  value: PropTypes.string,
   label: PropTypes.string.isRequired,
   handleChange: PropTypes.func.isRequired,
   info: PropTypes.string,
@@ -44,6 +44,7 @@ Input.propTypes = {
 Input.defaultProps = {
   info: null,
   attributes: null,
+  value: '',
 };
 
 export default Input;
