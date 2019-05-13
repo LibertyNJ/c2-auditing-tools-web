@@ -66,6 +66,7 @@ class SearchFormSection extends React.Component {
           <Element
             key={index}
             value={this.state[props.name]}
+            isDisabled={this.state.isSubmitted}
             handleChange={this.handleChange}
             {...props}
           />
@@ -98,6 +99,13 @@ class SearchFormSection extends React.Component {
 }
 
 SearchFormSection.propTypes = {
+  formControlDefinitions: PropTypes.arrayOf(
+    PropTypes.shape({
+      type: PropTypes.string.isRequired,
+      props: PropTypes.object.isRequired,
+    })
+  ).isRequired,
+
   ipcChannel: PropTypes.string.isRequired,
 };
 

@@ -39,7 +39,7 @@ export default class App extends React.Component {
     return (
       <Layout databaseStatus={this.state.databaseStatus} version={version}>
         <Switch>
-          <Route exact path="/" component={LedgerView} />
+          <Route path="/" exact component={LedgerView} />
           <Route path="/ledger" component={LedgerView} />
           <Route path="/transaction" component={TransactionView} />
           <Route path="/administration" component={AdministrationView} />

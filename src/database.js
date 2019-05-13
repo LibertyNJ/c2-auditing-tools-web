@@ -2,14 +2,17 @@ const Database = require('better-sqlite3');
 const Excel = require('exceljs');
 const fs = require('fs');
 const path = require('path');
+
 const adcTransactionTypes = require('./scripts/adc-transaction-types');
 const databaseSchema = require('./scripts/database-schema.js');
 const medications = require('./scripts/medications');
 
 const isDevMode = process.execPath.match(/[\\/]electron/);
+
 const databasePath = isDevMode
   ? path.join(__dirname, '..', 'database.db')
   : path.join(__dirname, '..', '..', 'database.db');
+
 const db = isDevMode
   ? new Database(databasePath, { verbose: console.log })
   : new Database(databasePath);
@@ -188,96 +191,89 @@ db.updateStatus = status => {
   });
 };
 
-db.createProviders = () =>
-  new Promise((resolve, reject) => {
-    try {
-      const providerEmars = db.read('providerEmar', {
-        isDistinct: true,
-        columns: ['id', 'name', 'providerId'],
-        wheres: [],
-      });
-
-      providerEmars.forEach(({ id, name, providerId }) => {
-        if (providerId) return;
-
-        const [lastName, remainder] = name.split(', ');
-        const middleInitial = /\s\w$/.test(remainder)
-          ? remainder.match(/\w$/)[0]
-          : null;
-        const firstName = middleInitial
-          ? remainder.slice(0, remainder.length - 2)
-          : remainder;
-
-        db.create('provider', {
-          onConflict: 'ignore',
-          data: {
-            lastName,
-            firstName,
-            middleInitial,
-          },
-        });
-
-        const newProviderId = db.read('provider', {
-          columns: ['id'],
-          wheres: [
-            {
-              column: 'lastName',
-              operator: '=',
-              value: lastName,
-            },
-            {
-              column: 'firstName',
-              operator: '=',
-              value: firstName,
-            },
-            {
-              column: 'middleInitial',
-              operator: 'IS',
-              value: middleInitial,
-            },
-          ],
-        });
-
-        db.update('providerEmar', {
-          sets: [
-            {
-              column: 'providerId',
-              value: newProviderId,
-            },
-          ],
-
-          wheres: [
-            {
-              column: 'id',
-              operator: '=',
-              value: id,
-            },
-          ],
-        });
-
-        db.update('providerAdc', {
-          sets: [
-            {
-              column: 'providerId',
-              value: newProviderId,
-            },
-          ],
-
-          wheres: [
-            {
-              column: 'name',
-              operator: '=',
-              value: `${lastName.toUpperCase()}, ${firstName.toUpperCase()}`,
-            },
-          ],
-        });
-      });
-
-      resolve();
-    } catch (error) {
-      reject(error);
-    }
+db.createProviders = () => {
+  const providerEmars = db.read('providerEmar', {
+    isDistinct: true,
+    columns: ['id', 'name', 'providerId'],
+    wheres: [],
   });
+
+  providerEmars.forEach(({ id, name, providerId }) => {
+    if (providerId) return;
+
+    const [lastName, remainder] = name.split(', ');
+    const middleInitial = /\s\w$/.test(remainder)
+      ? remainder.match(/\w$/)[0]
+      : null;
+    const firstName = middleInitial
+      ? remainder.slice(0, remainder.length - 2)
+      : remainder;
+
+    db.create('provider', {
+      onConflict: 'ignore',
+      data: {
+        lastName,
+        firstName,
+        middleInitial,
+      },
+    });
+
+    const newProviderId = db.read('provider', {
+      columns: ['id'],
+      wheres: [
+        {
+          column: 'lastName',
+          operator: '=',
+          value: lastName,
+        },
+        {
+          column: 'firstName',
+          operator: '=',
+          value: firstName,
+        },
+        {
+          column: 'middleInitial',
+          operator: 'IS',
+          value: middleInitial,
+        },
+      ],
+    });
+
+    db.update('providerEmar', {
+      sets: [
+        {
+          column: 'providerId',
+          value: newProviderId,
+        },
+      ],
+
+      wheres: [
+        {
+          column: 'id',
+          operator: '=',
+          value: id,
+        },
+      ],
+    });
+
+    db.update('providerAdc', {
+      sets: [
+        {
+          column: 'providerId',
+          value: newProviderId,
+        },
+      ],
+
+      wheres: [
+        {
+          column: 'name',
+          operator: '=',
+          value: `${lastName.toUpperCase()}, ${firstName.toUpperCase()}`,
+        },
+      ],
+    });
+  });
+};
 
 db.initialize = () => {
   try {
@@ -465,125 +461,153 @@ const getAdcTransactionType = string => {
   }
 };
 
-db.parseAdc = filePath =>
-  new Promise((resolve, reject) => {
-    const readStream = fs.createReadStream(filePath);
+db.parseAdc = filePath => {
+  const readStream = fs.createReadStream(filePath);
+  const workbook = new Excel.Workbook();
+  workbook.xlsx
+    .read(readStream)
+    .then(() => {
+      const getTimestamp = (date, time) => {
+        const [month, day, year] = date.split(/\//);
+        return `${year}-${month}-${day}T${time}`;
+      };
 
-    const workbook = new Excel.Workbook();
-    workbook.xlsx
-      .read(readStream)
-      .then(() => {
-        const getTimestamp = (date, time) => {
-          const [month, day, year] = date.split(/\//);
-          return `${year}-${month}-${day}T${time}`;
-        };
+      const worksheet = workbook.getWorksheet(1);
+      let isPastHeaderRow = false;
 
-        const worksheet = workbook.getWorksheet(1);
-        let isPastHeaderRow = false;
+      worksheet.eachRow((row, rowNumber) => {
+        const adcTransactionType = getAdcTransactionType(
+          row.getCell('E').value
+        );
 
-        worksheet.eachRow((row, rowNumber) => {
-          const adcTransactionType = getAdcTransactionType(
-            row.getCell('E').value
+        const medicationId = db.read('medication', {
+          columns: ['id'],
+          wheres: [
+            {
+              column: 'name',
+              operator: '=',
+              value: getMedication(row.getCell('C').value),
+            },
+          ],
+        });
+
+        if (isPastHeaderRow && medicationId && adcTransactionType) {
+          const timestamp = getTimestamp(
+            row.getCell('A').value,
+            row.getCell('B').value
           );
 
-          const medicationId = db.read('medication', {
+          const medicationProductAdc = row.getCell('C').value;
+          const form = getForm(medicationProductAdc);
+          const units = getUnits(medicationProductAdc);
+          const amount = row.getCell('D').value;
+          const mrn = +row.getCell('I').value;
+
+          const medicationOrderId =
+            row.getCell('J').value === 'OVERRIDE'
+              ? 'OVERRIDE'
+              : row.getCell('J').value.slice(1);
+
+          const strength = /hycodan/i.test(medicationProductAdc) // Tests for special case of hycodan, which does not have an indicated strength in current Pyxis database.
+            ? 5.0
+            : row.getCell('O').value;
+
+          db.create('providerAdc', {
+            onConflict: 'ignore',
+            data: { name: row.getCell('K').value },
+          });
+
+          const providerAdcId = db.read('providerAdc', {
             columns: ['id'],
             wheres: [
               {
                 column: 'name',
                 operator: '=',
-                value: getMedication(row.getCell('C').value),
+                value: row.getCell('K').value,
               },
             ],
           });
 
-          if (isPastHeaderRow && medicationId && adcTransactionType) {
-            const timestamp = getTimestamp(
-              row.getCell('A').value,
-              row.getCell('B').value
-            );
+          db.create('medicationProductAdc', {
+            onConflict: 'ignore',
+            data: { name: medicationProductAdc },
+          });
 
-            const form = getForm(row.getCell('C').value);
-            const units = getUnits(row.getCell('C').value);
-            const amount = row.getCell('D').value;
-            const mrn = +row.getCell('I').value;
-
-            const medicationOrderId =
-              row.getCell('J').value === 'OVERRIDE'
-                ? 'OVERRIDE'
-                : row.getCell('J').value.slice(1);
-
-            const strength = row.getCell('O').value;
-
-            db.create('providerAdc', {
-              onConflict: 'ignore',
-              data: { name: row.getCell('K').value },
-            });
-
-            const providerAdcId = db.read('providerAdc', {
-              columns: ['id'],
-              wheres: [
-                {
-                  column: 'name',
-                  operator: '=',
-                  value: row.getCell('K').value,
-                },
-              ],
-            });
-
-            db.create('medicationProductAdc', {
-              onConflict: 'ignore',
-              data: { name: row.getCell('C').value },
-            });
-
-            const medicationProductAdcId = db.read('medicationProductAdc', {
-              columns: ['id'],
-              wheres: [
-                {
-                  column: 'name',
-                  operator: '=',
-                  value: row.getCell('C').value,
-                },
-              ],
-            });
-
-            db.create('medicationProduct', {
-              onConflict: 'ignore',
-              data: {
-                medicationId,
-                strength,
-                units,
-                form,
-                adcId: medicationProductAdcId,
+          const medicationProductAdcId = db.read('medicationProductAdc', {
+            columns: ['id'],
+            wheres: [
+              {
+                column: 'name',
+                operator: '=',
+                value: medicationProductAdc,
               },
-            });
+            ],
+          });
 
-            const medicationProductId = db.read('medicationProduct', {
-              columns: ['id'],
-              wheres: [
-                {
-                  column: 'adcId',
-                  operator: '=',
-                  value: medicationProductAdcId,
-                },
-              ],
-            });
+          db.create('medicationProduct', {
+            onConflict: 'ignore',
+            data: {
+              medicationId,
+              strength,
+              units,
+              form,
+              adcId: medicationProductAdcId,
+            },
+          });
 
-            db.create('medicationOrder', {
-              onConflict: 'ignore',
-              data: {
-                id: medicationOrderId,
-                medicationId,
+          const medicationProductId = db.read('medicationProduct', {
+            columns: ['id'],
+            wheres: [
+              {
+                column: 'adcId',
+                operator: '=',
+                value: medicationProductAdcId,
               },
-            });
+            ],
+          });
 
-            const adcTransactionTypeId = db.read('adcTransactionType', {
+          db.create('medicationOrder', {
+            onConflict: 'ignore',
+            data: {
+              id: medicationOrderId,
+              medicationId,
+            },
+          });
+
+          const adcTransactionTypeId = db.read('adcTransactionType', {
+            columns: ['id'],
+            wheres: [
+              {
+                column: 'name',
+                operator: '=',
+                value: adcTransactionType,
+              },
+            ],
+          });
+
+          db.create('adcTransaction', {
+            onConflict: 'ignore',
+            data: {
+              typeId: adcTransactionTypeId,
+              providerAdcId,
+              medicationOrderId,
+              medicationProductId,
+              amount,
+              mrn,
+              timestamp,
+            },
+          });
+
+          if (/WASTED/.test(row.getCell('F').value)) {
+            const amountWasted = row.getCell('F').value.split(/\s/)[2];
+
+            const adcWasteTypeId = db.read('adcTransactionType', {
               columns: ['id'],
               wheres: [
                 {
                   column: 'name',
                   operator: '=',
-                  value: adcTransactionType,
+                  value: 'Waste',
                 },
               ],
             });
@@ -591,163 +615,132 @@ db.parseAdc = filePath =>
             db.create('adcTransaction', {
               onConflict: 'ignore',
               data: {
-                typeId: adcTransactionTypeId,
+                typeId: adcWasteTypeId,
                 providerAdcId,
                 medicationOrderId,
                 medicationProductId,
-                amount,
-                mrn,
+                amount: amountWasted,
                 timestamp,
               },
             });
-
-            if (/WASTED/.test(row.getCell('F').value)) {
-              const amountWasted = row.getCell('F').value.split(/\s/)[2];
-
-              const adcWasteTypeId = db.read('adcTransactionType', {
-                columns: ['id'],
-                wheres: [
-                  {
-                    column: 'name',
-                    operator: '=',
-                    value: 'Waste',
-                  },
-                ],
-              });
-
-              db.create('adcTransaction', {
-                onConflict: 'ignore',
-                data: {
-                  typeId: adcWasteTypeId,
-                  providerAdcId,
-                  medicationOrderId,
-                  medicationProductId,
-                  amount: amountWasted,
-                  timestamp,
-                },
-              });
-            }
           }
+        }
 
-          if (row.getCell('A').value === 'TRANSACTIONDATE') {
-            isPastHeaderRow = true;
-          }
-        });
-      })
-      .then(() => {
-        readStream.close();
-        resolve();
-      })
-      .catch(error => reject(error));
-  });
+        if (row.getCell('A').value === 'TRANSACTIONDATE') {
+          isPastHeaderRow = true;
+        }
+      });
+    })
+    .then(() => {
+      readStream.close();
+    })
+    .catch(() => db.updateStatus('Error'));
+};
 
-db.parseEmar = filePath =>
-  new Promise((resolve, reject) => {
-    const readStream = fs.createReadStream(filePath);
+db.parseEmar = filePath => {
+  const readStream = fs.createReadStream(filePath);
+  const workbook = new Excel.Workbook();
+  workbook.csv
+    .read(readStream)
+    .then(worksheet => {
+      const getTimestamp = string => {
+        if (!string) return null;
 
-    const workbook = new Excel.Workbook();
-    workbook.csv
-      .read(readStream)
-      .then(worksheet => {
-        const getTimestamp = string => {
-          if (!string) return null;
+        const [date, time, meridian] = string.split(/\s/);
 
-          const [date, time, meridian] = string.split(/\s/);
+        let [month, day, year] = date.split(/\//);
+        month = month.toString().padStart(2, '0');
+        day = day.toString().padStart(2, '0');
 
-          let [month, day, year] = date.split(/\//);
-          month = month.toString().padStart(2, '0');
-          day = day.toString().padStart(2, '0');
+        let [hours, minutes] = time.split(/:/);
+        if (meridian === 'PM' && hours !== '12') {
+          hours = (+hours + 12).toString();
+        } else if (meridian === 'AM' && hours === '12') {
+          hours = '00';
+        } else {
+          hours = hours.toString().padStart(2, '0');
+        }
+        return `${year}-${month}-${day}T${hours}:${minutes}:00`;
+      };
 
-          let [hours, minutes] = time.split(/:/);
-          if (meridian === 'PM' && hours !== '12') {
-            hours = (+hours + 12).toString();
-          } else if (meridian === 'AM' && hours === '12') {
-            hours = '00';
-          } else {
-            hours = hours.toString().padStart(2, '0');
-          }
-          return `${year}-${month}-${day}T${hours}:${minutes}:00`;
-        };
+      let isPastHeaderRow = false;
+      worksheet.eachRow((row, rowNumber) => {
+        if (isPastHeaderRow) {
+          const visitId = row.getCell('F').value;
+          const mrn = +row.getCell('G').value;
+          const discharged = getTimestamp(row.getCell('L').value);
+          const medicationOrderId = row.getCell('M').value;
+          const form = getForm(row.getCell('P').value);
+          let [dose, units] = row.getCell('R').value.split(/\s/);
+          units = getUnits(units);
+          const timestamp = getTimestamp(row.getCell('AM').value);
 
-        let isPastHeaderRow = false;
-        worksheet.eachRow((row, rowNumber) => {
-          if (isPastHeaderRow) {
-            const visitId = row.getCell('F').value;
-            const mrn = +row.getCell('G').value;
-            const discharged = getTimestamp(row.getCell('L').value);
-            const medicationOrderId = row.getCell('M').value;
-            const form = getForm(row.getCell('P').value);
-            let [dose, units] = row.getCell('R').value.split(/\s/);
-            units = getUnits(units);
-            const timestamp = getTimestamp(row.getCell('AM').value);
+          db.create('visit', {
+            onConflict: 'replace',
+            data: {
+              id: visitId,
+              mrn,
+              discharged,
+            },
+          });
 
-            db.create('visit', {
-              onConflict: 'replace',
-              data: {
-                id: visitId,
-                mrn,
-                discharged,
+          const medicationId = db.read('medication', {
+            columns: ['id'],
+            wheres: [
+              {
+                column: 'name',
+                operator: '=',
+                value: getMedication(row.getCell('O').value),
               },
-            });
+            ],
+          });
 
-            const medicationId = db.read('medication', {
-              columns: ['id'],
-              wheres: [
-                {
-                  column: 'name',
-                  operator: '=',
-                  value: getMedication(row.getCell('O').value),
-                },
-              ],
-            });
+          db.create('medicationOrder', {
+            onConflict: 'replace',
+            data: {
+              id: medicationOrderId,
+              medicationId,
+              dose,
+              units,
+              form,
+              visitId,
+            },
+          });
 
-            db.create('medicationOrder', {
-              onConflict: 'replace',
-              data: {
-                id: medicationOrderId,
-                medicationId,
-                dose,
-                units,
-                form,
-                visitId,
+          db.create('providerEmar', {
+            onConflict: 'ignore',
+            data: {
+              name: row.getCell('AP').value,
+            },
+          });
+
+          const providerEmarId = db.read('providerEmar', {
+            columns: ['id'],
+            wheres: [
+              {
+                column: 'name',
+                operator: '=',
+                value: row.getCell('AP').value,
               },
-            });
+            ],
+          });
 
-            db.create('providerEmar', {
-              onConflict: 'ignore',
-              data: {
-                name: row.getCell('AP').value,
-              },
-            });
+          db.create('emarAdministration', {
+            onConflict: 'ignore',
+            data: { providerEmarId, medicationOrderId, timestamp },
+          });
+        }
 
-            const providerEmarId = db.read('providerEmar', {
-              columns: ['id'],
-              wheres: [
-                {
-                  column: 'name',
-                  operator: '=',
-                  value: row.getCell('AP').value,
-                },
-              ],
-            });
-
-            db.create('emarAdministration', {
-              onConflict: 'ignore',
-              data: { providerEmarId, medicationOrderId, timestamp },
-            });
-          }
-
-          if (row.getCell('A').value === 'FacilityName') {
-            isPastHeaderRow = true;
-          }
-        });
-      })
-      .then(() => {
-        readStream.close();
-        resolve();
-      })
-      .catch(error => reject(error));
-  });
+        if (row.getCell('A').value === 'FacilityName') {
+          isPastHeaderRow = true;
+        }
+      });
+    })
+    .then(() => {
+      readStream.close();
+    })
+    .catch(() => db.updateStatus('Error'));
+};
 
 process.on('message', data => {
   switch (data.header.type) {
@@ -761,20 +754,17 @@ process.on('message', data => {
 
       break;
     case 'import':
-      db.updateStatus('Importing data…');
-      Promise.all([
-        db.parseAdc(data.body.adcPath),
-        db.parseEmar(data.body.emarPath),
-        db.createProviders(),
-      ])
-        .then(() => {
-          process.send({ header: { type: data.header.response } });
-          db.updateStatus('Ready');
-        })
-        .catch(error => {
-          if (isDevMode) console.error(error);
-          db.updateStatus('Error');
-        });
+      try {
+        db.updateStatus('Importing data…');
+        db.parseAdc(data.body.adcPath);
+        db.parseEmar(data.body.emarPath);
+        db.createProviders();
+        process.send({ header: { type: data.header.response } });
+        db.updateStatus('Ready');
+      } catch (error) {
+        if (isDevMode) console.error(error);
+        db.updateStatus('Error');
+      }
 
       break;
     case 'query':

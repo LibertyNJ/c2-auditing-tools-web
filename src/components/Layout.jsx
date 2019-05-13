@@ -1,4 +1,4 @@
-import { Link, NavLink } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import React from 'react';
 import SVGIcon from '../components/SVGIcon';
@@ -18,29 +18,31 @@ const getDatabaseStatusClass = databaseStatus => {
 const Layout = props => {
   const databaseStatusClass = getDatabaseStatusClass(props.databaseStatus);
 
+  const navLinkClass =
+    props.databaseStatus === 'Ready' || props.databaseStatus === 'Error'
+      ? 'nav-link'
+      : 'nav-link disabled';
+
   return (
     <div className="d-flex flex-column vh-100">
       <header className="container-fluid flex-shrink-0 sticky-top bg-white p-0 mb-3">
         <nav className="d-flex justify-content-between">
           <div className="border-bottom flex-grow-1">
-            <Link className="navbar-brand px-3" to="/">
-              C2 Auditing Tools
-            </Link>
+            <div className="navbar-brand text-primary px-3">C2 Auditing Tools</div>
           </div>
           <ul className="nav nav-tabs d-flex justify-content-end">
             <li className="nav-item">
               <NavLink
-                className="nav-link"
-                activeClassName="active"
-                to="/ledger"
+                className={navLinkClass}
+                exact
+                to="/"
               >
                 Ledger
               </NavLink>
             </li>
             <li className="nav-item">
               <NavLink
-                className="nav-link"
-                activeClassName="active"
+                className={navLinkClass}
                 to="/transaction"
               >
                 Transactions
@@ -48,8 +50,7 @@ const Layout = props => {
             </li>
             <li className="nav-item">
               <NavLink
-                className="nav-link"
-                activeClassName="active"
+                className={navLinkClass}
                 to="/administration"
               >
                 Administrations
@@ -57,25 +58,27 @@ const Layout = props => {
             </li>
             <li className="nav-item">
               <NavLink
-                className="nav-link"
-                activeClassName="active"
+                className={navLinkClass}
                 to="/provider"
               >
                 Providers
               </NavLink>
             </li>
             <li className="nav-item">
-              <NavLink className="nav-link" activeClassName="active" to="/data">
+              <NavLink
+                className={navLinkClass}
+                to="/data"
+              >
                 Data
               </NavLink>
             </li>
           </ul>
         </nav>
       </header>
-      <main className="container-fluid d-flex flex-column">
+      <main className="container-fluid d-flex flex-column flex-grow-1">
         {props.children}
       </main>
-      <footer className="container-fluid flex-shrink-0 d-flex justify-content-between text-light bg-dark px-3 py-1 mt-auto">
+      <footer className="container-fluid flex-shrink-0 d-flex justify-content-between text-light bg-dark px-3 py-1">
         <div className="mb-0">Version: {props.version}</div>
         <div className="mb-0">
           <SVGIcon

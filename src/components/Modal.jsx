@@ -34,6 +34,8 @@ class Modal extends React.Component {
 
       providerAdcs: [],
       providerEmars: [],
+
+      isSubmitted: false,
     };
 
     this.handleChange = this.handleChange.bind(this);
@@ -325,10 +327,13 @@ class Modal extends React.Component {
       },
     });
 
+    this.setState({ isSubmitted: true });
+
     ipcRenderer.once('update', () => {
       this.getProviderData();
       this.getUnassignedIds();
       this.handleReset();
+      this.setState({ isSubmitted: false });
     });
   }
 
@@ -459,6 +464,7 @@ class Modal extends React.Component {
                         type="text"
                         name="editLastName"
                         value={this.state.editLastName}
+                        isDisabled={this.state.isSubmitted}
                         label="Last"
                         handleChange={this.handleChange}
                       />
@@ -468,6 +474,7 @@ class Modal extends React.Component {
                         type="text"
                         name="editFirstName"
                         value={this.state.editFirstName}
+                        isDisabled={this.state.isSubmitted}
                         label="First"
                         handleChange={this.handleChange}
                       />
@@ -477,6 +484,7 @@ class Modal extends React.Component {
                         type="text"
                         name="editMiddleInitial"
                         value={this.state.editMiddleInitial}
+                        isDisabled={this.state.isSubmitted}
                         label="MI"
                         handleChange={this.handleChange}
                       />
@@ -525,6 +533,7 @@ class Modal extends React.Component {
                       <Select
                         name="addAdcId"
                         value={this.state.addAdcId}
+                        isDisabled={this.state.isSubmitted}
                         label="Add ADC ID"
                         options={providerAdcs}
                         handleChange={this.handleChange}
@@ -540,6 +549,7 @@ class Modal extends React.Component {
                       <Select
                         name="addEmarId"
                         value={this.state.addEmarId}
+                        isDisabled={this.state.isSubmitted}
                         label="Add EMAR ID"
                         options={providerEmars}
                         handleChange={this.handleChange}
@@ -554,8 +564,19 @@ class Modal extends React.Component {
               </section>
             </div>
             <footer className="modal-footer">
-              <Button type="submit" text="Save" color="primary" icon="save" />
-              <Button type="reset" text="Reset" color="secondary" icon="undo" />
+              <Button
+                type="submit"
+                text="Save"
+                color="primary"
+                icon="save"
+                disabled={this.state.isSubmitted}
+              />
+              <Button
+                type="reset"
+                text="Reset"
+                color="secondary"
+                icon="undo"
+              />
             </footer>
           </form>
         </div>

@@ -100,6 +100,7 @@ class DataImportForm extends React.Component {
                   Medication Order Task Status:{' '}
                 </React.Fragment>
               }
+              isDisabled={this.state.isSubmitted}
               handleChange={this.handleChange}
               attributes={{
                 accept: '.csv',
@@ -125,6 +126,7 @@ class DataImportForm extends React.Component {
                   C2 Activity:{' '}
                 </React.Fragment>
               }
+              isDisabled={this.state.isSubmitted}
               handleChange={this.handleChange}
               attributes={{
                 accept: '.xlsx',
@@ -158,7 +160,7 @@ const FileInput = props => (
       type="file"
       name={props.name}
       value={props.value}
-      disabled={props.disabled}
+      disabled={props.isDisabled}
       onChange={props.handleChange}
       {...props.attributes}
     />
@@ -171,8 +173,9 @@ const FileInput = props => (
 FileInput.propTypes = {
   name: PropTypes.string.isRequired,
   value: PropTypes.string.isRequired,
+  isDisabled: PropTypes.bool.isRequired,
   handleChange: PropTypes.func.isRequired,
-  attributes: PropTypes.object,
+  attributes: PropTypes.objectOf(PropTypes.any),
   label: PropTypes.node.isRequired,
 };
 

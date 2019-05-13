@@ -88,7 +88,7 @@ const AdministrationView = () => {
           <h1 className="text-primary text-center">Administrations</h1>
         </header>
       </div>
-      <div className="row">
+      <div className="row flex-grow-1">
         <SearchSection
           formControlDefinitions={formControlDefinitions}
           ipcChannel="administration"

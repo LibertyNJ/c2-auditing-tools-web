@@ -17,6 +17,7 @@ const Select = props => {
         className="custom-select"
         name={props.name}
         value={props.value}
+        disabled={props.isDisabled}
         onChange={props.handleChange}
         {...props.attributes}
       >
@@ -41,6 +42,7 @@ const Select = props => {
 Select.propTypes = {
   name: PropTypes.string.isRequired,
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.array]),
+  isDisabled: PropTypes.bool.isRequired,
   label: PropTypes.string,
   options: PropTypes.arrayOf(PropTypes.object).isRequired,
   handleChange: PropTypes.func.isRequired,

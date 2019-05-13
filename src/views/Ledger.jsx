@@ -112,7 +112,7 @@ const LedgerView = () => {
           <h1 className="text-primary text-center">Ledger</h1>
         </header>
       </div>
-      <div className="row">
+      <div className="row flex-grow-1">
         <SearchSection
           formControlDefinitions={formControlDefinitions}
           ipcChannel="ledger"

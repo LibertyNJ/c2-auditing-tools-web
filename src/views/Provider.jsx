@@ -71,7 +71,7 @@ const ProviderView = () => {
           <h1 className="text-primary text-center">Providers</h1>
         </header>
       </div>
-      <div className="row">
+      <div className="row flex-grow-1">
         <SearchSection
           formControlDefinitions={formControlDefinitions}
           ipcChannel="provider"

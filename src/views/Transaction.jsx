@@ -130,7 +130,7 @@ const TransactionView = () => {
           <h1 className="text-primary text-center">Transactions</h1>
         </header>
       </div>
-      <div className="row">
+      <div className="row flex-grow-1">
         <SearchSection
           formControlDefinitions={formControlDefinitions}
           ipcChannel="transaction"

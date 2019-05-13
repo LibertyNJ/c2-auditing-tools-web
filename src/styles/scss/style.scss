@@ -1,6 +1,10 @@
 @import 'config';
 @import '../../../node_modules/bootstrap/scss/bootstrap.scss';
 
+* :focus {
+  outline: none;
+}
+
 .ReactVirtualized {
   &__Collection {
     &__innerScrollContainer {

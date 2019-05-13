@@ -11,6 +11,7 @@ const Input = props => (
       type={props.type}
       name={props.name}
       value={props.value}
+      disabled={props.isDisabled}
       onChange={props.handleChange}
       {...props.attributes}
     />
@@ -33,6 +34,7 @@ Input.propTypes = {
   type: PropTypes.string.isRequired,
   name: PropTypes.string.isRequired,
   value: PropTypes.string,
+  isDisabled: PropTypes.bool.isRequired,
   label: PropTypes.string.isRequired,
   handleChange: PropTypes.func.isRequired,
   info: PropTypes.string,
