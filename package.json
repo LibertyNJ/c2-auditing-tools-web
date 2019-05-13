@@ -1,7 +1,7 @@
 {
   "name": "c2-auditing-tools",
   "productName": "C2-auditing-tools",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Tools for auditing select C2 medications at North Shore Univeristy Hospital.",
   "main": "src/main.js",
   "scripts": {
