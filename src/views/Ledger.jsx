@@ -99,6 +99,18 @@ const LedgerView = () => {
     },
 
     {
+      label: 'Pain reassessed',
+      dataKey: 'painAssessmentTimestamp',
+      maxWidth: 120,
+    },
+
+    {
+      label: 'Pain reassessed by',
+      dataKey: 'painAssessmentProvider',
+      maxWidth: 0,
+    },
+
+    {
       label: 'Order ID',
       dataKey: 'medicationOrderId',
       maxWidth: 110,
