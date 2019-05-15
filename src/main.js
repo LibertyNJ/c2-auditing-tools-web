@@ -61,7 +61,6 @@ const databasePath = isDevMode
   : 'app.asar/src/database.js';
 
 const cwd = isDevMode ? null : path.join(__dirname, '..', '..');
-
 const db = fork(databasePath, [], { cwd });
 
 db.on('message', data => mainWindow.webContents.send(data.header.type, data));

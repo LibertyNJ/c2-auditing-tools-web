@@ -38,6 +38,21 @@ module.exports = {
     },
   },
 
+  emarPainAssessment: {
+    columns: {
+      id: 'INTEGER PRIMARY KEY',
+      providerEmarId: 'INTEGER REFERENCES providerEmar(id) NOT NULL',
+      medicationOrderId: 'CHAR(9) REFERENCES medicationOrder(id) NOT NULL',
+      byPolicy: 'BOOLEAN NOT NULL',
+      timestamp: 'CHAR(19) NOT NULL',
+    },
+
+    unique: {
+      columns: ['medicationOrderId', 'timestamp'],
+      onConflict: 'ignore',
+    },
+  },
+
   medication: {
     columns: {
       id: 'INTEGER PRIMARY KEY',

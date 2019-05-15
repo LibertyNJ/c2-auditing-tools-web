@@ -669,11 +669,6 @@ db.parseEmar = filePath => {
           const visitId = row.getCell('F').value;
           const mrn = +row.getCell('G').value;
           const discharged = getTimestamp(row.getCell('L').value);
-          const medicationOrderId = row.getCell('M').value;
-          const form = getForm(row.getCell('P').value);
-          let [dose, units] = row.getCell('R').value.split(/\s/);
-          units = getUnits(units);
-          const timestamp = getTimestamp(row.getCell('AM').value);
 
           db.create('visit', {
             onConflict: 'replace',
@@ -683,6 +678,11 @@ db.parseEmar = filePath => {
               discharged,
             },
           });
+
+          const medicationOrderId = row.getCell('M').value;
+          let [dose, units] = row.getCell('R').value.split(/\s/);
+          units = getUnits(units);
+          const form = getForm(row.getCell('P').value);
 
           const medicationId = db.read('medication', {
             columns: ['id'],
@@ -725,10 +725,28 @@ db.parseEmar = filePath => {
             ],
           });
 
-          db.create('emarAdministration', {
-            onConflict: 'ignore',
-            data: { providerEmarId, medicationOrderId, timestamp },
-          });
+          const timestamp = getTimestamp(row.getCell('AM').value);
+
+          if (row.getCell('Q').value === 'Y') {
+            if (/Reassess Pain Response/.test(row.getCell('P').value)) {
+              const byPolicy = row.getCell('AO').value === 'Y' ? 1 : 0;
+
+              db.create('emarPainAssessment', {
+                onConflict: 'ignore',
+                data: {
+                  providerEmarId,
+                  medicationOrderId,
+                  byPolicy,
+                  timestamp,
+                },
+              });
+            }
+          } else {
+            db.create('emarAdministration', {
+              onConflict: 'ignore',
+              data: { providerEmarId, medicationOrderId, timestamp },
+            });
+          }
         }
 
         if (row.getCell('A').value === 'FacilityName') {
