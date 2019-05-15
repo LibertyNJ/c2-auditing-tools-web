@@ -680,8 +680,8 @@ db.parseEmar = filePath => {
           });
 
           const medicationOrderId = row.getCell('M').value;
-          let [dose, units] = row.getCell('R').value.split(/\s/);
-          units = getUnits(units);
+          const [dose, rawUnits] = row.getCell('R').value.split(/\s/);
+          const units = getUnits(rawUnits);
           const form = getForm(row.getCell('P').value);
 
           const medicationId = db.read('medication', {
@@ -1114,13 +1114,75 @@ process.on('message', data => {
           ],
         });
 
+        const painAssessments = db.read('emarPainAssessment', {
+          columns: [
+            'emarPainAssessment.id',
+            'timestamp',
+            'provider.id AS providerId',
+            "provider.lastName || ', ' || provider.firstName || ifnull(' ' || provider.middleInitial, '') AS provider",
+            'medicationOrderId',
+            'byPolicy',
+            'mrn',
+            'medicationOrder.dose',
+            'medication.name AS medication',
+          ],
+
+          wheres: [
+            {
+              column: 'timestamp',
+              operator: '<',
+              value: data.body.datetimeEnd,
+            },
+            {
+              column: 'timestamp',
+              operator: '>',
+              value: data.body.datetimeStart,
+            },
+          ],
+
+          joins: [
+            {
+              type: 'LEFT',
+              table: 'providerEmar',
+              predicate: 'providerEmarId = providerEmar.id',
+            },
+            {
+              type: 'LEFT',
+              table: 'provider',
+              predicate: 'providerEmar.providerId = provider.id',
+            },
+            {
+              type: 'LEFT',
+              table: 'medicationOrder',
+              predicate: 'medicationOrderId = medicationOrder.id',
+            },
+            {
+              type: 'LEFT',
+              table: 'medication',
+              predicate: 'medicationOrder.medicationId = medication.id',
+            },
+            {
+              type: 'LEFT',
+              table: 'visit',
+              predicate: 'medicationOrder.visitId = visit.id',
+            },
+          ],
+
+          orderBys: [
+            {
+              column: 'timestamp',
+              direction: 'ASC',
+            },
+          ],
+        });
+
         const result = [...withdrawals].reverse(); // Withdrawals are run in reverse so that later administrations are not assigned as dispositions for earlier diversions.
 
         // Adjustments are present for administration to adc transaction time comparisons. Emar and Adc time are not coordinated, and Emar time is only precise to the minute. Adc is precise to the second.
 
         result.forEach(withdrawal => {
           if (withdrawal.medicationOrderId === 'OVERRIDE') {
-            // I cannot think of a way to reliably identify multiple wastes for an overridden withdrawal programmatically.
+            // I cannot think of a way to reliably identify multiple wastes for an overridden withdrawal, programmatically.
             // For the time being, I am accepting up to one waste for an overridden withdrawal.
 
             const wasteIndex = wastes.findIndex(
@@ -1173,6 +1235,26 @@ process.on('message', data => {
                 administrations[administrationIndex].timestamp;
               withdrawal.dispositionType = 'Administration';
               administrations[administrationIndex].reconciled = true;
+
+              const painAssessmentIndex = painAssessments.findIndex(
+                painAssessment =>
+                  painAssessment.medicationOrderId ===
+                    administrations[administrationIndex].medicationOrderId &&
+                  new Date(painAssessment.timestamp).getTime() >=
+                    new Date(
+                      administrations[administrationIndex].timestamp
+                    ).getTime() &&
+                  painAssessment.byPolicy &&
+                  !painAssessment.reconciled
+              );
+
+              if (painAssessments[painAssessmentIndex]) {
+                withdrawal.painAssessmentProvider =
+                  painAssessments[painAssessmentIndex].provider;
+                withdrawal.painAssessmentTimestamp =
+                  painAssessments[painAssessmentIndex].timestamp;
+                painAssessments[painAssessmentIndex].reconciled = true;
+              }
             } else {
               const otherTransactionIndex = otherTransactions.findIndex(
                 otherTransaction =>
@@ -1277,6 +1359,45 @@ process.on('message', data => {
                   administrations[administrationIndex].timestamp;
                 withdrawal.dispositionType = 'Administration';
                 administrations[administrationIndex].reconciled = true;
+
+                const painAssessmentIndex = painAssessments.findIndex(
+                  painAssessment => {
+                    if (nextWithdrawal) {
+                      return (
+                        painAssessment.medicationOrderId ===
+                          administrations[administrationIndex]
+                            .medicationOrderId &&
+                        new Date(painAssessment.timestamp).getTime() >=
+                          new Date(
+                            administrations[administrationIndex].timestamp
+                          ).getTime() &&
+                        painAssessment.timestamp < nextWithdrawal.timestamp &&
+                        painAssessment.byPolicy &&
+                        !painAssessment.reconciled
+                      );
+                    }
+
+                    return (
+                      painAssessment.medicationOrderId ===
+                        administrations[administrationIndex]
+                          .medicationOrderId &&
+                      new Date(painAssessment.timestamp).getTime() >=
+                        new Date(
+                          administrations[administrationIndex].timestamp
+                        ).getTime() &&
+                      painAssessment.byPolicy &&
+                      !painAssessment.reconciled
+                    );
+                  }
+                );
+
+                if (painAssessments[painAssessmentIndex]) {
+                  withdrawal.painAssessmentProvider =
+                    painAssessments[painAssessmentIndex].provider;
+                  withdrawal.painAssessmentTimestamp =
+                    painAssessments[painAssessmentIndex].timestamp;
+                  painAssessments[painAssessmentIndex].reconciled = true;
+                }
               } else {
                 const otherTransactionIndex = otherTransactions.findIndex(
                   otherTransaction => {
