@@ -1209,11 +1209,12 @@ process.on('message', data => {
             );
 
             if (wastes[wasteIndex]) {
-              withdrawal.waste = `${wastes[wasteIndex].amount} ${
-                wastes[wasteIndex].units
-              }`;
-              withdrawal.wasteAmount = wastes[wasteIndex].amount;
               wastes[wasteIndex].reconciled = true;
+
+              const waste = wastes[wasteIndex];
+
+              withdrawal.waste = `${waste.amount} ${waste.units}`;
+              withdrawal.wasteAmount = waste.amount;
             }
 
             const administrationIndex = administrations.findIndex(
@@ -1244,31 +1245,33 @@ process.on('message', data => {
             );
 
             if (administrations[administrationIndex]) {
-              withdrawal.dispositionProvider =
-                administrations[administrationIndex].provider;
-              withdrawal.dispositionTimestamp =
-                administrations[administrationIndex].timestamp;
-              withdrawal.dispositionType = 'Administration';
               administrations[administrationIndex].reconciled = true;
+
+              const administration = administrations[administrationIndex];
+
+              withdrawal.dispositionProvider = administration.provider;
+              withdrawal.dispositionTimestamp = administration.timestamp;
+              withdrawal.dispositionType = 'Administration';
 
               const painAssessmentIndex = painAssessments.findIndex(
                 painAssessment =>
                   painAssessment.medicationOrderId ===
-                    administrations[administrationIndex].medicationOrderId &&
+                    administration.medicationOrderId &&
                   new Date(painAssessment.timestamp).getTime() >=
-                    new Date(
-                      administrations[administrationIndex].timestamp
-                    ).getTime() &&
+                    new Date(administration.timestamp).getTime() &&
+                  new Date(painAssessment.timestamp).getTime() <
+                    new Date(administration.timestamp).getTime() + 3600000 && // Up to one hour after administration
                   painAssessment.byPolicy &&
                   !painAssessment.reconciled
               );
 
               if (painAssessments[painAssessmentIndex]) {
-                withdrawal.painAssessmentProvider =
-                  painAssessments[painAssessmentIndex].provider;
-                withdrawal.painAssessmentTimestamp =
-                  painAssessments[painAssessmentIndex].timestamp;
                 painAssessments[painAssessmentIndex].reconciled = true;
+
+                const painAssessment = painAssessments[painAssessmentIndex];
+
+                withdrawal.painAssessmentProvider = painAssessment.provider;
+                withdrawal.painAssessmentTimestamp = painAssessment.timestamp;
               }
             } else {
               const otherTransactionIndex = otherTransactions.findIndex(
@@ -1281,13 +1284,14 @@ process.on('message', data => {
               );
 
               if (otherTransactions[otherTransactionIndex]) {
-                withdrawal.dispositionProvider =
-                  otherTransactions[otherTransactionIndex].provider;
-                withdrawal.dispositionTimestamp =
-                  otherTransactions[otherTransactionIndex].timestamp;
-                withdrawal.dispositionType =
-                  otherTransactions[otherTransactionIndex].type;
                 otherTransactions[otherTransactionIndex].reconciled = true;
+
+                const otherTransaction =
+                  otherTransactions[otherTransactionIndex];
+
+                withdrawal.dispositionProvider = otherTransaction.provider;
+                withdrawal.dispositionTimestamp = otherTransaction.timestamp;
+                withdrawal.dispositionType = otherTransaction.type;
               }
             }
           } else {
@@ -1300,6 +1304,7 @@ process.on('message', data => {
 
             // There can be multiple wastes for a single withdrawal. What follows finds all those wastes, and if the entire withdrawal is wasted, marks the last waste as disposition.
             const totalStrength = withdrawal.amount * withdrawal.strength;
+
             let totalWaste = 0;
             let lastWasteIndex = 0;
 
@@ -1318,6 +1323,7 @@ process.on('message', data => {
                   !waste.reconciled
                 ) {
                   wastes[i].reconciled = true;
+
                   totalWaste += waste.amount;
                   lastWasteIndex = i;
                 }
@@ -1327,22 +1333,23 @@ process.on('message', data => {
                 !waste.reconciled
               ) {
                 wastes[i].reconciled = true;
+
                 totalWaste += waste.amount;
                 lastWasteIndex = i;
               }
             }
 
             withdrawal.wasteAmount = totalWaste;
+
+            const lastWaste = wastes[lastWasteIndex];
+
             withdrawal.waste =
-              totalWaste > 0
-                ? `${totalWaste} ${wastes[lastWasteIndex].units}`
-                : null;
+              totalWaste > 0 ? `${totalWaste} ${lastWaste.units}` : null;
 
             if (totalWaste >= totalStrength) {
               withdrawal.dispositionType = 'Waste';
-              withdrawal.dispositionProvider = wastes[lastWasteIndex].provider;
-              withdrawal.dispositionTimestamp =
-                wastes[lastWasteIndex].timestamp;
+              withdrawal.dispositionProvider = lastWaste.provider;
+              withdrawal.dispositionTimestamp = lastWaste.timestamp;
             } else {
               const administrationIndex = administrations.findIndex(
                 administration => {
@@ -1368,24 +1375,25 @@ process.on('message', data => {
               );
 
               if (administrations[administrationIndex]) {
-                withdrawal.dispositionProvider =
-                  administrations[administrationIndex].provider;
-                withdrawal.dispositionTimestamp =
-                  administrations[administrationIndex].timestamp;
-                withdrawal.dispositionType = 'Administration';
                 administrations[administrationIndex].reconciled = true;
+
+                const administration = administrations[administrationIndex];
+
+                withdrawal.dispositionProvider = administration.provider;
+                withdrawal.dispositionTimestamp = administration.timestamp;
+                withdrawal.dispositionType = 'Administration';
 
                 const painAssessmentIndex = painAssessments.findIndex(
                   painAssessment => {
                     if (nextWithdrawal) {
                       return (
                         painAssessment.medicationOrderId ===
-                          administrations[administrationIndex]
-                            .medicationOrderId &&
+                          administration.medicationOrderId &&
                         new Date(painAssessment.timestamp).getTime() >=
-                          new Date(
-                            administrations[administrationIndex].timestamp
-                          ).getTime() &&
+                          new Date(administration.timestamp).getTime() &&
+                        new Date(painAssessment.timestamp).getTime() <
+                          new Date(administration.timestamp).getTime() +
+                            3600000 && // Up to one hour after administration.
                         painAssessment.timestamp < nextWithdrawal.timestamp &&
                         painAssessment.byPolicy &&
                         !painAssessment.reconciled
@@ -1394,12 +1402,12 @@ process.on('message', data => {
 
                     return (
                       painAssessment.medicationOrderId ===
-                        administrations[administrationIndex]
-                          .medicationOrderId &&
+                        administration.medicationOrderId &&
                       new Date(painAssessment.timestamp).getTime() >=
-                        new Date(
-                          administrations[administrationIndex].timestamp
-                        ).getTime() &&
+                        new Date(administration.timestamp).getTime() &&
+                      new Date(painAssessment.timestamp).getTime() <
+                        new Date(administration.timestamp).getTime() +
+                          3600000 && // Up to one hour after administration
                       painAssessment.byPolicy &&
                       !painAssessment.reconciled
                     );
@@ -1407,11 +1415,12 @@ process.on('message', data => {
                 );
 
                 if (painAssessments[painAssessmentIndex]) {
-                  withdrawal.painAssessmentProvider =
-                    painAssessments[painAssessmentIndex].provider;
-                  withdrawal.painAssessmentTimestamp =
-                    painAssessments[painAssessmentIndex].timestamp;
                   painAssessments[painAssessmentIndex].reconciled = true;
+
+                  const painAssessment = painAssessments[painAssessmentIndex];
+
+                  withdrawal.painAssessmentProvider = painAssessment.provider;
+                  withdrawal.painAssessmentTimestamp = painAssessment.timestamp;
                 }
               } else {
                 const otherTransactionIndex = otherTransactions.findIndex(
@@ -1436,13 +1445,14 @@ process.on('message', data => {
                 );
 
                 if (otherTransactions[otherTransactionIndex]) {
-                  withdrawal.dispositionProvider =
-                    otherTransactions[otherTransactionIndex].provider;
-                  withdrawal.dispositionTimestamp =
-                    otherTransactions[otherTransactionIndex].timestamp;
-                  withdrawal.dispositionType =
-                    otherTransactions[otherTransactionIndex].type;
                   otherTransactions[otherTransactionIndex].reconciled = true;
+
+                  const otherTransaction =
+                    otherTransactions[otherTransactionIndex];
+
+                  withdrawal.dispositionProvider = otherTransaction.provider;
+                  withdrawal.dispositionTimestamp = otherTransaction.timestamp;
+                  withdrawal.dispositionType = otherTransaction.type;
                 }
               }
             }
