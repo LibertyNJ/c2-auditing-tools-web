@@ -21,6 +21,7 @@ db.create = (table, parameters) => {
   const onConflict = parameters.onConflict
     ? `OR ${parameters.onConflict.toUpperCase()} `
     : '';
+
   const columns = Object.keys(parameters.data).join(', ');
   const values = Object.values(parameters.data);
   const valuePlaceholders = values.map(() => '?').join(', ');
@@ -36,12 +37,14 @@ db.create = (table, parameters) => {
 db.read = (table, parameters) => {
   const isDistinct = parameters.isDistinct ? 'DISTINCT ' : '';
   const columns = parameters.columns.join(', ');
+
   const whereValues = parameters.wheres
     ? parameters.wheres
         .filter(where => where)
         .reduce((flattenedWheres, where) => flattenedWheres.concat(where), [])
         .map(({ value }) => value)
     : null;
+
   const wheres =
     whereValues.length > 0
       ? `WHERE ${parameters.wheres
@@ -63,16 +66,19 @@ db.read = (table, parameters) => {
           })
           .join(' AND ')}`
       : '';
+
   const joins = parameters.joins
     ? parameters.joins
         .map(join => `${join.type} JOIN ${join.table} ON ${join.predicate}`)
         .join(' ')
     : '';
+
   const orderBys = parameters.orderBys
     ? `ORDER BY ${parameters.orderBys
         .map(({ column, direction }) => `${column} ${direction}`)
         .join(', ')}`
     : '';
+
   const limit = parameters.limit ? `LIMIT ${parameters.limit}` : '';
 
   const stmt = db.prepare(
@@ -99,9 +105,11 @@ db.update = (table, parameters) => {
   const onConflict = parameters.onConflict
     ? `OR ${parameters.onConflict.toUpperCase()} `
     : '';
+
   const setValues = parameters.sets
     ? parameters.sets.filter(set => set).map(({ value }) => value)
     : null;
+
   const sets =
     setValues.length > 0
       ? `SET ${parameters.sets
@@ -109,12 +117,14 @@ db.update = (table, parameters) => {
           .map(({ column }) => `${column} = ?`)
           .join(', ')}`
       : '';
+
   const whereValues = parameters.wheres
     ? parameters.wheres
         .filter(where => where)
         .reduce((flattenedWheres, where) => flattenedWheres.concat(where), [])
         .map(({ value }) => value)
     : null;
+
   const wheres =
     whereValues.length > 0
       ? `WHERE ${parameters.wheres
@@ -153,6 +163,7 @@ db.delete = (table, parameters) => {
         .reduce((flattenedWheres, where) => flattenedWheres.concat(where), [])
         .map(({ value }) => value)
     : null;
+
   const wheres =
     whereValues.length > 0
       ? `WHERE ${parameters.wheres
@@ -204,9 +215,11 @@ db.createProviders = () =>
         if (providerId) return;
 
         const [lastName, remainder] = name.split(', ');
+
         const middleInitial = /\s\w$/.test(remainder)
           ? remainder.match(/\w$/)[0]
           : null;
+
         const firstName = middleInitial
           ? remainder.slice(0, remainder.length - 2)
           : remainder;
@@ -228,11 +241,13 @@ db.createProviders = () =>
               operator: '=',
               value: lastName,
             },
+
             {
               column: 'firstName',
               operator: '=',
               value: firstName,
             },
+
             {
               column: 'middleInitial',
               operator: 'IS',
@@ -289,6 +304,7 @@ db.initialize = () => {
       const columns = Object.entries(parameters.columns)
         .map(([column, constraint]) => `${column} ${constraint}`)
         .join(', ');
+
       const unique = parameters.unique
         ? `, UNIQUE (${parameters.unique.columns.join(
             ', ' // Ugly
@@ -306,6 +322,7 @@ db.initialize = () => {
     medications.forEach(medication => {
       db.create('medication', {
         onConflict: 'ignore',
+
         data: { name: medication },
       });
     });
@@ -313,6 +330,7 @@ db.initialize = () => {
     adcTransactionTypes.forEach(adcTransactionType => {
       db.create('adcTransactionType', {
         onConflict: 'ignore',
+
         data: {
           name: adcTransactionType,
         },
@@ -321,6 +339,7 @@ db.initialize = () => {
 
     db.create('medicationOrder', {
       onConflict: 'ignore',
+
       data: {
         id: 'OVERRIDE',
         medicationId: null,
@@ -472,6 +491,7 @@ db.parseAdc = filePath =>
   new Promise((resolve, reject) => {
     const readStream = fs.createReadStream(filePath);
     const workbook = new Excel.Workbook();
+
     workbook.xlsx
       .read(readStream)
       .then(() => {
@@ -1523,7 +1543,7 @@ process.on('message', data => {
           columns: [
             'adcTransaction.id',
             'timestamp',
-            "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS provider",
+            "provider.lastName || ', ' || provider.firstName || ifnull(' ' || provider.middleInitial, '') AS provider",
             'adcTransactionType.name AS transactionType',
             "medication.name || ', ' || medicationProduct.strength || ' ' || medicationProduct.units || ' ' || medicationProduct.form AS product",
             'amount',
@@ -1634,7 +1654,7 @@ process.on('message', data => {
           columns: [
             'emarAdministration.id',
             'timestamp',
-            "provider.lastName || ', ' || provider.firstName || ' ' || provider.middleInitial AS provider",
+            "provider.lastName || ', ' || provider.firstName || ifnull(' ' || provider.middleInitial, '') AS provider",
             "medication.name || ', ' || medicationOrder.form AS medication",
             "medicationOrder.dose || ' ' || medicationOrder.units AS dose",
             'medicationOrderId',
