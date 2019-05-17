@@ -1,123 +1,112 @@
 import React from 'react';
+import { ipcRenderer } from 'electron';
 
-const DashboardView = () => (
-  <React.Fragment>
-    <div className="row flex-shrink-0">
-      <header className="col">
-        <h1 className="text-primary text-center">Dashboard</h1>
-      </header>
-    </div>
-    <div className="row">
-      <div className="col">
-        <section>
-          <header>
-            <h2 className="text-primary">Unassigned IDs</h2>
-            <p>
-              Assigning and maintaining IDs will give you more accurate results.
+class DashboardView extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      now: new Date(),
+    };
+  }
+
+  componentDidMount() {
+    ipcRenderer.send('database', {
+      header: { type: 'dashboard', response: 'dashboard' },
+      body: '',
+    });
+
+    ipcRenderer.once('dashboard', (event, data) => {
+      this.setState({
+        unassignedAdcIds: data.body.unassignedAdcIds,
+        unassignedEmarIds: data.body.unassignedEmarIds,
+        earliestAdcData: data.body.earliestAdcData,
+        earliestEmarData: data.body.earliestEmarData,
+        latestAdcData: data.body.latestAdcData,
+        latestEmarData: data.body.latestEmarData,
+      });
+    });
+  }
+
+  render() {
+    const formatDate = dateString =>
+      new Date(dateString).toLocaleString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        hour12: false,
+      });
+
+    return (
+      <React.Fragment>
+        <div className="row flex-shrink-0">
+          <header className="col">
+            <h1 className="text-primary text-center">Dashboard</h1>
+            <p className="lead">
+              Today is{' '}
+              {this.state.now.toLocaleString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+              .
             </p>
-            <table className="table table-sm table-bordered">
-              <thead>
-                <tr>
-                  <th>ADC IDs</th>
-                  <th>EMAR IDs</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>#</td>
-                  <td>#</td>
-                </tr>
-              </tbody>
-            </table>
           </header>
-        </section>
-        <section>
-          <header>
-            <h2 className="text-primary">Earliest and latest data imports</h2>
-            <p>Earliest and latest dates for which data was imported.</p>
-            <table className="table table-sm table-bordered">
-              <thead>
-                <tr>
-                  <th />
-                  <th>ADC</th>
-                  <th>EMAR</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <th>Earliest</th>
-                  <td>#</td>
-                  <td>#</td>
-                </tr>
-                <tr>
-                  <th>Latest</th>
-                  <td>#</td>
-                  <td>#</td>
-                </tr>
-              </tbody>
-            </table>
-          </header>
-        </section>
-        <section>
-          <header>
-            <h2 className="text-primary">Past year</h2>
-            <p>Presence of imported data over the past year.</p>
-            <table className="table table-sm table-bordered">
-              <thead>
-                <tr>
-                  <th />
-                  <th>Jan</th>
-                  <th>Feb</th>
-                  <th>Mar</th>
-                  <th>Apr</th>
-                  <th>May</th>
-                  <th>Jun</th>
-                  <th>Jul</th>
-                  <th>Aug</th>
-                  <th>Sep</th>
-                  <th>Oct</th>
-                  <th>Nov</th>
-                  <th>Dec</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <th>ADC</th>
-                  <td>#</td>
-                  <td>#</td>
-                  <td>#</td>
-                  <td>#</td>
-                  <td>#</td>
-                  <td>#</td>
-                  <td>#</td>
-                  <td>#</td>
-                  <td>#</td>
-                  <td>#</td>
-                  <td>#</td>
-                  <td>#</td>
-                </tr>
-                <tr>
-                  <th>EMAR</th>
-                  <td>#</td>
-                  <td>#</td>
-                  <td>#</td>
-                  <td>#</td>
-                  <td>#</td>
-                  <td>#</td>
-                  <td>#</td>
-                  <td>#</td>
-                  <td>#</td>
-                  <td>#</td>
-                  <td>#</td>
-                  <td>#</td>
-                </tr>
-              </tbody>
-            </table>
-          </header>
-        </section>
-      </div>
-    </div>
-  </React.Fragment>
-);
+        </div>
+        <div className="row">
+          <section className="col-3">
+            <header>
+              <h2 className="text-primary">Unassigned IDs</h2>
+              <table className="table table-sm table-bordered">
+                <thead>
+                  <tr>
+                    <th>ADC IDs</th>
+                    <th>EMAR IDs</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>{this.state.unassignedAdcIds}</td>
+                    <td>{this.state.unassignedEmarIds}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </header>
+          </section>
+          <section className="col-6">
+            <header>
+              <h2 className="text-primary">Data range</h2>
+              <table className="table table-sm table-bordered">
+                <thead>
+                  <tr>
+                    <th />
+                    <th>Earliest</th>
+                    <th>Latest</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th>ADC</th>
+                    <td>{formatDate(this.state.earliestAdcData)}</td>
+                    <td>{formatDate(this.state.latestAdcData)}</td>
+                  </tr>
+                  <tr>
+                    <th>EMAR</th>
+                    <td>{formatDate(this.state.earliestEmarData)}</td>
+                    <td>{formatDate(this.state.latestEmarData)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </header>
+          </section>
+        </div>
+      </React.Fragment>
+    );
+  }
+}
 
 export default DashboardView;

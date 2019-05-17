@@ -89,8 +89,8 @@ process.on('message', ({ header, body }) => {
       Promise.all([
         parser.parseAdc(db, body.adcPath),
         parser.parseEmar(db, body.emarPath),
+        parser.createProviders(db),
       ])
-        .then(() => parser.createProviders(db))
         .then(() => {
           process.send({ header: { type: header.response } });
           db.updateStatus('Ready');
@@ -1149,6 +1149,104 @@ process.on('message', ({ header, body }) => {
         db.updateStatus('Error');
       }
 
+      break;
+
+    case 'dashboard':
+      try {
+        db.updateStatus('Querying dashboard…');
+
+        const unassignedAdcIds = db.read('providerAdc', {
+          columns: ['*'],
+
+          wheres: [
+            {
+              column: 'providerId',
+              operator: 'IS',
+              value: null,
+            },
+          ],
+        });
+
+        const unassignedEmarIds = db.read('providerEmar', {
+          columns: ['*'],
+
+          wheres: [
+            {
+              column: 'providerId',
+              operator: 'IS',
+              value: null,
+            },
+          ],
+        });
+
+        const adcTransactionTimestamps = db.read('adcTransaction', {
+          isDistinct: true,
+          columns: ['timestamp'],
+
+          wheres: [
+            {
+              column: 1,
+              operator: '=',
+              value: 1,
+            },
+          ],
+
+          orderBys: [
+            {
+              column: 'timestamp',
+              direction: 'ASC',
+            },
+          ],
+        });
+
+        const emarAdministrationTimestamps = db.read('emarAdministration', {
+          isDistinct: true,
+          columns: ['timestamp'],
+
+          wheres: [
+            {
+              column: 1,
+              operator: '=',
+              value: 1,
+            },
+          ],
+
+          orderBys: [
+            {
+              column: 'timestamp',
+              direction: 'ASC',
+            },
+          ],
+        });
+
+        process.send({
+          header: { type: header.response },
+
+          body: {
+            unassignedAdcIds: unassignedAdcIds ? unassignedAdcIds.length : 0,
+            unassignedEmarIds: unassignedEmarIds ? unassignedEmarIds.length : 0,
+            earliestAdcData: adcTransactionTimestamps[0].timestamp,
+            earliestEmarData: emarAdministrationTimestamps[0].timestamp,
+
+            latestAdcData:
+              adcTransactionTimestamps[adcTransactionTimestamps.length - 1]
+                .timestamp,
+
+            latestEmarData:
+              emarAdministrationTimestamps[
+                emarAdministrationTimestamps.length - 1
+              ].timestamp,
+          },
+        });
+
+        db.updateStatus('Ready');
+      } catch (error) {
+        if (isDevMode) {
+          console.error(error);
+        }
+
+        db.updateStatus('Error');
+      }
       break;
 
     default:

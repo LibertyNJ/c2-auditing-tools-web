@@ -28,47 +28,38 @@ const Layout = props => {
       <header className="container-fluid flex-shrink-0 sticky-top bg-white p-0 mb-3">
         <nav className="d-flex justify-content-between">
           <div className="border-bottom flex-grow-1">
-            <div className="navbar-brand text-primary px-3">C2 Auditing Tools</div>
+            <div className="navbar-brand text-primary px-3">
+              C2 Auditing Tools
+            </div>
           </div>
           <ul className="nav nav-tabs d-flex justify-content-end">
             <li className="nav-item">
-              <NavLink
-                className={navLinkClass}
-                exact
-                to="/"
-              >
+              <NavLink className={navLinkClass} exact to="/">
+                Dashboard
+              </NavLink>
+            </li>
+            <li className="nav-item">
+              <NavLink className={navLinkClass} to="/ledger">
                 Ledger
               </NavLink>
             </li>
             <li className="nav-item">
-              <NavLink
-                className={navLinkClass}
-                to="/transaction"
-              >
+              <NavLink className={navLinkClass} to="/transaction">
                 Transactions
               </NavLink>
             </li>
             <li className="nav-item">
-              <NavLink
-                className={navLinkClass}
-                to="/administration"
-              >
+              <NavLink className={navLinkClass} to="/administration">
                 Administrations
               </NavLink>
             </li>
             <li className="nav-item">
-              <NavLink
-                className={navLinkClass}
-                to="/provider"
-              >
+              <NavLink className={navLinkClass} to="/provider">
                 Providers
               </NavLink>
             </li>
             <li className="nav-item">
-              <NavLink
-                className={navLinkClass}
-                to="/data"
-              >
+              <NavLink className={navLinkClass} to="/data">
                 Data
               </NavLink>
             </li>

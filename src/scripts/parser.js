@@ -163,6 +163,7 @@ module.exports = {
 
           const newProviderId = db.read('provider', {
             columns: ['id'],
+            
             wheres: [
               {
                 column: 'lastName',

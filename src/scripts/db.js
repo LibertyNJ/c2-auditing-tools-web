@@ -76,10 +76,7 @@ db.read = (table, parameters) => {
 
   const joins = parameters.joins
     ? parameters.joins
-        .map(
-          ({ type, joinTable, predicate }) =>
-            `${type} JOIN ${joinTable} ON ${predicate}`
-        )
+        .map(join => `${join.type} JOIN ${join.table} ON ${join.predicate}`)
         .join(' ')
     : '';
 
@@ -103,7 +100,7 @@ db.read = (table, parameters) => {
     `
   );
 
-  if (parameters.columns.length === 1 && /id/i.test(parameters.columns[0])) {
+  if (parameters.columns.length === 1 && /id\b/i.test(parameters.columns[0])) {
     const record = stmt.get(...whereValues);
     return record ? record.id : null;
   }
