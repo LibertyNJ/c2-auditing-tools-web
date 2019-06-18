@@ -1,13 +1,15 @@
 import { ipcRenderer } from 'electron';
-import React from 'react';
 import path from 'path';
 import PropTypes from 'prop-types';
+import React from 'react';
+
 import Button from '../components/Button';
 import SVGIcon from '../components/SVGIcon';
+import ViewHeader from '../components/ViewHeader';
 
 const DataView = () => (
   <React.Fragment>
-    <h1 className="text-primary text-center">Data</h1>
+    <ViewHeader>Data</ViewHeader>
     <div className="row">
       <div className="col mx-auto" style={{ maxWidth: '33em' }}>
         <p className="lead">Import data to the database.</p>

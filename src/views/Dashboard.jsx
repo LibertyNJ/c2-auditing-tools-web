@@ -1,16 +1,12 @@
 import React from 'react';
 import { ipcRenderer } from 'electron';
 
-class DashboardView extends React.Component {
-  constructor(props) {
-    super(props);
+export default class DashboardView extends React.Component {
+  state = {
+    now: new Date(),
+  };
 
-    this.state = {
-      now: new Date(),
-    };
-  }
-
-  componentDidMount() {
+  componentDidMount = () => {
     ipcRenderer.send('database', {
       header: { type: 'dashboard', response: 'dashboard' },
       body: '',
@@ -26,9 +22,9 @@ class DashboardView extends React.Component {
         latestEmarData: data.body.latestEmarData,
       });
     });
-  }
+  };
 
-  render() {
+  render = () => {
     const formatDate = dateString =>
       new Date(dateString).toLocaleString('en-US', {
         month: '2-digit',
@@ -106,7 +102,5 @@ class DashboardView extends React.Component {
         </div>
       </React.Fragment>
     );
-  }
+  };
 }
-
-export default DashboardView;

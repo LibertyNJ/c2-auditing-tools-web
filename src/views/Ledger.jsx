@@ -2,6 +2,7 @@ import React from 'react';
 
 import RecordsSection from '../components/RecordsSection';
 import SearchSection from '../components/SearchSection';
+import ViewHeader from '../components/ViewHeader';
 
 const LedgerView = () => {
   const formControlDefinitions = [
@@ -18,7 +19,6 @@ const LedgerView = () => {
         },
       },
     },
-
     {
       type: 'input',
       props: {
@@ -32,17 +32,14 @@ const LedgerView = () => {
         },
       },
     },
-
     {
       type: 'input',
       props: { type: 'text', name: 'provider', label: 'Withdrawn by' },
     },
-
     {
       type: 'input',
       props: { type: 'text', name: 'product', label: 'Product' },
     },
-
     {
       type: 'input',
       props: { type: 'text', name: 'medicationOrderId', label: 'Order ID' },
@@ -55,19 +52,16 @@ const LedgerView = () => {
       dataKey: 'provider',
       maxWidth: 0,
     },
-
     {
       label: 'Time',
       dataKey: 'timestamp',
       maxWidth: 120,
     },
-
     {
       label: 'Product',
       dataKey: 'product',
       maxWidth: 0,
     },
-
     {
       label: 'Amount',
       dataKey: 'amount',
@@ -79,19 +73,16 @@ const LedgerView = () => {
       dataKey: 'waste',
       maxWidth: 110,
     },
-
     {
       label: 'Disposition',
       dataKey: 'dispositionType',
       maxWidth: 130,
     },
-
     {
       label: 'Disposed by',
       dataKey: 'dispositionProvider',
       maxWidth: 0,
     },
-
     {
       label: 'Time',
       dataKey: 'dispositionTimestamp',
@@ -103,13 +94,11 @@ const LedgerView = () => {
       dataKey: 'painAssessmentTimestamp',
       maxWidth: 120,
     },
-
     {
       label: 'Pain reassessed by',
       dataKey: 'painAssessmentProvider',
       maxWidth: 0,
     },
-
     {
       label: 'Order ID',
       dataKey: 'medicationOrderId',
@@ -120,9 +109,7 @@ const LedgerView = () => {
   return (
     <React.Fragment>
       <div className="row flex-shrink-0">
-        <header className="col">
-          <h1 className="text-primary text-center">Ledger</h1>
-        </header>
+        <ViewHeader>Ledger</ViewHeader>
       </div>
       <div className="row flex-grow-1">
         <SearchSection

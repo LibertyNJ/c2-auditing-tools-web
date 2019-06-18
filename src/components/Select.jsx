@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import React from 'react';
+
 import SVGIcon from './SVGIcon';
 
 const Select = props => {
@@ -23,18 +24,7 @@ const Select = props => {
       >
         {options}
       </select>
-      {props.info && (
-        <small className="form-text text-info">
-          <SVGIcon
-            className="align-baseline"
-            type="info-circle"
-            width="1em"
-            height="1em"
-            fill="#17b2a8"
-          />{' '}
-          {props.info}
-        </small>
-      )}
+      {props.helpText && <HelpText text={props.helpText} />}
     </div>
   );
 };
@@ -46,7 +36,7 @@ Select.propTypes = {
   label: PropTypes.string,
   options: PropTypes.arrayOf(PropTypes.object).isRequired,
   handleChange: PropTypes.func.isRequired,
-  info: PropTypes.string,
+  helpText: PropTypes.string,
   attributes: PropTypes.objectOf(
     PropTypes.oneOfType([PropTypes.string, PropTypes.bool])
   ),
@@ -54,9 +44,26 @@ Select.propTypes = {
 
 Select.defaultProps = {
   label: null,
-  info: null,
+  helpText: null,
   attributes: null,
   value: [],
+};
+
+const HelpText = ({ text }) => (
+  <small className="form-text text-info text-nowrap">
+    <SVGIcon
+      className="align-baseline"
+      type="info-circle"
+      width="1em"
+      height="1em"
+      fill="#17b2a8"
+    />{' '}
+    {text}
+  </small>
+);
+
+HelpText.propTypes = {
+  text: PropTypes.string.isRequired,
 };
 
 export default Select;

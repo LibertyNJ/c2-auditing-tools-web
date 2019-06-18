@@ -1,7 +1,8 @@
-const Excel = require('exceljs');
 const fs = require('fs');
 
-const getMedication = string => {
+const Excel = require('exceljs');
+
+const getMedicationName = string => {
   if (/oxycodone/i.test(string)) {
     if (/acetaminophen/i.test(string)) {
       return 'Oxycodone–Acetaminophen';
@@ -22,12 +23,8 @@ const getMedication = string => {
     return 'Fentanyl';
   }
 
-  if (/hydrocodone/i.test(string)) {
-    if (/homatrop/i.test(string)) {
-      return 'Hydrocodone–Homatropine';
-    }
-
-    return null;
+  if (/hydrocodone/i.test(string) && /homatrop/i.test(string)) {
+    return 'Hydrocodone–Homatropine';
   }
 
   return null;
@@ -117,13 +114,10 @@ const getAdcTransactionType = string => {
   switch (string) {
     case 'WITHDRAWN':
       return 'Withdrawal';
-
     case 'RESTOCKED':
       return 'Restock';
-
     case 'RETURNED':
       return 'Return';
-
     default:
       return null;
   }
@@ -143,11 +137,9 @@ module.exports = {
           if (providerId) return;
 
           const [lastName, remainder] = name.split(', ');
-
           const middleInitial = /\s\w$/.test(remainder)
             ? remainder.match(/\w$/)[0]
             : null;
-
           const firstName = middleInitial
             ? remainder.slice(0, remainder.length - 2)
             : remainder;
@@ -163,20 +155,17 @@ module.exports = {
 
           const newProviderId = db.read('provider', {
             columns: ['id'],
-            
             wheres: [
               {
                 column: 'lastName',
                 operator: '=',
                 value: lastName,
               },
-
               {
                 column: 'firstName',
                 operator: '=',
                 value: firstName,
               },
-
               {
                 column: 'middleInitial',
                 operator: 'IS',
@@ -192,7 +181,6 @@ module.exports = {
                 value: newProviderId,
               },
             ],
-
             wheres: [
               {
                 column: 'id',
@@ -209,7 +197,6 @@ module.exports = {
                 value: newProviderId,
               },
             ],
-
             wheres: [
               {
                 column: 'name',
@@ -235,29 +222,28 @@ module.exports = {
       workbook.xlsx
         .read(readStream)
         .then(() => {
-          const getTimestamp = (date, time) => {
-            const [month, day, year] = date.split(/\//);
-            return `${year}-${month}-${day}T${time}`;
-          };
-
           const worksheet = workbook.getWorksheet(1);
           let isPastHeaderRow = false;
 
-          worksheet.eachRow((row, rowNumber) => {
+          worksheet.eachRow(row => {
             const adcTransactionType = getAdcTransactionType(
               row.getCell('E').value
             );
+            const medicationName = getMedicationName(row.getCell('C').value);
+            const medicationId = getMedicationId(medicationName);
 
-            const medicationId = db.read('medication', {
-              columns: ['id'],
-              wheres: [
-                {
-                  column: 'name',
-                  operator: '=',
-                  value: getMedication(row.getCell('C').value),
-                },
-              ],
-            });
+            function getMedicationId(medicationName) {
+              db.read('medication', {
+                columns: ['id'],
+                wheres: [
+                  {
+                    column: 'name',
+                    operator: '=',
+                    value: medicationName,
+                  },
+                ],
+              });
+            }
 
             if (isPastHeaderRow && medicationId && adcTransactionType) {
               const timestamp = getTimestamp(
@@ -285,32 +271,42 @@ module.exports = {
                 data: { name: row.getCell('K').value },
               });
 
-              const providerAdcId = db.read('providerAdc', {
-                columns: ['id'],
-                wheres: [
-                  {
-                    column: 'name',
-                    operator: '=',
-                    value: row.getCell('K').value,
-                  },
-                ],
-              });
+              const providerAdcId = getProviderAdcId(row.getCell('K').value);
+
+              function getProviderAdcId(providerAdcName) {
+                db.read('providerAdc', {
+                  columns: ['id'],
+                  wheres: [
+                    {
+                      column: 'name',
+                      operator: '=',
+                      value: providerAdcName,
+                    },
+                  ],
+                });
+              }
 
               db.create('medicationProductAdc', {
                 onConflict: 'ignore',
                 data: { name: medicationProductAdc },
               });
 
-              const medicationProductAdcId = db.read('medicationProductAdc', {
-                columns: ['id'],
-                wheres: [
-                  {
-                    column: 'name',
-                    operator: '=',
-                    value: medicationProductAdc,
-                  },
-                ],
-              });
+              const medicationProductAdcId = getMedicationProductAdcId(
+                medicationProductAdc
+              );
+
+              function getMedicationProductAdcId(medicationProductAdcName) {
+                db.read('medicationProductAdc', {
+                  columns: ['id'],
+                  wheres: [
+                    {
+                      column: 'name',
+                      operator: '=',
+                      value: medicationProductAdcName,
+                    },
+                  ],
+                });
+              }
 
               db.create('medicationProduct', {
                 onConflict: 'ignore',
@@ -398,6 +394,11 @@ module.exports = {
               isPastHeaderRow = true;
             }
           });
+
+          const getTimestamp = (date, time) => {
+            const [month, day, year] = date.split(/\//);
+            return `${year}-${month}-${day}T${time}`;
+          };
         })
         .then(() => {
           readStream.close();
@@ -411,6 +412,7 @@ module.exports = {
     return new Promise((resolve, reject) => {
       const readStream = fs.createReadStream(filePath);
       const workbook = new Excel.Workbook();
+
       workbook.csv
         .read(readStream)
         .then(worksheet => {
@@ -437,7 +439,7 @@ module.exports = {
           };
 
           let isPastHeaderRow = false;
-          worksheet.eachRow((row, rowNumber) => {
+          worksheet.eachRow(row => {
             if (isPastHeaderRow) {
               const visitId = row.getCell('F').value;
               const mrn = +row.getCell('G').value;
@@ -445,6 +447,7 @@ module.exports = {
 
               db.create('visit', {
                 onConflict: 'replace',
+
                 data: {
                   id: visitId,
                   mrn,
@@ -459,6 +462,7 @@ module.exports = {
 
               const medicationId = db.read('medication', {
                 columns: ['id'],
+
                 wheres: [
                   {
                     column: 'name',
@@ -526,8 +530,7 @@ module.exports = {
               isPastHeaderRow = true;
             }
           });
-        })
-        .then(() => {
+
           readStream.close();
           resolve();
         })

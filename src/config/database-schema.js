@@ -10,7 +10,6 @@ module.exports = {
       mrn: 'UNSIGNED INT(8)',
       timestamp: 'CHAR(19) NOT NULL',
     },
-
     unique: {
       columns: ['typeId', 'providerAdcId', 'timestamp'],
       onConflict: 'ignore',
@@ -31,7 +30,6 @@ module.exports = {
       medicationOrderId: 'CHAR(9) REFERENCES medicationOrder(id) NOT NULL',
       timestamp: 'CHAR(19) NOT NULL',
     },
-
     unique: {
       columns: ['medicationOrderId', 'timestamp'],
       onConflict: 'ignore',
@@ -46,7 +44,6 @@ module.exports = {
       byPolicy: 'BOOLEAN NOT NULL',
       timestamp: 'CHAR(19) NOT NULL',
     },
-
     unique: {
       columns: ['medicationOrderId', 'timestamp'],
       onConflict: 'ignore',
@@ -87,7 +84,6 @@ module.exports = {
       id: 'INTEGER PRIMARY KEY',
       name: 'VARCHAR(255) UNIQUE NOT NULL',
     },
-
     unique: {
       columns: ['name'],
       onConflict: 'ignore',
@@ -101,7 +97,6 @@ module.exports = {
       firstName: 'VARCHAR(255) NOT NULL',
       middleInitial: 'CHAR(1)',
     },
-
     unique: {
       columns: ['lastName', 'firstName', 'middleInitial'],
       onConflict: 'ignore',
@@ -114,7 +109,6 @@ module.exports = {
       name: 'VARCHAR(255) NOT NULL',
       providerId: 'INTEGER REFERENCES provider',
     },
-
     unique: {
       columns: ['name'],
       onConflict: 'ignore',
@@ -127,7 +121,6 @@ module.exports = {
       name: 'VARCHAR(255) NOT NULL',
       providerId: 'INTEGER REFERENCES provider',
     },
-
     unique: {
       columns: ['name'],
       onConflict: 'ignore',

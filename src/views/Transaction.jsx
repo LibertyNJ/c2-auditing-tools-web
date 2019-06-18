@@ -2,6 +2,7 @@ import React from 'react';
 
 import RecordsSection from '../components/RecordsSection';
 import SearchSection from '../components/SearchSection';
+import ViewHeader from '../components/ViewHeader';
 
 const TransactionView = () => {
   const transactionTypeOptions = [
@@ -9,17 +10,14 @@ const TransactionView = () => {
       value: 'Restock',
       text: 'Restock',
     },
-
     {
       value: 'Return',
       text: 'Return',
     },
-
     {
       value: 'Waste',
       text: 'Waste',
     },
-
     {
       value: 'Withdrawal',
       text: 'Withdrawal',
@@ -40,7 +38,6 @@ const TransactionView = () => {
         },
       },
     },
-
     {
       type: 'input',
       props: {
@@ -54,7 +51,6 @@ const TransactionView = () => {
         },
       },
     },
-
     {
       type: 'select',
       props: {
@@ -68,17 +64,14 @@ const TransactionView = () => {
         },
       },
     },
-
     {
       type: 'input',
       props: { type: 'text', name: 'provider', label: 'Provider' },
     },
-
     {
       type: 'input',
       props: { type: 'text', name: 'product', label: 'Product' },
     },
-
     {
       type: 'input',
       props: { type: 'text', name: 'medicationOrderId', label: 'Order ID' },
@@ -91,31 +84,26 @@ const TransactionView = () => {
       dataKey: 'timestamp',
       maxWidth: 120,
     },
-
     {
       label: 'Provider',
       dataKey: 'provider',
       maxWidth: 0,
     },
-
     {
       label: 'Transaction',
       dataKey: 'transactionType',
       maxWidth: 130,
     },
-
     {
       label: 'Product',
       dataKey: 'product',
       maxWidth: 0,
     },
-
     {
       label: 'Amount',
       dataKey: 'amount',
       maxWidth: 110,
     },
-
     {
       label: 'Order ID',
       dataKey: 'medicationOrderId',
@@ -126,9 +114,7 @@ const TransactionView = () => {
   return (
     <React.Fragment>
       <div className="row flex-shrink-0">
-        <header className="col">
-          <h1 className="text-primary text-center">Transactions</h1>
-        </header>
+        <ViewHeader>Transaction</ViewHeader>
       </div>
       <div className="row flex-grow-1">
         <SearchSection

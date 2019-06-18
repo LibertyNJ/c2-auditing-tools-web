@@ -1,5 +1,6 @@
-const Database = require('better-sqlite3');
 const path = require('path');
+
+const Database = require('better-sqlite3');
 
 const isDevMode = process.execPath.match(/[\\/]electron/);
 
@@ -11,101 +12,102 @@ const db = isDevMode
   ? new Database(dbPath, { verbose: console.log })
   : new Database(dbPath);
 
-db.create = (table, parameters) => {
-  const onConflict = parameters.onConflict
+db.create = (tableName, parameters) => {
+  const onConflictClause = parameters.onConflict
     ? `OR ${parameters.onConflict.toUpperCase()} `
     : '';
-
-  const columns = Object.keys(parameters.data).join(', ');
+  const columnNames = Object.keys(parameters.data).join(', ');
   const values = Object.values(parameters.data);
-  const valuePlaceholders = values.map(() => '?').join(', ');
+  const valueParameters = values.map(() => '?').join(', ');
 
-  db.prepare(
+  const statement = db.prepare(
     `
-    INSERT ${onConflict}INTO ${table} (${columns})
-    VALUES (${valuePlaceholders});   
+    INSERT ${onConflictClause}INTO ${tableName} (${columnNames})
+    VALUES (${valueParameters});
     `
-  ).run(...values);
+  );
+
+  statement.run(...values);
 };
 
 function getWhereValues(parameters) {
-  if (parameters.wheres) {
-    return parameters.wheres
-      .filter(where => where)
-      .reduce((flattenedWheres, where) => flattenedWheres.concat(where), [])
-      .map(({ value }) => value);
-  }
-
-  return null;
+  return parameters.wheres
+    .filter(where => where)
+    .reduce((flattenedWheres, where) => flattenedWheres.concat(where), [])
+    .map(({ value }) => value);
 }
 
-function getWheres(parameters, whereValues) {
-  if (whereValues.length > 0) {
-    const whereStatements = parameters.wheres
-      .filter(where => where)
-      .map(where => {
-        if (Array.isArray(where)) {
-          const orStatement = where
-            .map(({ column, operator }) => `${column} ${operator} ?`)
-            .join(' OR ');
+function getWhereClause(parameters, whereValues) {
+  const predicates = parameters.wheres
+    .filter(where => where)
+    .map(where => {
+      if (Array.isArray(where)) {
+        const orStatement = where
+          .map(({ column, operator }) => `${column} ${operator} ?`)
+          .join(' OR ');
 
-          return `(${orStatement})`;
-        }
+        return `(${orStatement})`;
+      }
 
-        const { column, operator } = where;
+      const { column, operator } = where;
 
-        if (/timestamp/.test(column)) {
-          return `strftime('%s', ${column}) ${operator} strftime('%s', ?)`;
-        }
+      if (isTimestamp(column)) {
+        return `strftime('%s', ${column}) ${operator} strftime('%s', ?)`;
+      }
 
-        return `${column} ${operator} ?`;
-      })
-      .join(' AND ');
+      return `${column} ${operator} ?`;
+    })
+    .join(' AND ');
 
-    return `WHERE ${whereStatements}`;
-  }
+  const whereClause = `WHERE ${predicates}`;
 
-  return '';
+  return whereClause;
 }
 
-db.read = (table, parameters) => {
-  const isDistinct = parameters.isDistinct ? 'DISTINCT ' : '';
+function areNoWhereValues(whereValues) {
+  return whereValues.length === 0;
+}
+
+function isTimestamp(column) {
+  return /timestamp/.test(column);
+}
+
+db.read = (tableName, parameters) => {
+  const distinctClause = parameters.isDistinct ? 'DISTINCT ' : '';
   const columns = parameters.columns.join(', ');
   const whereValues = getWhereValues(parameters);
-  const wheres = getWheres(parameters, whereValues);
-
-  const joins = parameters.joins
-    ? parameters.joins
-        .map(join => `${join.type} JOIN ${join.table} ON ${join.predicate}`)
-        .join(' ')
-    : '';
-
+  const whereClause = getWhereClause(parameters, whereValues);
+  const joinClause =
+    parameters.joins
+      .map(join => `${join.type} JOIN ${join.table} ON ${join.predicate}`)
+      .join(' ') || '';
   const orderByStatements = parameters.orderBys
     ? parameters.orderBys
         .map(({ column, direction }) => `${column} ${direction}`)
         .join(', ')
     : null;
+  const orderByClause = orderByStatements
+    ? `ORDER BY ${orderByStatements}`
+    : '';
+  const limitClause = parameters.limit ? `LIMIT ${parameters.limit}` : '';
 
-  const orderBys = orderByStatements ? `ORDER BY ${orderByStatements}` : '';
-  const limit = parameters.limit ? `LIMIT ${parameters.limit}` : '';
-
-  const stmt = db.prepare(
+  const statement = db.prepare(
     `
-    SELECT ${isDistinct}${columns}
-    FROM ${table}
-    ${joins}
-    ${wheres}
-    ${orderBys}
-    ${limit};
+    SELECT ${distinctClause}${columns}
+    FROM ${tableName}
+    ${joinClause}
+    ${whereClause}
+    ${orderByClause}
+    ${limitClause};
     `
   );
 
   if (parameters.columns.length === 1 && /id\b/i.test(parameters.columns[0])) {
-    const record = stmt.get(...whereValues);
+    const record = statement.get(...whereValues);
     return record ? record.id : null;
   }
 
-  return stmt.all(...whereValues) || null;
+  return statement.all(...whereValues) || null;
 };
 
 db.update = (table, parameters) => {
@@ -127,7 +129,7 @@ db.update = (table, parameters) => {
 
   const sets = setStatements ? `SET ${setStatements}` : '';
   const whereValues = getWhereValues(parameters);
-  const wheres = getWheres(parameters, whereValues);
+  const wheres = getWhereClause(parameters, whereValues);
 
   db.prepare(
     `
@@ -140,7 +142,7 @@ db.update = (table, parameters) => {
 
 db.delete = (table, parameters) => {
   const whereValues = getWhereValues(parameters);
-  const wheres = getWheres(parameters, whereValues);
+  const wheres = getWhereClause(parameters, whereValues);
 
   db.prepare(
     `
@@ -154,8 +156,8 @@ db.updateStatus = status => {
   db.status = status;
 
   process.send({
-    header: { type: 'status' },
-    body: db.status,
+    channel: 'status',
+    message: db.status,
   });
 };
 

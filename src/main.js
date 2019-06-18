@@ -10,9 +10,21 @@ let mainWindow;
 
 const isDevMode = process.execPath.match(/[\\/]electron/);
 
-if (isDevMode) enableLiveReload({ strategy: 'react-hmr' });
+if (isDevMode) {
+  enableLiveReload({ strategy: 'react-hmr' });
+}
 
-const createWindow = async () => {
+app.on('ready', () => {
+  createWindow();
+});
+
+app.on('activate', () => {
+  if (mainWindow === null) {
+    createWindow();
+  }
+});
+
+async function createWindow() {
   mainWindow = new BrowserWindow({
     show: false,
     minWidth: 800,
@@ -38,11 +50,7 @@ const createWindow = async () => {
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
-};
-
-app.on('ready', () => {
-  createWindow();
-});
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -50,18 +58,20 @@ app.on('window-all-closed', () => {
   }
 });
 
-app.on('activate', () => {
-  if (mainWindow === null) {
-    createWindow();
-  }
-});
-
-const databasePath = isDevMode
+const databaseProcessPath = isDevMode
   ? path.join(__dirname, 'database.js')
   : 'app.asar/src/database.js';
 
-const cwd = isDevMode ? null : path.join(__dirname, '..', '..');
-const db = fork(databasePath, [], { cwd });
+const currentWorkingDirectory = isDevMode
+  ? null
+  : path.join(__dirname, '..', '..');
 
-db.on('message', data => mainWindow.webContents.send(data.header.type, data));
-ipcMain.on('database', (event, data) => db.send(data));
+const databaseProcess = fork(databaseProcessPath, [], {
+  currentWorkingDirectory,
+});
+
+databaseProcess.on('message', ({ channel, message }) => {
+  mainWindow.webContents.send(channel, message);
+});
+
+ipcMain.on('database', (event, data) => databaseProcess.send(data));

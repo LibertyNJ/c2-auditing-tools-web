@@ -2,10 +2,11 @@ import { ipcRenderer } from 'electron';
 import React from 'react';
 import { Route, Switch } from 'react-router-dom';
 
+import Layout from './components/Layout';
+
 import AdministrationView from './views/Administration';
 import DashboardView from './views/Dashboard';
 import DataView from './views/Data';
-import Layout from './components/Layout';
 import LedgerView from './views/Ledger';
 import ProviderView from './views/Provider';
 import TransactionView from './views/Transaction';
@@ -13,27 +14,32 @@ import TransactionView from './views/Transaction';
 import { version } from '../package.json';
 
 export default class App extends React.Component {
-  constructor(props) {
-    super(props);
+  state = { databaseStatus: 'Unknown' };
 
-    this.state = {
-      databaseStatus: 'Unknown',
-    };
-  }
+  componentDidMount = () => {
+    this.listenForDatabaseStatusUpdates();
+    this.queryDatabaseStatus();
+  };
 
-  componentDidMount() {
-    ipcRenderer.send('database', {
-      header: { type: 'status', response: 'status' },
-    });
-
+  listenForDatabaseStatusUpdates = () => {
     ipcRenderer.on('status', (event, data) => {
       this.setState({ databaseStatus: data.body });
     });
-  }
+  };
 
-  componentWillUnmount() {
+  queryDatabaseStatus = () => {
+    ipcRenderer.send('database', {
+      header: { type: 'status', response: 'status' },
+    });
+  };
+
+  componentWillUnmount = () => {
+    this.stopListeningForDatabaseStatusUpdates();
+  };
+
+  stopListeningForDatabaseStatusUpdates = () => {
     ipcRenderer.removeAllListeners('status');
-  }
+  };
 
   render() {
     return (

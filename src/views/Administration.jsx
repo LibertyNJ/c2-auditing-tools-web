@@ -2,6 +2,7 @@ import React from 'react';
 
 import RecordsSection from '../components/RecordsSection';
 import SearchSection from '../components/SearchSection';
+import ViewHeader from '../components/ViewHeader';
 
 const AdministrationView = () => {
   const formControlDefinitions = [
@@ -18,7 +19,6 @@ const AdministrationView = () => {
         },
       },
     },
-
     {
       type: 'input',
       props: {
@@ -32,20 +32,29 @@ const AdministrationView = () => {
         },
       },
     },
-
     {
       type: 'input',
-      props: { type: 'text', name: 'provider', label: 'Provider' },
+      props: {
+        type: 'text',
+        name: 'provider',
+        label: 'Provider',
+      },
     },
-
     {
       type: 'input',
-      props: { type: 'text', name: 'medication', label: 'Medication' },
+      props: {
+        type: 'text',
+        name: 'medication',
+        label: 'Medication',
+      },
     },
-
     {
       type: 'input',
-      props: { type: 'text', name: 'medicationOrderId', label: 'Order ID' },
+      props: {
+        type: 'text',
+        name: 'medicationOrderId',
+        label: 'Order ID',
+      },
     },
   ];
 
@@ -55,25 +64,21 @@ const AdministrationView = () => {
       dataKey: 'timestamp',
       maxWidth: 120,
     },
-
     {
       label: 'Provider',
       dataKey: 'provider',
       maxWidth: 0,
     },
-
     {
       label: 'Medication',
       dataKey: 'medication',
       maxWidth: 0,
     },
-
     {
       label: 'Dose',
       dataKey: 'dose',
       maxWidth: 100,
     },
-
     {
       label: 'Order ID',
       dataKey: 'medicationOrderId',
@@ -84,9 +89,7 @@ const AdministrationView = () => {
   return (
     <React.Fragment>
       <div className="row flex-shrink-0">
-        <header className="col">
-          <h1 className="text-primary text-center">Administrations</h1>
-        </header>
+        <ViewHeader>Administration</ViewHeader>
       </div>
       <div className="row flex-grow-1">
         <SearchSection

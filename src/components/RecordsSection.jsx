@@ -1,37 +1,37 @@
-import { AutoSizer, Column, Table } from 'react-virtualized';
-import { ipcRenderer } from 'electron';
 import PropTypes from 'prop-types';
 import React from 'react';
+import { ipcRenderer } from 'electron';
 
+import { AutoSizer, Column, Table } from 'react-virtualized';
 import Modal from './Modal';
 import SVGIcon from './SVGIcon';
 
-class RecordsTableSection extends React.Component {
-  constructor(props) {
-    super(props);
+export default class RecordsTableSection extends React.Component {
+  state = {
+    records: [],
+    sortBy: '',
+  };
 
-    this.state = {
-      records: [],
-      sortBy: '',
-    };
+  componentDidMount = () => {
+    this.listenForDatabaseCommunication();
+  };
 
-    this.handleClick = this.handleClick.bind(this);
-    this.sort = this.sort.bind(this);
-    this.toggleModal = this.toggleModal.bind(this);
-  }
-
-  componentDidMount() {
+  listenForDatabaseCommunication = () => {
     ipcRenderer.on(this.props.ipcChannel, (event, data) => {
       this.setState({ records: data.body, sortBy: '', sortDirection: null });
     });
-  }
+  };
 
-  componentWillUnmount() {
+  componentWillUnmount = () => {
+    this.stopListeningForDatabaseCommunication();
+  };
+
+  stopListeningForDatabaseCommunication = () => {
     ipcRenderer.removeAllListeners(this.props.ipcChannel);
-  }
+  };
 
-  sort({ sortBy, sortDirection }) {
-    if (!this.state.records.length > 0) {
+  sortRecords = ({ sortBy, sortDirection }) => {
+    if (this.areNoRecords()) {
       return;
     }
 
@@ -41,12 +41,8 @@ class RecordsTableSection extends React.Component {
         return recordA[sortBy] - recordB[sortBy];
       }
 
-      const recordAString = recordA[sortBy]
-        ? recordA[sortBy].toUpperCase()
-        : '';
-      const recordBString = recordB[sortBy]
-        ? recordB[sortBy].toUpperCase()
-        : '';
+      const recordAString = recordA[sortBy].toUpperCase() || '';
+      const recordBString = recordB[sortBy].toUpperCase() || '';
 
       if (recordAString > recordBString) {
         return 1;
@@ -64,19 +60,21 @@ class RecordsTableSection extends React.Component {
       sortDirection,
       records: sortDirection === 'DESC' ? records.reverse() : records,
     });
-  }
+  };
 
-  toggleModal() {
+  areNoRecords = () => this.state.records.length === 0;
+
+  toggleModal = () => {
     this.setState(state => {
       return { modalIsShown: !state.modalIsShown };
     });
-  }
+  };
 
-  handleClick(rowData) {
+  handleRowClick = rowData => {
     this.setState({ selectedProviderId: rowData.id }, this.toggleModal);
-  }
+  };
 
-  render() {
+  render = () => {
     const getCellData = (rowData, dataKey) => {
       const cellData = rowData[dataKey];
       if (/timestamp/i.test(dataKey)) {
@@ -176,12 +174,12 @@ class RecordsTableSection extends React.Component {
                 rowClassName={this.props.modalIsEnabled ? 'hover' : null}
                 rowCount={this.state.records.length}
                 rowGetter={({ index }) => this.state.records[index]}
-                sort={this.sort}
+                sort={this.sortRecords}
                 sortBy={this.state.sortBy}
                 sortDirection={this.state.sortDirection}
                 onRowClick={
                   this.props.modalIsEnabled
-                    ? ({ rowData }) => this.handleClick(rowData)
+                    ? ({ rowData }) => this.handleRowClick(rowData)
                     : null
                 }
               >
@@ -200,7 +198,7 @@ class RecordsTableSection extends React.Component {
         )}
       </section>
     );
-  }
+  };
 }
 
 RecordsTableSection.propTypes = {
@@ -211,7 +209,6 @@ RecordsTableSection.propTypes = {
       maxWidth: PropTypes.number,
     })
   ).isRequired,
-
   ipcChannel: PropTypes.string.isRequired,
   modalIsEnabled: PropTypes.bool,
 };
@@ -219,5 +216,3 @@ RecordsTableSection.propTypes = {
 RecordsTableSection.defaultProps = {
   modalIsEnabled: false,
 };
-
-export default RecordsTableSection;

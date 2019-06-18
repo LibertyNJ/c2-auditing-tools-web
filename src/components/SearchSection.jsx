@@ -6,68 +6,80 @@ import Button from './Button';
 import Input from './Input';
 import Select from './Select';
 
-class SearchFormSection extends React.Component {
-  constructor(props) {
-    super(props);
+export default class SearchFormSection extends React.Component {
+  state = {
+    isSubmitted: false,
+  };
 
-    this.state = {
-      isSubmitted: false,
-    };
+  static propTypes = {
+    formControlDefinitions: PropTypes.arrayOf(
+      PropTypes.shape({
+        type: PropTypes.string.isRequired,
+        props: PropTypes.object.isRequired,
+      })
+    ).isRequired,
+    ipcChannel: PropTypes.string.isRequired,
+  };
 
-    this.handleChange = this.handleChange.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
-  }
-
-  handleChange(event) {
-    const target = event.target;
-
-    if (target.tagName === 'SELECT') {
-      const values = [...target.selectedOptions].map(option => option.value);
-
+  handleFormControlChange = ({ target }) => {
+    if (SearchFormSection.isSelectFormControl(target)) {
+      const values = SearchFormSection.getSelectedOptionValues(target);
       this.setState({ [target.name]: values });
     } else {
       this.setState({ [target.name]: target.value });
     }
-  }
+  };
 
-  handleSubmit(event) {
+  static isSelectFormControl = formControl => formControl.tagName === 'SELECT';
+
+  static getSelectedOptionValues = selectFormControl =>
+    [...selectFormControl.selectedOptions].map(option => option.value);
+
+  handleFormSubmit = event => {
     if (event) {
       event.preventDefault();
     }
 
-    ipcRenderer.send('database', {
-      header: { type: this.props.ipcChannel, response: this.props.ipcChannel },
-      body: this.state,
-    });
-
+    this.sendRequestToDatabase();
     this.setState({ isSubmitted: true });
+    this.listenForDatabaseResponse();
+  };
+
+  sendRequestToDatabase = () => {
+    ipcRenderer.send('database', {
+      channel: this.props.ipcChannel,
+      message: this.state,
+    });
+  };
+
+  listenForDatabaseResponse = () => {
     ipcRenderer.once(this.props.ipcChannel, () =>
       this.setState({ isSubmitted: false })
     );
-  }
+  };
 
-  render() {
-    const getElement = type => {
+  render = () => {
+    const getFormControlElement = type => {
       switch (type) {
         case 'input':
           return Input;
         case 'select':
           return Select;
         default:
-          return null;
+          throw new Error('Invalid form control type.');
       }
     };
 
     const formControls = this.props.formControlDefinitions.map(
       ({ type, props }, index) => {
-        const Element = getElement(type);
+        const FormControlElement = getFormControlElement(type);
 
         return (
-          <Element
+          <FormControlElement
             key={index}
             value={this.state[props.name]}
             isDisabled={this.state.isSubmitted}
-            handleChange={this.handleChange}
+            handleChange={this.handleFormControlChange}
             {...props}
           />
         );
@@ -81,7 +93,7 @@ class SearchFormSection extends React.Component {
         </header>
         <form
           className="form overflow-auto px-3 pb-3 ml-n3"
-          onSubmit={this.handleSubmit}
+          onSubmit={this.handleFormSubmit}
         >
           {formControls}
           <Button
@@ -95,18 +107,5 @@ class SearchFormSection extends React.Component {
         </form>
       </section>
     );
-  }
+  };
 }
-
-SearchFormSection.propTypes = {
-  formControlDefinitions: PropTypes.arrayOf(
-    PropTypes.shape({
-      type: PropTypes.string.isRequired,
-      props: PropTypes.object.isRequired,
-    })
-  ).isRequired,
-
-  ipcChannel: PropTypes.string.isRequired,
-};
-
-export default SearchFormSection;
