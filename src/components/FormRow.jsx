@@ -1,10 +1,10 @@
-import PropTypes from 'prop-types';
 import React from 'react';
-
-const FormRow = ({ children }) => <div className="form-row">{children}</div>;
+import PropTypes from 'prop-types';
 
 FormRow.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
-export default FormRow;
+export default function FormRow({ children }) {
+  return <div className="form-row">{children}</div>;
+}

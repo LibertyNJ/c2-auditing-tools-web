@@ -7,7 +7,7 @@ module.exports = {
       medicationOrderId: 'CHAR(9) REFERENCES medicationOrder(id) NOT NULL',
       medicationProductId: 'INTEGER REFERENCES medicationProduct(id) NOT NULL',
       amount: 'FLOAT NOT NULL',
-      mrn: 'UNSIGNED INT(8)',
+      medicalRecordNumber: 'UNSIGNED INT(8)',
       timestamp: 'CHAR(19) NOT NULL',
     },
     unique: {
@@ -130,7 +130,7 @@ module.exports = {
   visit: {
     columns: {
       id: 'UNSIGNED BIGINT(12) PRIMARY KEY',
-      mrn: 'UNSIGNED INT(8) NOT NULL',
+      medicalRecordNumber: 'UNSIGNED INT(8) NOT NULL',
       discharged: 'CHAR(19)',
     },
   },

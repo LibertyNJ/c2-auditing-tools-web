@@ -1,18 +1,5 @@
-import PropTypes from 'prop-types';
 import React from 'react';
-
-const SVGIcon = props => (
-  <svg
-    className={props.className}
-    height={props.height}
-    style={props.style}
-    width={props.width}
-    viewBox={getViewBox(props.type)}
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path d={getD(props.type)} fill={props.fill} />
-  </svg>
-);
+import PropTypes from 'prop-types';
 
 SVGIcon.propTypes = {
   className: PropTypes.string,
@@ -29,7 +16,22 @@ SVGIcon.defaultProps = {
   style: undefined,
 };
 
-function getViewBox(iconType) {
+export default function SVGIcon(props) {
+  return (
+    <svg
+      className={props.className}
+      height={props.height}
+      style={props.style}
+      width={props.width}
+      viewBox={getViewBox(props.type)}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d={getD(props.type)} fill={props.fill} />
+    </svg>
+  );
+}
+
+export function getViewBox(iconType) {
   switch (iconType) {
     case 'sort':
     case 'sort-down':
@@ -56,7 +58,7 @@ function getViewBox(iconType) {
   }
 }
 
-function getD(iconType) {
+export function getD(iconType) {
   switch (iconType) {
     case 'database':
       return 'M448 73.143v45.714C448 159.143 347.667 192 224 192S0 159.143 0 118.857V73.143C0 32.857 100.333 0 224 0s224 32.857 224 73.143zM448 176v102.857C448 319.143 347.667 352 224 352S0 319.143 0 278.857V176c48.125 33.143 136.208 48.572 224 48.572S399.874 209.143 448 176zm0 160v102.857C448 479.143 347.667 512 224 512S0 479.143 0 438.857V336c48.125 33.143 136.208 48.572 224 48.572S399.874 369.143 448 336z';
@@ -91,8 +93,6 @@ function getD(iconType) {
     case 'window-close':
       return 'M464 32H48C21.5 32 0 53.5 0 80v352c0 26.5 21.5 48 48 48h416c26.5 0 48-21.5 48-48V80c0-26.5-21.5-48-48-48zm-83.6 290.5c4.8 4.8 4.8 12.6 0 17.4l-40.5 40.5c-4.8 4.8-12.6 4.8-17.4 0L256 313.3l-66.5 67.1c-4.8 4.8-12.6 4.8-17.4 0l-40.5-40.5c-4.8-4.8-4.8-12.6 0-17.4l67.1-66.5-67.1-66.5c-4.8-4.8-4.8-12.6 0-17.4l40.5-40.5c4.8-4.8 12.6-4.8 17.4 0l66.5 67.1 66.5-67.1c4.8-4.8 12.6-4.8 17.4 0l40.5 40.5c4.8 4.8 4.8 12.6 0 17.4L313.3 256l67.1 66.5z';
     default:
-      return '';
+      throw new Error(`Invalid SVGIcon type: '${iconType}'`);
   }
 }
-
-export default SVGIcon;

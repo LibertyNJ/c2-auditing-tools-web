@@ -1168,10 +1168,7 @@ function handleUpdateProviderAdcRequest({ parameters }) {
 }
 
 function sendResponseToRendererProcess(channel, message) {
-  process.send({
-    channel,
-    message,
-  });
+  process.send({ channel, message });
 }
 
 try {

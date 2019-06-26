@@ -4,12 +4,12 @@ import { Route, Switch } from 'react-router-dom';
 
 import Layout from './components/Layout';
 
-import AdministrationView from './views/Administration';
-import DashboardView from './views/Dashboard';
-import DataView from './views/Data';
-import LedgerView from './views/Ledger';
-import ProviderView from './views/Provider';
-import TransactionView from './views/Transaction';
+import AdministrationView from './views/AdministrationView';
+import DashboardView from './views/DashboardView';
+import DataView from './views/DataView';
+import LedgerView from './views/LedgerView';
+import ProviderView from './views/ProviderView';
+import TransactionView from './views/TransactionView';
 
 import { version } from '../package.json';
 
@@ -23,14 +23,12 @@ export default class App extends React.Component {
 
   listenForDatabaseStatusUpdates = () => {
     ipcRenderer.on('status', (event, data) => {
-      this.setState({ databaseStatus: data.body });
+      this.setState({ databaseStatus: data });
     });
   };
 
   queryDatabaseStatus = () => {
-    ipcRenderer.send('database', {
-      header: { type: 'status', response: 'status' },
-    });
+    ipcRenderer.send('database', { channel: 'status', message: '' });
   };
 
   componentWillUnmount = () => {
@@ -41,18 +39,16 @@ export default class App extends React.Component {
     ipcRenderer.removeAllListeners('status');
   };
 
-  render() {
-    return (
-      <Layout databaseStatus={this.state.databaseStatus} version={version}>
-        <Switch>
-          <Route path="/" exact component={DashboardView} />
-          <Route path="/ledger" component={LedgerView} />
-          <Route path="/transaction" component={TransactionView} />
-          <Route path="/administration" component={AdministrationView} />
-          <Route path="/provider" component={ProviderView} />
-          <Route path="/data" component={DataView} />
-        </Switch>
-      </Layout>
-    );
-  }
+  render = () => (
+    <Layout databaseStatus={this.state.databaseStatus} version={version}>
+      <Switch>
+        <Route path="/" exact component={DashboardView} />
+        <Route path="/ledger" component={LedgerView} />
+        <Route path="/transaction" component={TransactionView} />
+        <Route path="/administration" component={AdministrationView} />
+        <Route path="/provider" component={ProviderView} />
+        <Route path="/data" component={DataView} />
+      </Switch>
+    </Layout>
+  );
 }
