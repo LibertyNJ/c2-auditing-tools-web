@@ -1,108 +1,47 @@
 import React from 'react';
 
+import Input from '../components/Input';
 import RecordsSection from '../components/RecordsSection';
+import Row from '../components/Row';
 import SearchSection from '../components/SearchSection';
-import Header from '../components/Header';
+import View from '../components/View';
 
-const AdministrationView = () => {
-  const formControlDefinitions = [
-    {
-      type: 'input',
-      props: {
-        type: 'datetime-local',
-        name: 'datetimeStart',
-        label: 'Time start',
-        info: 'Required',
-        attributes: {
-          max: '9999-12-31T23:59',
-          required: true,
-        },
-      },
-    },
-    {
-      type: 'input',
-      props: {
-        type: 'datetime-local',
-        name: 'datetimeEnd',
-        label: 'Time end',
-        info: 'Required',
-        attributes: {
-          max: '9999-12-31T23:59',
-          required: true,
-        },
-      },
-    },
-    {
-      type: 'input',
-      props: {
-        type: 'text',
-        name: 'provider',
-        label: 'Provider',
-      },
-    },
-    {
-      type: 'input',
-      props: {
-        type: 'text',
-        name: 'medication',
-        label: 'Medication',
-      },
-    },
-    {
-      type: 'input',
-      props: {
-        type: 'text',
-        name: 'medicationOrderId',
-        label: 'Order ID',
-      },
-    },
-  ];
-
-  const columnDefinitions = [
-    {
-      label: 'Time',
-      dataKey: 'timestamp',
-      maxWidth: 120,
-    },
-    {
-      label: 'Provider',
-      dataKey: 'provider',
-      maxWidth: 0,
-    },
-    {
-      label: 'Medication',
-      dataKey: 'medication',
-      maxWidth: 0,
-    },
-    {
-      label: 'Dose',
-      dataKey: 'dose',
-      maxWidth: 100,
-    },
-    {
-      label: 'Order ID',
-      dataKey: 'medicationOrderId',
-      maxWidth: 110,
-    },
-  ];
-
+export default function AdministrationsView() {
   return (
-    <React.Fragment>
-      <div className="row flex-shrink-0">
-        <Header>Administration</Header>
-      </div>
-      <div className="row flex-grow-1">
-        <SearchSection
-          formControlDefinitions={formControlDefinitions}
-          ipcChannel="administration"
-        />
+    <View heading="Administrations">
+      <Row className="flex-grow-1 flex-shrink-1">
+        <SearchSection channel="get-administrations">
+          <Input
+            info="Required"
+            label="Time start"
+            max="9999-12-31T23:59"
+            name="datetimeStart"
+            required
+            type="datetime-local"
+          />
+          <Input
+            info="Required"
+            label="Time end"
+            max="9999-12-31T23:59"
+            name="datetimeEnd"
+            required
+            type="datetime-local"
+          />
+          <Input label="Provider" name="provider" type="text" />
+          <Input label="Medication" name="medication" type="text" />
+          <Input label="Order ID" name="medicationOrderId" type="text" />
+        </SearchSection>
         <RecordsSection
-          columnDefinitions={columnDefinitions}
-          ipcChannel="administration"
+          channel="get-administrations"
+          columns={[
+            { dataKey: 'timestamp', label: 'Time', maxWidth: 120 },
+            { dataKey: 'provider', label: 'Provider' },
+            { dataKey: 'medication', label: 'Medication' },
+            { dataKey: 'doseWithUnits', label: 'Dose', maxWidth: 100 },
+            { dataKey: 'medicationOrderId', label: 'Order ID', maxWidth: 110 },
+          ]}
         />
-      </div>
-    </React.Fragment>
+      </Row>
+    </View>
   );
-};
-
-export default AdministrationView;
+}

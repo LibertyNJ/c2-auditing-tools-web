@@ -1,16 +1,14 @@
 import { fork } from 'child_process';
 import path from 'path';
 import { app, BrowserWindow, ipcMain } from 'electron';
-import installExtension, {
-  REACT_DEVELOPER_TOOLS,
-} from 'electron-devtools-installer';
+import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
 import { enableLiveReload } from 'electron-compile';
+
+const IS_DEV_MODE = /[\\/]electron/.test(process.execPath);
 
 let mainWindow;
 
-const isDevMode = process.execPath.match(/[\\/]electron/);
-
-if (isDevMode) {
+if (IS_DEV_MODE) {
   enableLiveReload({ strategy: 'react-hmr' });
 }
 
@@ -27,14 +25,14 @@ app.on('activate', () => {
 async function createWindow() {
   mainWindow = new BrowserWindow({
     show: false,
-    minWidth: 800,
     minHeight: 600,
+    minWidth: 800,
     webPreferences: { nodeIntegration: true },
   });
 
   mainWindow.loadURL(`file://${__dirname}/index.html`);
 
-  if (isDevMode) {
+  if (IS_DEV_MODE) {
     await installExtension(REACT_DEVELOPER_TOOLS);
   }
 
@@ -42,7 +40,7 @@ async function createWindow() {
     mainWindow.maximize();
     mainWindow.show();
 
-    if (isDevMode) {
+    if (IS_DEV_MODE) {
       mainWindow.webContents.openDevTools();
     }
   });
@@ -58,20 +56,16 @@ app.on('window-all-closed', () => {
   }
 });
 
-const databaseProcessPath = isDevMode
-  ? path.join(__dirname, 'database.js')
-  : 'app.asar/src/database.js';
+const backendProcessPath = IS_DEV_MODE ? path.join(__dirname, 'backend') : 'app.asar/src/backend';
 
-const currentWorkingDirectory = isDevMode
-  ? null
-  : path.join(__dirname, '..', '..');
+const currentWorkingDirectory = IS_DEV_MODE ? null : path.join(__dirname, '..', '..');
 
-const databaseProcess = fork(databaseProcessPath, [], {
+const backendProcess = fork(backendProcessPath, [], {
   currentWorkingDirectory,
 });
 
-databaseProcess.on('message', ({ channel, message }) => {
-  mainWindow.webContents.send(channel, message);
+backendProcess.on('message', (message) => {
+  mainWindow.webContents.send(message.channel, message);
 });
 
-ipcMain.on('database', (event, data) => databaseProcess.send(data));
+ipcMain.on('backend', (event, message) => backendProcess.send(message));

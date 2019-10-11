@@ -12,6 +12,7 @@
     "import/no-unresolved": [2, { "ignore": ["electron"] }],
     "jsx-a11y/label-has-for": [ 2, { "required": "id" }],
     "linebreak-style": 0,
+    "no-console": 0,
     "no-use-before-define": ["error", { "functions": false }],
     "react/button-has-type": 0,
     "react/destructuring-assignment": 0,

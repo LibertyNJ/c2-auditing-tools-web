@@ -7,88 +7,94 @@ import FileInput from './FileInput';
 import Button from '../../../components/Button';
 
 export default class Form extends React.Component {
-  static CHANNEL = 'import';
+  CHANNEL = 'import-data';
 
   state = { isSubmitted: false };
 
-  componentWillUnmount = () => this.stopListeningForDatabaseCommunication();
+  componentWillUnmount = () => {
+    this.stopListeningForDatabaseCommunication();
+  };
 
-  stopListeningForDatabaseCommunication = () => ipcRenderer.removeAllListeners('import');
+  stopListeningForDatabaseCommunication = () => {
+    ipcRenderer.removeAllListeners(this.CHANNEL);
+  };
 
-  handleChange = ({ target }) => this.setFileNameAndPath(target);
+  handleChange = ({ target }) => {
+    this.setFileNameAndPath(target);
+  };
 
   setFileNameAndPath = (target) => {
     const { name, value } = target;
     const pathName = `${name}Path`;
     const pathValue = target.files[0].path;
-
     this.setState({
       [name]: value,
       [pathName]: pathValue,
     });
-  }
+  };
 
   handleSubmit = (event) => {
     event.preventDefault();
-    this.sendFilePathsToDatabase();
+    this.sendFilePathsToBackend();
     this.toggleIsSubmitted();
-    this.listenForDatabaseReponse();
-  }
+    this.listenForBackendResponse();
+  };
 
-  sendFilePathsToDatabase = () => {
-    ipcRenderer.send('database', {
-      channel: Form.CHANNEL,
-      message: {
-        c2ActivityReportPath: this.state.c2ActivityReportPath,
-        medicationOrderTaskStatusDetailReportPath: this.state.medicationOrderTaskStatusDetailReportPath,
+  sendFilePathsToBackend = () => {
+    const { c2ActivityReportPath, medicationOrderTaskStatusDetailReportPath } = this.state;
+    ipcRenderer.send('backend', {
+      body: {
+        c2ActivityReportPath,
+        medicationOrderTaskStatusDetailReportPath,
       },
+      channel: this.CHANNEL,
     });
-  }
+  };
 
-  toggleIsSubmitted = () => this.setState((state) => {
-    return { isSubmitted: !state.isSubmitted };
-  });
+  toggleIsSubmitted = () => {
+    this.setState(state => ({ isSubmitted: !state.isSubmitted }));
+  };
 
-  listenForDatabaseReponse = () => ipcRenderer.once(Form.CHANNEL, () => this.toggleIsSubmitted());
+  listenForBackendResponse = () => {
+    ipcRenderer.once(this.CHANNEL, () => this.toggleIsSubmitted());
+  };
 
-  render() {
-    return (
-      <form className="form" onSubmit={this.handleSubmit}>
-        <FormRow>
-          <FileInput
-            name="medicationOrderTaskStatusDetailReport"
-            value={this.state.medicationOrderTaskStatusDetailReport}
-            label="Medication Order Task Status Detail Report"
-            isDisabled={this.state.isSubmitted}
-            handleChange={this.handleChange}
-            attributes={{
-              accept: '.csv',
-              required: true,
-            }}
-          />
-        </FormRow>
-        <FormRow>
-          <FileInput
-            name="c2ActivityReport"
-            value={this.state.c2ActivityReport}
-            label="C2 Activity Report"
-            isDisabled={this.state.isSubmitted}
-            handleChange={this.handleChange}
-            attributes={{
-              accept: '.xlsx',
-              required: true,
-            }}
-          />
-        </FormRow>
-        <Button
-          type="submit"
-          text="Import"
-          iconType="file-import"
-          color="primary"
+  render = () => (
+    <form onSubmit={this.handleSubmit}>
+      <FormRow>
+        <FileInput
+          accept=".csv"
+          handleChange={this.handleChange}
           disabled={this.state.isSubmitted}
-          className="d-block mb-3 ml-auto"
+          label="Medication Order Task Status Detail Report"
+          name="medicationOrderTaskStatusDetailReport"
+          required
+          value={this.state.medicationOrderTaskStatusDetailReport}
+          wrapperClassName="col mb-3"
         />
-      </form>
-    );
-  }
+      </FormRow>
+      <FormRow>
+        <FileInput
+          accept=".xlsx"
+          handleChange={this.handleChange}
+          disabled={this.state.isSubmitted}
+          label="C2 Activity Report"
+          name="c2ActivityReport"
+          required
+          value={this.state.c2ActivityReport}
+          wrapperClassName="col mb-3"
+        />
+      </FormRow>
+      <FormRow>
+        <Button
+          className="btn-primary d-block mb-3 ml-auto"
+          disabled={this.state.isSubmitted}
+          iconType="file-import"
+          type="submit"
+        >
+          Import
+        </Button>
+      </FormRow>
+    </form>
+  );
 }

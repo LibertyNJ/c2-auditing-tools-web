@@ -5,25 +5,29 @@ import Input from './Input';
 import Label from './Label';
 
 FileInput.propTypes = {
-  attributes: PropTypes.objectOf(PropTypes.any),
+  disabled: PropTypes.bool,
   handleChange: PropTypes.func.isRequired,
-  isDisabled: PropTypes.bool,
   label: PropTypes.node.isRequired,
   name: PropTypes.string.isRequired,
   value: PropTypes.string,
+  wrapperClassName: PropTypes.string,
 };
 
 FileInput.defaultProps = {
-  attributes: null,
-  isDisabled: false,
-  value: undefined,
+  disabled: false,
+  value: '',
+  wrapperClassName: '',
 };
 
-export default function FileInput({ label, ...restProps }) {
+export default function FileInput({
+  label, name, value, wrapperClassName, ...restProps
+}) {
   return (
-    <div className="col custom-file mb-3">
-      <Input {...restProps} />
-      <Label htmlFor={restProps.name} value={restProps.value}>{label}</Label>
+    <div className={`custom-file ${wrapperClassName}`}>
+      <Input name={name} value={value} {...restProps} />
+      <Label htmlFor={name} value={value}>
+        {label}
+      </Label>
     </div>
   );
 }

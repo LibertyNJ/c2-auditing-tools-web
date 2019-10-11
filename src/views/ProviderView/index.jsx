@@ -2,99 +2,71 @@ import React from 'react';
 
 import { ipcRenderer } from 'electron';
 
-import Header from '../../components/Header';
+import Input from '../../components/Input';
 import RecordsSection from '../../components/RecordsSection';
+import Row from '../../components/Row';
 import SearchSection from '../../components/SearchSection';
+import View from '../../components/View';
+
 import Modal from './Modal';
 
+import extractProviderId from './extract-provider-id';
+
 export default class ProviderView extends React.Component {
-  state = {
-    modalIsShown: false,
+  modalRef = React.createRef();
+
+  handleTableRowClick = ({ rowData }) => {
+    const providerId = extractProviderId(rowData);
+    this.sendProviderModalQuery(providerId);
+    this.listenForBackendResponse();
   };
 
-  handleTableRowClick = (rowData) => {
-    const providerId = this.getProviderId(rowData);
-    this.querySelectedProvider(providerId);
-  }
-
-  querySelectedProvider = (providerId) => {
-    ipcRenderer.send('database', {
-      channel: 'edit-provider',
-      message: providerId,
+  sendProviderModalQuery = (providerId) => {
+    ipcRenderer.send('backend', {
+      body: providerId,
+      channel: 'get-provider-modal',
     });
-  }
+  };
+
+  listenForBackendResponse = () => {
+    ipcRenderer.once('get-provider-modal', this.showModal);
+  };
 
   showModal = () => {
-    this.setState({ modalIsShown: true });
+    this.modalRef.current.show();
   };
 
-  render = () => {
-    const formControlDefinitions = [
-      {
-        type: 'input',
-        props: { type: 'text', name: 'lastName', label: 'Last name' },
-      },
-      {
-        type: 'input',
-        props: { type: 'text', name: 'firstName', label: 'First name' },
-      },
-      {
-        type: 'input',
-        props: { type: 'text', name: 'middleInitial', label: 'Middle initial' },
-      },
-      {
-        type: 'input',
-        props: { type: 'text', name: 'adcId', label: 'ADC ID' },
-      },
-      {
-        type: 'input',
-        props: { type: 'text', name: 'emarId', label: 'EMAR ID' },
-      },
-    ];
-
-    const columnDefinitions = [
-      {
-        label: 'Last name',
-        dataKey: 'lastName',
-        maxWidth: 0,
-      },
-      {
-        label: 'First name',
-        dataKey: 'firstName',
-        maxWidth: 0,
-      },
-      {
-        label: 'MI',
-        dataKey: 'middleInitial',
-        maxWidth: 70,
-      },
-      {
-        label: 'ADC IDs',
-        dataKey: 'adcId',
-        maxWidth: 0,
-      },
-      {
-        label: 'EMAR IDs',
-        dataKey: 'emarId',
-        maxWidth: 0,
-      },
-    ];
-
-    return (
-      <React.Fragment>
-        <div className="row flex-shrink-0">
-          <Header>Provider</Header>
-        </div>
-        <div className="row flex-grow-1">
-          <SearchSection formControlDefinitions={formControlDefinitions} ipcChannel="provider" />
-          <RecordsSection
-            columnDefinitions={columnDefinitions}
-            ipcChannel="provider"
-            handleTableRowClick={this.handleTableRowClick}
-          />
-        </div>
-        <Modal isShown={this.state.modalIsShown} />
-      </React.Fragment>
-    );
+  componentWillUnmount = () => {
+    this.stopListeningForBackendCommunication();
   };
+
+  stopListeningForBackendCommunication = () => {
+    ipcRenderer.removeAllListeners('provider-modal');
+  };
+
+  render = () => (
+    <View heading="Providers">
+      <Row className="flex-grow-1 flex-shrink-1">
+        <SearchSection channel="get-providers">
+          <Input label="Last name" name="lastName" type="text" />
+          <Input label="First name" name="firstName" type="text" />
+          <Input label="Middle initial" name="middleInitial" type="text" />
+          <Input label="ADC ID" name="adcId" type="text" />
+          <Input label="EMAR ID" name="emarId" type="text" />
+        </SearchSection>
+        <RecordsSection
+          channel="get-providers"
+          columns={[
+            { dataKey: 'lastName', label: 'Last name' },
+            { dataKey: 'firstName', label: 'First name' },
+            { dataKey: 'middleInitial', label: 'MI', maxWidth: 70 },
+            { dataKey: 'adcIds', label: 'ADC IDs' },
+            { dataKey: 'emarIds', label: 'EMAR IDs' },
+          ]}
+          handleTableRowClick={this.handleTableRowClick}
+        />
+      </Row>
+      <Modal ref={this.modalRef} />
+    </View>
+  );
 }

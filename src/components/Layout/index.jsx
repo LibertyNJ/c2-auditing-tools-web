@@ -1,20 +1,25 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import Header from './Header';
-import Main from './Main';
 import Footer from './Footer';
+import Navigation from './Navigation';
 
 Layout.propTypes = {
   children: PropTypes.node.isRequired,
+  databaseStatus: PropTypes.string.isRequired,
+  version: PropTypes.string.isRequired,
 };
 
-export default function Layout({ children, ...restProps }) {
+export default function Layout({ children, databaseStatus, version }) {
   return (
     <div className="d-flex flex-column vh-100">
-      <Header />
-      <Main>{children}</Main>
-      <Footer {...restProps} />
+      <Navigation className="flex-grow-0 flex-shrink-0 mb-3" />
+      {children}
+      <Footer
+        className="flex-grow-0 flex-shrink-0"
+        databaseStatus={databaseStatus}
+        version={version}
+      />
     </div>
   );
 }

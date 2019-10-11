@@ -8,9 +8,5 @@ Icon.propTypes = {
 };
 
 export default function Icon({ type }) {
-  return (
-    <React.Fragment>
-      <SVGIcon className="align-baseline" type={type} width="1em" height="1em" fill="white" />{' '}
-    </React.Fragment>
-  );
+  return <SVGIcon className="align-baseline" type={type} width="1em" height="1em" fill="white" />;
 }

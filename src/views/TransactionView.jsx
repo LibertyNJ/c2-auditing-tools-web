@@ -1,133 +1,61 @@
 import React from 'react';
 
+import Input from '../components/Input';
 import RecordsSection from '../components/RecordsSection';
+import Row from '../components/Row';
 import SearchSection from '../components/SearchSection';
-import Header from '../components/Header';
+import Select from '../components/Select';
+import View from '../components/View';
 
-const TransactionView = () => {
-  const transactionTypeOptions = [
-    {
-      value: 'Restock',
-      text: 'Restock',
-    },
-    {
-      value: 'Return',
-      text: 'Return',
-    },
-    {
-      value: 'Waste',
-      text: 'Waste',
-    },
-    {
-      value: 'Withdrawal',
-      text: 'Withdrawal',
-    },
-  ];
-
-  const formControlDefinitions = [
-    {
-      type: 'input',
-      props: {
-        type: 'datetime-local',
-        name: 'datetimeStart',
-        label: 'Time start',
-        info: 'Required',
-        attributes: {
-          max: '9999-12-31T23:59',
-          required: true,
-        },
-      },
-    },
-    {
-      type: 'input',
-      props: {
-        type: 'datetime-local',
-        name: 'datetimeEnd',
-        label: 'Time end',
-        info: 'Required',
-        attributes: {
-          max: '9999-12-31T23:59',
-          required: true,
-        },
-      },
-    },
-    {
-      type: 'select',
-      props: {
-        name: 'transactionTypes',
-        label: 'Transaction types',
-        options: transactionTypeOptions,
-        info: 'Required, may select multiple options',
-        attributes: {
-          multiple: true,
-          required: true,
-        },
-      },
-    },
-    {
-      type: 'input',
-      props: { type: 'text', name: 'provider', label: 'Provider' },
-    },
-    {
-      type: 'input',
-      props: { type: 'text', name: 'product', label: 'Product' },
-    },
-    {
-      type: 'input',
-      props: { type: 'text', name: 'medicationOrderId', label: 'Order ID' },
-    },
-  ];
-
-  const columnDefinitions = [
-    {
-      label: 'Time',
-      dataKey: 'timestamp',
-      maxWidth: 120,
-    },
-    {
-      label: 'Provider',
-      dataKey: 'provider',
-      maxWidth: 0,
-    },
-    {
-      label: 'Transaction',
-      dataKey: 'transactionType',
-      maxWidth: 130,
-    },
-    {
-      label: 'Product',
-      dataKey: 'product',
-      maxWidth: 0,
-    },
-    {
-      label: 'Amount',
-      dataKey: 'amount',
-      maxWidth: 110,
-    },
-    {
-      label: 'Order ID',
-      dataKey: 'medicationOrderId',
-      maxWidth: 110,
-    },
-  ];
-
+export default function TransactionsView() {
   return (
-    <React.Fragment>
-      <div className="row flex-shrink-0">
-        <Header>Transaction</Header>
-      </div>
-      <div className="row flex-grow-1">
-        <SearchSection
-          formControlDefinitions={formControlDefinitions}
-          ipcChannel="transaction"
-        />
+    <View heading="Transactions">
+      <Row className="flex-grow-1 flex-shrink-1">
+        <SearchSection channel="get-transactions">
+          <Input
+            info="Required"
+            label="Time start"
+            max="9999-12-31T23:59"
+            name="datetimeStart"
+            required
+            type="datetime-local"
+          />
+          <Input
+            info="Required"
+            label="Time end"
+            max="9999-12-31T23:59"
+            name="datetimeEnd"
+            required
+            type="datetime-local"
+          />
+          <Select
+            info="Required, may select multiple options"
+            label="Transaction types"
+            multiple
+            name="transactionTypes"
+            required
+          >
+            <option value="Restock">Restock</option>
+            <option value="Return">Return</option>
+            <option value="Waste">Waste</option>
+            <option value="Withdrawal">Withdrawal</option>
+          </Select>
+          <Input label="Provider" name="provider" type="text" />
+          <Input label="Product" name="product" type="text" />
+          <Input label="Order ID" name="medicationOrderId" type="text" />
+        </SearchSection>
         <RecordsSection
-          columnDefinitions={columnDefinitions}
-          ipcChannel="transaction"
+          channel="get-transactions"
+          columns={[
+            { dataKey: 'timestamp', label: 'Time', maxWidth: 120 },
+            { dataKey: 'provider', label: 'Provider' },
+            { dataKey: 'type', label: 'Transaction' },
+            { dataKey: 'product', label: 'Product' },
+            { dataKey: 'amount', label: 'Amount', maxWidth: 110 },
+            { dataKey: 'medicationOrderId', label: 'Order ID', maxWidth: 110 },
+          ]}
         />
-      </div>
-    </React.Fragment>
+      </Row>
+    </View>
   );
-};
-
-export default TransactionView;
+}

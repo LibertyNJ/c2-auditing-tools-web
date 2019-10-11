@@ -1,21 +1,21 @@
 {
   "name": "c2-auditing-tools",
-  "productName": "C2-auditing-tools",
-  "version": "0.1.0",
-  "description": "Tools for auditing select C2 medications at North Shore Univeristy Hospital.",
+  "productName": "C2 Auditing Tools",
+  "version": "1.0.0",
+  "description": "Tools for auditing C2 medication chain of custody from withdrawal to administration in a hospital setting.",
   "main": "src/main.js",
   "scripts": {
-    "start": "electron-forge start",
-    "package": "electron-forge package --arch=ia32",
-    "make": "electron-forge make",
-    "publish": "electron-forge publish",
     "lint": "eslint --cache --color --ext .jsx,.js src",
-    "watch-my-sass": "start node-sass --watch --output-style=compressed ./src/styles/scss/style.scss ./src/styles/css/style.css && start postcss ./src/styles/css/style.css --use autoprefixer --verbose --output ./src/styles/style.css --watch",
-    "test": "jest"
+    "make": "electron-forge make",
+    "package": "electron-forge package --arch=ia32",
+    "publish": "electron-forge publish",
+    "start": "electron-forge start",
+    "test": "jest --coverage",
+    "watch-my-sass": "start node-sass --watch --output-style=compressed ./src/styles/scss/style.scss ./src/styles/css/style.css && start postcss ./src/styles/css/style.css --use autoprefixer --verbose --output ./src/styles/style.css --watch"
   },
   "keywords": [],
-  "author": "Nathaniel J. Liberty",
-  "license": "MIT",
+  "author": "Nathaniel J. Liberty <nathaniel.liberty@gmail.com>",
+  "license": "UNLICENSED",
   "config": {
     "forge": {
       "make_targets": {
@@ -32,14 +32,18 @@
       },
       "electronPackagerConfig": {
         "packageManager": "npm",
-        "appCopyright": ".",
+        "appCopyright": "© Nathaniel J. Liberty 2019",
         "asar": true,
         "executableName": "c2-auditing-tools",
-        "name": "c2-auditing-tools",
+        "name": "C2 Auditing Tools",
         "icon": "src/assets/images/icon.ico",
+        "ignore": [
+          ".scss",
+          "coverage/"
+        ],
         "win32metadata": {
-          "CompanyName": ".",
-          "FileDescription": "Tools for auditing select C2 medications at North Shore Univeristy Hospital."
+          "CompanyName": "Nathaniel J. Liberty",
+          "FileDescription": "Tools for auditing C2 medication chain of custody from withdrawal to administration in a hospital setting."
         }
       },
       "electronWinstallerConfig": {
@@ -58,6 +62,9 @@
     }
   },
   "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^1.2.24",
+    "@fortawesome/free-solid-svg-icons": "^5.11.1",
+    "@fortawesome/react-fontawesome": "^0.1.4",
     "better-sqlite3": "^5.4.0",
     "bootstrap": "^4.3.1",
     "electron-compile": "^6.4.4",
@@ -67,17 +74,22 @@
     "jquery": "^3.4.0",
     "popper.js": "^1.14.7",
     "prop-types": "^15.7.2",
-    "react": "^16.8.6",
-    "react-dom": "^16.8.6",
-    "react-hot-loader": "^4.8.2",
+    "react": "^16.10.1",
+    "react-dom": "^16.10.1",
+    "react-hot-loader": "^4.12.14",
+    "react-redux": "^7.1.1",
     "react-router-dom": "^5.0.0",
-    "react-virtualized": "^9.21.0"
+    "react-virtualized": "^9.21.0",
+    "redux": "^4.0.4",
+    "redux-thunk": "^2.3.0"
   },
   "devDependencies": {
     "@babel/plugin-proposal-class-properties": "^7.4.4",
     "@babel/preset-env": "^7.4.5",
     "@babel/preset-react": "^7.0.0",
-    "autoprefixer": "^9.5.1",
+    "@testing-library/jest-dom": "^4.1.0",
+    "@testing-library/react": "^9.2.0",
+    "autoprefixer": "^9.6.0",
     "babel-eslint": "^10.0.1",
     "babel-jest": "^24.8.0",
     "babel-plugin-transform-async-to-generator": "^6.24.1",

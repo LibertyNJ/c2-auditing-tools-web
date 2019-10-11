@@ -2,36 +2,30 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import SVGIcon from '../../../SVGIcon';
+import BusySpinner from './BusySpinner';
 
-import DatabaseBusySpinner from './DatabaseBusySpinner';
+import { getTextClassName, isDatabaseBusy } from './utilties';
 
 DatabaseStatusWidget.propTypes = {
+  className: PropTypes.string,
   databaseStatus: PropTypes.string.isRequired,
 };
 
-export default function DatabaseStatusWidget({ databaseStatus }) {
-  const databaseStatusTextColorClass = getDatabaseStatusTextColorClass(databaseStatus);
+DatabaseStatusWidget.defaultProps = {
+  className: null,
+};
 
+export default function DatabaseStatusWidget({ className, databaseStatus }) {
   return (
-    <div className="mb-0">
-      <SVGIcon className="align-baseline" type="database" width="1em" height="1em" fill="white" />{' '}
+    <div className={className}>
+      <SVGIcon className="align-baseline" fill="white" height="1em" type="database" width="1em" />{' '}
       Database:{' '}
-      {databaseStatusTextColorClass === 'text-warning' && (
-        <DatabaseBusySpinner databaseStatus={databaseStatus} />
+      {isDatabaseBusy(databaseStatus) && (
+        <React.Fragment>
+          <BusySpinner screenReaderText={databaseStatus} />{' '}
+        </React.Fragment>
       )}
-      <span className={databaseStatusTextColorClass}>{databaseStatus}</span>
+      <span className={getTextClassName(databaseStatus)}>{databaseStatus}</span>
     </div>
   );
-}
-
-export function getDatabaseStatusTextColorClass(databaseStatus) {
-  switch (databaseStatus) {
-    case 'Ready':
-      return 'text-success';
-    case 'Error':
-    case 'Unknown':
-      return 'text-danger';
-    default:
-      return 'text-warning';
-  }
 }

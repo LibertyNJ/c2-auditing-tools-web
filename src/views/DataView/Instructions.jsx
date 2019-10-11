@@ -10,7 +10,7 @@ export default function Instructions() {
           Download these reports from BICC and RxAuditor for the same time period:
           <ul>
             <li>
-              Medication Order Task Status Summary (<span className="font-italic">as CSV</span>)
+              Medication Order Task Status Detail (<span className="font-italic">as CSV</span>)
             </li>
             <li>
               C2 Activity (<span className="font-italic">as XLSX</span>)

@@ -1,128 +1,53 @@
 import React from 'react';
 
+import Input from '../components/Input';
 import RecordsSection from '../components/RecordsSection';
+import Row from '../components/Row';
 import SearchSection from '../components/SearchSection';
-import Header from '../components/Header';
+import View from '../components/View';
 
-const LedgerView = () => {
-  const formControlDefinitions = [
-    {
-      type: 'input',
-      props: {
-        type: 'datetime-local',
-        name: 'datetimeStart',
-        label: 'Time withdrawn start',
-        info: 'Required',
-        attributes: {
-          max: '9999-12-31T23:59',
-          required: true,
-        },
-      },
-    },
-    {
-      type: 'input',
-      props: {
-        type: 'datetime-local',
-        name: 'datetimeEnd',
-        label: 'Time withdrawn end',
-        info: 'Required',
-        attributes: {
-          max: '9999-12-31T23:59',
-          required: true,
-        },
-      },
-    },
-    {
-      type: 'input',
-      props: { type: 'text', name: 'provider', label: 'Withdrawn by' },
-    },
-    {
-      type: 'input',
-      props: { type: 'text', name: 'product', label: 'Product' },
-    },
-    {
-      type: 'input',
-      props: { type: 'text', name: 'medicationOrderId', label: 'Order ID' },
-    },
-  ];
-
-  const columnDefinitions = [
-    {
-      label: 'Withdrawn by',
-      dataKey: 'provider',
-      maxWidth: 0,
-    },
-    {
-      label: 'Time',
-      dataKey: 'timestamp',
-      maxWidth: 120,
-    },
-    {
-      label: 'Product',
-      dataKey: 'product',
-      maxWidth: 0,
-    },
-    {
-      label: 'Amount',
-      dataKey: 'amount',
-      maxWidth: 110,
-    },
-
-    {
-      label: 'Waste',
-      dataKey: 'waste',
-      maxWidth: 110,
-    },
-    {
-      label: 'Disposition',
-      dataKey: 'dispositionType',
-      maxWidth: 130,
-    },
-    {
-      label: 'Disposed by',
-      dataKey: 'dispositionProvider',
-      maxWidth: 0,
-    },
-    {
-      label: 'Time',
-      dataKey: 'dispositionTimestamp',
-      maxWidth: 120,
-    },
-
-    {
-      label: 'Pain reassessed',
-      dataKey: 'painAssessmentTimestamp',
-      maxWidth: 120,
-    },
-    {
-      label: 'Pain reassessed by',
-      dataKey: 'painAssessmentProvider',
-      maxWidth: 0,
-    },
-    {
-      label: 'Order ID',
-      dataKey: 'medicationOrderId',
-      maxWidth: 110,
-    },
-  ];
-
+export default function LedgerView() {
   return (
-    <React.Fragment>
-      <div className="row flex-shrink-0">
-        <Header>Ledger</Header>
-      </div>
-      <div className="row flex-grow-1">
-        <SearchSection
-          formControlDefinitions={formControlDefinitions}
-          ipcChannel="ledger"
-        />
+    <View heading="Ledger">
+      <Row className="flex-grow-1 flex-shrink-1">
+        <SearchSection channel="get-ledger">
+          <Input
+            info="Required"
+            label="Time start"
+            max="9999-12-31T23:59"
+            name="datetimeStart"
+            required
+            type="datetime-local"
+          />
+          <Input
+            info="Required"
+            label="Time end"
+            max="9999-12-31T23:59"
+            name="datetimeEnd"
+            required
+            type="datetime-local"
+          />
+          <Input label="Provider" name="provider" type="text" />
+          <Input label="Product" name="product" type="text" />
+          <Input label="Order ID" name="medicationOrderId" type="text" />
+        </SearchSection>
         <RecordsSection
-          columnDefinitions={columnDefinitions}
-          ipcChannel="ledger"
+          channel="get-ledger"
+          columns={[
+            { dataKey: 'provider', label: 'Withdrawn by' },
+            { dataKey: 'timestamp', label: 'Time', maxWidth: 120 },
+            { dataKey: 'product', label: 'Product' },
+            { dataKey: 'amount', label: 'Amount', maxWidth: 110 },
+            { dataKey: 'waste', label: 'Waste', maxWidth: 110 },
+            { dataKey: 'dispositionType', label: 'Disposition', maxWidth: 130 },
+            { dataKey: 'dispositionProvider', label: 'Disposed by' },
+            { dataKey: 'dispositionTimestamp', label: 'Time', maxWidth: 120 },
+            { dataKey: 'painReassessmentTimestamp', label: 'Pain reassessed' },
+            { dataKey: 'painReassessmentProvider', label: 'Pain reassessed by', maxWidth: 110 },
+            { dataKey: 'medicationOrderId', label: 'Order ID', maxWidth: 110 },
+          ]}
         />
-      </div>
-    </React.Fragment>
+      </Row>
+    </View>
   );
-};
-
-export default LedgerView;
+}
