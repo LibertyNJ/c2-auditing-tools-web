@@ -10,6 +10,7 @@
     "import/extensions": 0,
     "import/no-extraneous-dependencies": 0,
     "import/no-unresolved": [2, { "ignore": ["electron"] }],
+    "import/prefer-default-export": 0,
     "jsx-a11y/label-has-for": [ 2, { "required": "id" }],
     "linebreak-style": 0,
     "no-console": 0,
