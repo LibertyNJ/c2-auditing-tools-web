@@ -1,7 +1,6 @@
-'use-strict';
-
-export const CHANGE_FIELD = 'CHANGE_FIELD';
-export const QUERY_DATA = 'QUERY_DATA';
-export const RECEIVE_DATA = 'RECEIVE_DATA';
+export const CHANGE_PARAMETER = 'CHANGE_PARAMETER';
+export const DISMISS_ERROR = 'DISMISS_ERROR';
+export const QUERY_RECORDS = 'QUERY_RECORDS';
 export const RECEIVE_ERROR = 'RECEIVE_ERROR';
+export const RECEIVE_RECORDS = 'RECEIVE_RECORDS';
 export const SORT_RECORDS = 'SORT_RECORDS';

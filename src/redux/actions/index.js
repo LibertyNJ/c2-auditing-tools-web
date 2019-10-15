@@ -1,29 +1,32 @@
 'use-strict';
 
 import {
-  CHANGE_FIELD, QUERY_DATA, RECEIVE_DATA, RECEIVE_ERROR, SORT_RECORDS,
+  CHANGE_PARAMETER,
+  DISMISS_ERROR,
+  QUERY_RECORDS,
+  RECEIVE_RECORDS,
+  RECEIVE_ERROR,
+  SORT_RECORDS,
 } from './types';
 
-export function changeField(view, name, value) {
+export function changeParameter(view, name, value) {
   return {
     name,
-    type: CHANGE_FIELD,
+    type: CHANGE_PARAMETER,
     value,
     view,
   };
 }
 
-export function queryData() {
+export function dismissError() {
   return {
-    type: QUERY_DATA,
+    type: DISMISS_ERROR,
   };
 }
 
-export function receiveData(view, data) {
+export function queryRecords() {
   return {
-    data,
-    type: RECEIVE_DATA,
-    view,
+    type: QUERY_RECORDS,
   };
 }
 
@@ -34,9 +37,17 @@ export function receiveError(error) {
   };
 }
 
-export function sortRecords(view, column) {
+export function receiveRecords(view, records) {
   return {
-    column,
+    records,
+    type: RECEIVE_RECORDS,
+    view,
+  };
+}
+
+export function sortRecords(view, sortBy) {
+  return {
+    sortBy,
     type: SORT_RECORDS,
     view,
   };

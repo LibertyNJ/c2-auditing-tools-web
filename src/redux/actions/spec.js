@@ -1,42 +1,58 @@
-'use-strict';
-
 import {
-  changeField, queryData, receiveData, receiveError, sortRecords,
+  changeParameter,
+  dismissError,
+  queryRecords,
+  receiveError,
+  receiveRecords,
+  sortRecords,
 } from './index';
 import {
-  CHANGE_FIELD, QUERY_DATA, RECEIVE_DATA, RECEIVE_ERROR, SORT_RECORDS,
+  CHANGE_PARAMETER,
+  DISMISS_ERROR,
+  QUERY_RECORDS,
+  RECEIVE_ERROR,
+  RECEIVE_RECORDS,
+  SORT_RECORDS,
 } from './types';
 
-describe('changeField()', () => {
-  test('Returns an object of type CHANGE_FIELD with correct properties.', () => {
-    expect(changeField('foo', 'bar', 'baz')).toEqual({
+describe('changeParameter(view, name, value)', () => {
+  test('Returns an object of type CHANGE_PARAMETER with correct properties.', () => {
+    expect(changeParameter('foo', 'bar', 'baz')).toEqual({
       name: 'bar',
-      type: CHANGE_FIELD,
+      type: CHANGE_PARAMETER,
       value: 'baz',
       view: 'foo',
     });
   });
 });
 
-describe('queryData()', () => {
-  test('Returns an object of type QUERY_DATA with correct properties.', () => {
-    expect(queryData()).toEqual({
-      type: QUERY_DATA,
+describe('dismissError()', () => {
+  test('Returns an object of type CHANGE_PARAMETER with correct properties.', () => {
+    expect(dismissError()).toEqual({
+      type: DISMISS_ERROR,
     });
   });
 });
 
-describe('receiveData()', () => {
-  test('Returns an object of type RECEIVE_DATA with correct properties.', () => {
-    expect(receiveData('foo', 'bar')).toEqual({
-      data: 'bar',
-      type: RECEIVE_DATA,
+describe('queryRecords()', () => {
+  test('Returns an object of type QUERY_RECORDS with correct properties.', () => {
+    expect(queryRecords()).toEqual({
+      type: QUERY_RECORDS,
+    });
+  });
+});
+
+describe('receiveRecords()', () => {
+  test('Returns an object of type RECEIVE_RECORDS with correct properties.', () => {
+    expect(receiveRecords('foo', 'bar')).toEqual({
+      records: 'bar',
+      type: RECEIVE_RECORDS,
       view: 'foo',
     });
   });
 });
 
-describe('receiveError()', () => {
+describe('receiveError(error)', () => {
   test('Returns an object of type RECEIVE_ERROR with correct properties.', () => {
     expect(receiveError('foo')).toEqual({
       error: 'foo',
@@ -45,10 +61,10 @@ describe('receiveError()', () => {
   });
 });
 
-describe('sortRecords()', () => {
+describe('sortRecords(view, sortBy)', () => {
   test('Returns an object of type SORT_RECORDS with correct properties.', () => {
     expect(sortRecords('foo', 'bar')).toEqual({
-      column: 'bar',
+      sortBy: 'bar',
       type: SORT_RECORDS,
       view: 'foo',
     });
