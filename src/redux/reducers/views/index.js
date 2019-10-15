@@ -29,15 +29,22 @@ export default function rootReducer(state = INITIAL_STATE, action) {
         [action.view]: {
           ...state[action.view],
           sortBy: action.sortBy,
-          sortDirection:
-            action.sortBy === state[action.view].sortBy
-              ? state[action.view].sortDirection === 'ASC'
-                ? 'DESC'
-                : 'ASC'
-              : 'ASC',
+          sortDirection: isSameSortBy(state, action) ? getSortDirection(state, action) : 'ASC',
         },
       };
     default:
       return state;
   }
+}
+
+function isSameSortBy(state, { sortBy, view }) {
+  return state[view].sortBy === sortBy;
+}
+
+function getSortDirection(state, { view }) {
+  return isSortDirectionAscending(state[view]) ? 'DESC' : 'ASC';
+}
+
+function isSortDirectionAscending(view) {
+  return view.sortDirection === 'ASC';
 }
