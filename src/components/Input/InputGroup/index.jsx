@@ -1,46 +1,31 @@
-import React from 'react';
+'use-strict';
+
 import PropTypes from 'prop-types';
+import React from 'react';
 
 import PendGroup from './PendGroup';
+import { reduceClassNames } from '../../../util';
 
 InputGroup.propTypes = {
   append: PropTypes.node,
-  disabled: PropTypes.bool,
-  handleChange: PropTypes.func.isRequired,
+  className: PropTypes.string,
   name: PropTypes.string.isRequired,
   prepend: PropTypes.node,
   type: PropTypes.string.isRequired,
-  value: PropTypes.string,
-};
-
-InputGroup.defaultProps = {
-  append: null,
-  disabled: false,
-  prepend: null,
-  value: '',
 };
 
 export default function InputGroup({
-  append,
-  disabled,
-  handleChange,
-  name,
-  prepend,
-  type,
-  value,
-  ...restProps
+  append, className, name, prepend, type, ...restProps
 }) {
+  const InputElement = type === 'textarea' ? 'textarea' : 'input';
   return (
-    <div className="input-group flex-nowrap">
+    <div className="flex-nowrap input-group">
       {prepend && <PendGroup type="prepend">{prepend}</PendGroup>}
-      <input
-        className="form-control"
-        disabled={disabled}
+      <InputElement
+        className={reduceClassNames('form-control', className)}
         id={name}
         name={name}
-        onChange={handleChange}
         type={type}
-        value={value}
         {...restProps}
       />
       {append && <PendGroup type="append">{append}</PendGroup>}

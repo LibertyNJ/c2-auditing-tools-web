@@ -1,5 +1,3 @@
-'use-strict';
-
 export default function sort(records, sortBy) {
   records.sort((recordA, recordB) => {
     const valueA = getValue(recordA, sortBy);

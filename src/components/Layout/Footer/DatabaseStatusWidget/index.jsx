@@ -1,23 +1,18 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 
-import SVGIcon from '../../../SVGIcon';
 import BusySpinner from './BusySpinner';
+import SVGIcon from '../../../SVGIcon';
 
 import { getTextClassName, isDatabaseBusy } from './utilties';
 
 DatabaseStatusWidget.propTypes = {
-  className: PropTypes.string,
   databaseStatus: PropTypes.string.isRequired,
 };
 
-DatabaseStatusWidget.defaultProps = {
-  className: null,
-};
-
-export default function DatabaseStatusWidget({ className, databaseStatus }) {
+export default function DatabaseStatusWidget({ databaseStatus, ...restProps }) {
   return (
-    <div className={className}>
+    <div {...restProps}>
       <SVGIcon className="align-baseline" fill="white" height="1em" type="database" width="1em" />{' '}
       Database:{' '}
       {isDatabaseBusy(databaseStatus) && (

@@ -1,6 +1,56 @@
 import { CHANGE_PARAMETER, RECEIVE_RECORDS, SORT_RECORDS } from '../../actions/types';
 
-export const INITIAL_STATE = {};
+export const INITIAL_STATE = {
+  administrations: {
+    parameters: {
+      datetimeEnd: '',
+      datetimeStart: '',
+      medication: '',
+      medicationOrderId: '',
+      provider: '',
+    },
+    records: [],
+    sortBy: '',
+    sortDirection: '',
+  },
+  ledger: {
+    parameters: {
+      datetimeEnd: '',
+      datetimeStart: '',
+      medicationOrderId: '',
+      product: '',
+      provider: '',
+    },
+    records: [],
+    sortBy: '',
+    sortDirection: '',
+  },
+  providers: {
+    parameters: {
+      adcId: '',
+      emarId: '',
+      firstName: '',
+      lastName: '',
+      middleInitial: '',
+    },
+    records: [],
+    sortBy: '',
+    sortDirection: '',
+  },
+  transactions: {
+    parameters: {
+      datetimeEnd: '',
+      datetimeStart: '',
+      medicationOrderId: '',
+      product: '',
+      provider: '',
+      transactionTypes: [],
+    },
+    records: [],
+    sortBy: '',
+    sortDirection: '',
+  },
+};
 
 export default function rootReducer(state = INITIAL_STATE, action) {
   switch (action.type) {

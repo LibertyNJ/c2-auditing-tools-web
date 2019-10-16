@@ -1,8 +1,7 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 
 import FormRow from '../../../../components/FormRow';
-import Section from '../../../../components/Section';
 import Select from '../../../../components/Select';
 import SVGIcon from '../../../../components/SVGIcon';
 
@@ -29,29 +28,25 @@ export default function AssignNameSection({
   unassignedProviderAdcs,
   unassignedProviderEmars,
 }) {
-  const SectionHeading = (
-    <React.Fragment>
-      Assign names{' '}
-      <SVGIcon className="align-baseline" fill="green" height="1em" type="plus" width="1em" />
-    </React.Fragment>
-  );
-
   const adcNameOptions = unassignedProviderAdcs.map(({ id, name }) => (
     <option key={id} value={id}>
       {name}
     </option>
   ));
-
   const emarNameOptions = unassignedProviderEmars.map(({ id, name }) => (
     <option key={id} value={id}>
       {name}
     </option>
   ));
-
   return (
-    <Section heading={SectionHeading} level={4}>
+    <section>
+      <h4>
+        Assign names{' '}
+        <SVGIcon className="align-baseline" fill="green" height="1em" type="plus" width="1em" />
+      </h4>
       <FormRow>
-        <Section className="col" heading="ADC" level={5}>
+        <section className="col">
+          <h5>ADC</h5>
           {!isEmptyArray(adcNameOptions) ? (
             <Select
               disabled={disabled}
@@ -65,8 +60,9 @@ export default function AssignNameSection({
           ) : (
             <div className="alert alert-info">No unassigned ADC names found!</div>
           )}
-        </Section>
-        <Section className="col" heading="EMAR" level={5}>
+        </section>
+        <section className="col">
+          <h5>EMAR</h5>
           {!isEmptyArray(emarNameOptions) ? (
             <Select
               disabled={disabled}
@@ -80,8 +76,8 @@ export default function AssignNameSection({
           ) : (
             <div className="alert alert-info">No unassigned EMAR names found!</div>
           )}
-        </Section>
+        </section>
       </FormRow>
-    </Section>
+    </section>
   );
 }

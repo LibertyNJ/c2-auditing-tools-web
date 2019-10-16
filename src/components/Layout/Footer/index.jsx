@@ -1,26 +1,27 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 
+import CopyrightWidget from './CopyrightWidget';
 import DatabaseStatusWidget from './DatabaseStatusWidget';
 import VersionWidget from './VersionWidget';
+import { reduceClassNames } from '../../../util';
 
 Footer.propTypes = {
   className: PropTypes.string,
-  databaseStatus: PropTypes.string.isRequired,
-  version: PropTypes.string.isRequired,
 };
 
 Footer.defaultProps = {
   className: null,
 };
 
-export default function Footer({ className, databaseStatus, version }) {
+const BASE_CLASS_NAME = 'bg-dark d-flex justify-content-between px-3 py-1 text-light';
+
+export default function Footer({ className, ...restProps }) {
   return (
-    <footer
-      className={`d-flex justify-content-between text-light bg-dark px-3 py-1 ${className}`}
-    >
-      <VersionWidget version={version} />
-      <DatabaseStatusWidget databaseStatus={databaseStatus} />
+    <footer className={reduceClassNames(BASE_CLASS_NAME, className)} {...restProps}>
+      <VersionWidget />
+      <CopyrightWidget />
+      {/* <DatabaseStatusWidget /> */}
     </footer>
   );
 }

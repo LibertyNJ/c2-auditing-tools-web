@@ -1,12 +1,10 @@
-import React from 'react';
 import PropTypes from 'prop-types';
-
-import FormRow from '../../../../components/FormRow';
-import Section from '../../../../components/Section';
-import Select from '../../../../components/Select';
-import SVGIcon from '../../../../components/SVGIcon';
+import React from 'react';
 
 import { isEmptyArray } from './utilities';
+import FormRow from '../../../../components/FormRow';
+import Select from '../../../../components/Select';
+import SVGIcon from '../../../../components/SVGIcon';
 
 UnassignNameSection.propTypes = {
   assignedProviderAdcs: PropTypes.arrayOf(PropTypes.object).isRequired,
@@ -29,29 +27,25 @@ export default function UnassignNameSection({
   providerAdcIdsToBeUnassigned,
   providerEmarIdsToBeUnassigned,
 }) {
-  const SectionHeading = (
-    <React.Fragment>
-      Unassign names{' '}
-      <SVGIcon className="align-baseline" fill="red" height="1em" type="minus" width="1em" />
-    </React.Fragment>
-  );
-
   const adcNameOptions = assignedProviderAdcs.map(({ id, name }) => (
     <option key={id} value={id}>
       {name}
     </option>
   ));
-
   const emarNameOptions = assignedProviderEmars.map(({ id, name }) => (
     <option key={id} value={id}>
       {name}
     </option>
   ));
-
   return (
-    <Section heading={SectionHeading} level={4}>
+    <section>
+      <h4>
+        Unassign names{' '}
+        <SVGIcon className="align-baseline" fill="red" height="1em" type="minus" width="1em" />
+      </h4>
       <FormRow>
-        <Section className="col" heading="ADC" level={5}>
+        <section className="col">
+          <h5>ADC</h5>
           {!isEmptyArray(adcNameOptions) ? (
             <Select
               disabled={disabled}
@@ -65,8 +59,9 @@ export default function UnassignNameSection({
           ) : (
             <div className="alert alert-info">No assigned ADC names found!</div>
           )}
-        </Section>
-        <Section className="col" heading="EMAR" level={5}>
+        </section>
+        <section className="col">
+          <h5>EMAR</h5>
           {!isEmptyArray(emarNameOptions) ? (
             <Select
               disabled={disabled}
@@ -80,8 +75,8 @@ export default function UnassignNameSection({
           ) : (
             <div className="alert alert-info">No assigned EMAR names found!</div>
           )}
-        </Section>
+        </section>
       </FormRow>
-    </Section>
+    </section>
   );
 }

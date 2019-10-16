@@ -1,29 +1,33 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 
 import InputGroup from './InputGroup';
-import HelpText from '../HelpText';
+import Info from '../Info';
+import { reduceClassNames } from '../../util';
 
 Input.propTypes = {
-  helpText: PropTypes.string,
-  label: PropTypes.string.isRequired,
+  info: PropTypes.string,
+  label: PropTypes.node.isRequired,
+  labelClassName: PropTypes.string,
   name: PropTypes.string.isRequired,
   wrapperClassName: PropTypes.string,
 };
 
-Input.defaultProps = {
-  helpText: null,
-  wrapperClassName: null,
-};
-
 export default function Input({
-  helpText, label, name, wrapperClassName, ...restProps
+  info,
+  label,
+  labelClassName,
+  name,
+  wrapperClassName,
+  ...restProps
 }) {
   return (
-    <div className={`form-group ${wrapperClassName}`}>
-      <label htmlFor={name}>{label}</label>
+    <div className={reduceClassNames('form-group', wrapperClassName)}>
+      <label className={reduceClassNames('text-nowrap', labelClassName)} htmlFor={name}>
+        {label}
+      </label>
       <InputGroup name={name} {...restProps} />
-      {helpText && <HelpText text={helpText} />}
+      {info && <Info>{info}</Info>}
     </div>
   );
 }

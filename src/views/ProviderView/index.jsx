@@ -2,11 +2,9 @@ import React from 'react';
 
 import { ipcRenderer } from 'electron';
 
-import Input from '../../components/Input';
 import RecordsSection from '../../components/RecordsSection';
-import Row from '../../components/Row';
 import SearchSection from '../../components/SearchSection';
-import View from '../../components/View';
+import ConnectedInput from '../../redux/containers/ConnectedInput';
 
 import Modal from './Modal';
 
@@ -45,28 +43,26 @@ export default class ProviderView extends React.Component {
   };
 
   render = () => (
-    <View heading="Providers">
-      <Row className="flex-grow-1 flex-shrink-1">
-        <SearchSection channel="get-providers">
-          <Input label="Last name" name="lastName" type="text" />
-          <Input label="First name" name="firstName" type="text" />
-          <Input label="Middle initial" name="middleInitial" type="text" />
-          <Input label="ADC ID" name="adcId" type="text" />
-          <Input label="EMAR ID" name="emarId" type="text" />
-        </SearchSection>
-        <RecordsSection
-          channel="get-providers"
-          columns={[
-            { dataKey: 'lastName', label: 'Last name' },
-            { dataKey: 'firstName', label: 'First name' },
-            { dataKey: 'middleInitial', label: 'MI', maxWidth: 70 },
-            { dataKey: 'adcIds', label: 'ADC IDs' },
-            { dataKey: 'emarIds', label: 'EMAR IDs' },
-          ]}
-          handleTableRowClick={this.handleTableRowClick}
-        />
-      </Row>
+    <React.Fragment>
+      <SearchSection view="providers">
+        <ConnectedInput label="Last name" name="lastName" type="text" />
+        <ConnectedInput label="First name" name="firstName" type="text" />
+        <ConnectedInput label="Middle initial" name="middleInitial" type="text" />
+        <ConnectedInput label="ADC ID" name="adcId" type="text" />
+        <ConnectedInput label="EMAR ID" name="emarId" type="text" />
+      </SearchSection>
+      <RecordsSection
+        channel="get-providers"
+        columns={[
+          { dataKey: 'lastName', label: 'Last name' },
+          { dataKey: 'firstName', label: 'First name' },
+          { dataKey: 'middleInitial', label: 'MI', maxWidth: 70 },
+          { dataKey: 'adcIds', label: 'ADC IDs' },
+          { dataKey: 'emarIds', label: 'EMAR IDs' },
+        ]}
+        handleTableRowClick={this.handleTableRowClick}
+      />
       <Modal ref={this.modalRef} />
-    </View>
+    </React.Fragment>
   );
 }

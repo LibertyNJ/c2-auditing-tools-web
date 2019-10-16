@@ -1,6 +1,5 @@
-import React from 'react';
-
 import { ipcRenderer } from 'electron';
+import React from 'react';
 
 import AssignNameSection from './AssignNameSection';
 import ProviderNameSection from './ProviderNameSection';

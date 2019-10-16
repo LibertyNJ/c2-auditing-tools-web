@@ -1,30 +1,26 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 
 import BusySpinner from './BusySpinner';
 import Icon from './Icon';
+import { reduceClassNames } from '../../util';
 
 Button.propTypes = {
-  children: PropTypes.string,
+  children: PropTypes.string.isRequired,
   className: PropTypes.string,
   disabled: PropTypes.bool,
-  form: PropTypes.string,
   iconType: PropTypes.string.isRequired,
-  type: PropTypes.string.isRequired,
 };
 
 Button.defaultProps = {
-  children: null,
-  className: null,
   disabled: false,
-  form: null,
 };
 
 export default function Button({
-  children, className, disabled, form, iconType, type,
+  children, className, disabled, iconType,
 }) {
   return (
-    <button className={`btn ${className}`} disabled={disabled} form={form} type={type}>
+    <button className={reduceClassNames('btn', className)}>
       {disabled ? <BusySpinner /> : <Icon type={iconType} />} {children}
     </button>
   );

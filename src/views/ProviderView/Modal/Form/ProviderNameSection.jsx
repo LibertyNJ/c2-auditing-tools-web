@@ -1,9 +1,8 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 
 import FormRow from '../../../../components/FormRow';
 import Input from '../../../../components/Input';
-import Section from '../../../../components/Section';
 
 NameSection.propTypes = {
   disabled: PropTypes.bool,
@@ -28,7 +27,8 @@ export default function NameSection({
   middleInitial,
 }) {
   return (
-    <Section heading="Name" level={4}>
+    <section>
+      <h4>Name</h4>
       <FormRow>
         <Input
           disabled={disabled}
@@ -59,6 +59,6 @@ export default function NameSection({
           wrapperClassName="col-2"
         />
       </FormRow>
-    </Section>
+    </section>
   );
 }
