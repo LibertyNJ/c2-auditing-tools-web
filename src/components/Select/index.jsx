@@ -34,7 +34,7 @@ export default function Select({
 }) {
   const location = useLocation();
   useEffect(() => {
-    $('.selectpicker').selectpicker({ noneSelectedText: '', style: '', styleBase: 'form-control' });
+    $('.selectpicker').selectpicker();
   }, [location]);
   return (
     <div className={reduceClassNames('form-group', wrapperClassName)}>
@@ -45,6 +45,9 @@ export default function Select({
       )}
       <select
         className={reduceClassNames('selectpicker', className)}
+        data-none-selected-text=""
+        data-style=""
+        data-style-base="form-control"
         id={name}
         name={name}
         {...restProps}

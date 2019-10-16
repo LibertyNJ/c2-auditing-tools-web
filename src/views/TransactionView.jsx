@@ -2,8 +2,8 @@ import React from 'react';
 
 import RecordsSection from '../components/RecordsSection';
 import SearchSection from '../components/SearchSection';
-import Select from '../components/Select';
 import ConnectedInput from '../redux/containers/ConnectedInput';
+import ConnectedSelect from '../redux/containers/ConnectedSelect';
 
 export default function TransactionsView() {
   return (
@@ -25,7 +25,7 @@ export default function TransactionsView() {
           required
           type="datetime-local"
         />
-        <Select
+        <ConnectedSelect
           info="Required"
           label="Transaction types"
           multiple
@@ -36,7 +36,7 @@ export default function TransactionsView() {
           <option value="Return">Return</option>
           <option value="Waste">Waste</option>
           <option value="Withdrawal">Withdrawal</option>
-        </Select>
+        </ConnectedSelect>
         <ConnectedInput label="Provider" name="provider" type="text" />
         <ConnectedInput label="Product" name="product" type="text" />
         <ConnectedInput label="Order ID" name="medicationOrderId" type="text" />
