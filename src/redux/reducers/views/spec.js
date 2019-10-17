@@ -15,7 +15,13 @@ describe('viewsReducer(state, action)', () => {
       value: 'bar',
       view: 'baz',
     };
-    const state = INITIAL_STATE;
+    const state = {
+      baz: {
+        parameters: {
+          foo: 'zip',
+        },
+      },
+    };
     expect(viewsReducer(state, action)).toEqual({
       ...state,
       baz: {
@@ -28,76 +34,129 @@ describe('viewsReducer(state, action)', () => {
     });
   });
 
-  test('Returns state with records set on RECEIVE_RECORDS action.', () => {
+  test('Returns state with records set and sorting properties set to null on RECEIVE_RECORDS action.', () => {
     const action = {
       records: ['foo'],
       type: RECEIVE_RECORDS,
       view: 'bar',
     };
-    const state = INITIAL_STATE;
+    const state = {
+      bar: {
+        records: [],
+        sortBy: 'baz',
+        sortDirection: 'ASC',
+      },
+    };
     expect(viewsReducer(state, action)).toEqual({
       ...state,
       bar: {
         ...state.bar,
         records: ['foo'],
+        sortBy: null,
+        sortDirection: null,
       },
     });
   });
 
   describe('Handles SORT_RECORDS action.', () => {
-    const action = {
-      sortBy: 'foo',
-      type: SORT_RECORDS,
-      view: 'bar',
-    };
-    test('Returns state with sortBy set and sortDirection set to ASC when passed state sortBy differs with action sortBy.', () => {
-      const state = {
-        bar: {
-          sortBy: 'baz',
-          sortDirection: 'ASC',
-        },
-      };
-      expect(viewsReducer(state, action)).toEqual({
-        ...state,
-        bar: {
-          ...state.bar,
+    describe('SortBy data type is a number.', () => {
+      test('Returns state with sort properties set and records sorted when passed sort direction is "ASC".', () => {
+        const action = {
           sortBy: 'foo',
           sortDirection: 'ASC',
-        },
+          type: SORT_RECORDS,
+          view: 'bar',
+        };
+        const state = {
+          bar: {
+            records: [{ foo: 3 }, { foo: 1 }, { foo: 3 }, { foo: 2 }],
+            sortBy: 'baz',
+            sortDirection: 'DESC',
+          },
+        };
+        expect(viewsReducer(state, action)).toEqual({
+          ...state,
+          bar: {
+            ...state.bar,
+            records: [{ foo: 1 }, { foo: 2 }, { foo: 3 }, { foo: 3 }],
+            sortBy: 'foo',
+            sortDirection: 'ASC',
+          },
+        });
       });
-    });
-
-    test('Returns state with sortDirection set to DESC when passed state sortDirection is ASC and sortBy is the same as action sortBy', () => {
-      const state = {
-        bar: {
-          sortBy: 'foo',
-          sortDirection: 'ASC',
-        },
-      };
-      expect(viewsReducer(state, action)).toEqual({
-        ...state,
-        bar: {
-          ...state.bar,
+      test('Returns state with sort properties set and records sorted when passed sort direction is "DESC".', () => {
+        const action = {
           sortBy: 'foo',
           sortDirection: 'DESC',
-        },
+          type: SORT_RECORDS,
+          view: 'bar',
+        };
+        const state = {
+          bar: {
+            records: [{ foo: 1 }, { foo: 3 }, { foo: 1 }, { foo: 2 }],
+            sortBy: 'baz',
+            sortDirection: 'ASC',
+          },
+        };
+        expect(viewsReducer(state, action)).toEqual({
+          ...state,
+          bar: {
+            ...state.bar,
+            records: [{ foo: 3 }, { foo: 2 }, { foo: 1 }, { foo: 1 }],
+            sortBy: 'foo',
+            sortDirection: 'DESC',
+          },
+        });
       });
     });
-
-    test('Returns state with sortDirection set to ASC when passed state sortDirection is DESC and sortBy is the same as action sortBy', () => {
-      const state = {
-        bar: {
-          sortBy: 'foo',
-          sortDirection: 'DESC',
-        },
-      };
-      expect(viewsReducer(state, action)).toEqual({
-        ...state,
-        bar: {
-          ...state.bar,
+    describe('SortBy data type is a string.', () => {
+      test('Returns state with sort properties set and records sorted when passed sort direction is "ASC".', () => {
+        const action = {
           sortBy: 'foo',
           sortDirection: 'ASC',
-        },
+          type: SORT_RECORDS,
+          view: 'bar',
+        };
+        const state = {
+          bar: {
+            records: [{ foo: 'c' }, { foo: 'a' }, { foo: 'c' }, { foo: 'b' }],
+            sortBy: 'baz',
+            sortDirection: 'DESC',
+          },
+        };
+        expect(viewsReducer(state, action)).toEqual({
+          ...state,
+          bar: {
+            ...state.bar,
+            records: [{ foo: 'a' }, { foo: 'b' }, { foo: 'c' }, { foo: 'c' }],
+            sortBy: 'foo',
+            sortDirection: 'ASC',
+          },
+        });
+      });
+      test('Returns state with sort properties set and records sorted when passed sort direction is "DESC".', () => {
+        const action = {
+          sortBy: 'foo',
+          sortDirection: 'DESC',
+          type: SORT_RECORDS,
+          view: 'bar',
+        };
+        const state = {
+          bar: {
+            records: [{ foo: 'a' }, { foo: 'c' }, { foo: 'a' }, { foo: 'b' }],
+            sortBy: 'baz',
+            sortDirection: 'ASC',
+          },
+        };
+        expect(viewsReducer(state, action)).toEqual({
+          ...state,
+          bar: {
+            ...state.bar,
+            records: [{ foo: 'c' }, { foo: 'b' }, { foo: 'a' }, { foo: 'a' }],
+            sortBy: 'foo',
+            sortDirection: 'DESC',
+          },
+        });
       });
     });
   });

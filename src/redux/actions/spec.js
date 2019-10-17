@@ -61,10 +61,11 @@ describe('receiveError(error)', () => {
   });
 });
 
-describe('sortRecords(view, sortBy)', () => {
+describe('sortRecords(view, sortBy, sortDirection)', () => {
   test('Returns an object of type SORT_RECORDS with correct properties.', () => {
-    expect(sortRecords('foo', 'bar')).toEqual({
+    expect(sortRecords('foo', 'bar', 'baz')).toEqual({
       sortBy: 'bar',
+      sortDirection: 'baz',
       type: SORT_RECORDS,
       view: 'foo',
     });

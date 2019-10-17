@@ -45,9 +45,10 @@ export function receiveRecords(view, records) {
   };
 }
 
-export function sortRecords(view, sortBy) {
+export function sortRecords(view, sortBy, sortDirection) {
   return {
     sortBy,
+    sortDirection,
     type: SORT_RECORDS,
     view,
   };

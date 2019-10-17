@@ -13,6 +13,7 @@ function mapStateToProps(state, ownProps) {
     value: getValue(state.views, ownProps.view, ownProps.name),
   };
 }
+
 function mapDispatchToProps(dispatch, ownProps) {
   return {
     onChange: event => handleChange(event, dispatch, ownProps.view),

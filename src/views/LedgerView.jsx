@@ -43,6 +43,7 @@ export default function LedgerView() {
           { dataKey: 'painReassessmentProvider', label: 'Pain reassessed by', maxWidth: 110 },
           { dataKey: 'medicationOrderId', label: 'Order ID', maxWidth: 110 },
         ]}
+        view="ledger"
       />
     </React.Fragment>
   );

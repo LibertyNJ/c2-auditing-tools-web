@@ -9,7 +9,7 @@ Body.propTypes = {
 
 export default function Body({ children, className, ...restProps }) {
   return (
-    <main className={reduceClassNames('d-flex flex-column pt-3 px-3', className)} {...restProps}>
+    <main className={reduceClassNames('d-flex flex-column overflow-hidden pt-3 px-3', className)} {...restProps}>
       {children}
     </main>
   );

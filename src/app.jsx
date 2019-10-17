@@ -6,11 +6,11 @@ import Layout from './components/Layout';
 import BootstrapSelectReactRouterDomSupport from './components/Select/BootstrapSelectReactRouterDomSupport';
 import store from './redux/store';
 import './scripts/font-awesome-icon-library';
-import AdministrationView from './views/AdministrationView';
+import AdministrationsView from './views/AdministrationsView';
 import DataView from './views/DataView';
 import LedgerView from './views/LedgerView';
-import ProviderView from './views/ProviderView';
-import TransactionView from './views/TransactionView';
+import ProvidersView from './views/ProvidersView';
+import TransactionsView from './views/TransactionsView';
 
 export default function App() {
   return (
@@ -24,13 +24,13 @@ export default function App() {
               <LedgerView />
             </Route>
             <Route path="/transaction">
-              <TransactionView />
+              <TransactionsView />
             </Route>
             <Route path="/administration">
-              <AdministrationView />
+              <AdministrationsView />
             </Route>
             <Route path="/provider">
-              <ProviderView />
+              <ProvidersView />
             </Route>
             <Route path="/data">
               <DataView />

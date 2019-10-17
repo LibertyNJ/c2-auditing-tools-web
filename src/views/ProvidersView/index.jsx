@@ -10,7 +10,7 @@ import Modal from './Modal';
 
 import extractProviderId from './extract-provider-id';
 
-export default class ProviderView extends React.Component {
+export default class ProvidersView extends React.Component {
   modalRef = React.createRef();
 
   handleTableRowClick = ({ rowData }) => {
@@ -61,6 +61,7 @@ export default class ProviderView extends React.Component {
           { dataKey: 'emarIds', label: 'EMAR IDs' },
         ]}
         handleTableRowClick={this.handleTableRowClick}
+        view="providers"
       />
       <Modal ref={this.modalRef} />
     </React.Fragment>

@@ -3,12 +3,11 @@ import React from 'react';
 import RecordsSection from '../components/RecordsSection';
 import SearchSection from '../components/SearchSection';
 import ConnectedInput from '../redux/containers/ConnectedInput';
-import ConnectedSelect from '../redux/containers/ConnectedSelect';
 
-export default function TransactionsView() {
+export default function AdministrationsView() {
   return (
     <React.Fragment>
-      <SearchSection view="transactions">
+      <SearchSection view="administrations">
         <ConnectedInput
           info="Required"
           label="Time start"
@@ -25,32 +24,20 @@ export default function TransactionsView() {
           required
           type="datetime-local"
         />
-        <ConnectedSelect
-          info="Required"
-          label="Transaction types"
-          multiple
-          name="transactionTypes"
-          required
-        >
-          <option value="Restock">Restock</option>
-          <option value="Return">Return</option>
-          <option value="Waste">Waste</option>
-          <option value="Withdrawal">Withdrawal</option>
-        </ConnectedSelect>
         <ConnectedInput label="Provider" name="provider" type="text" />
-        <ConnectedInput label="Product" name="product" type="text" />
+        <ConnectedInput label="Medication" name="medication" type="text" />
         <ConnectedInput label="Order ID" name="medicationOrderId" type="text" />
       </SearchSection>
       <RecordsSection
-        channel="get-transactions"
+        channel="get-administrations"
         columns={[
           { dataKey: 'timestamp', label: 'Time', maxWidth: 120 },
           { dataKey: 'provider', label: 'Provider' },
-          { dataKey: 'type', label: 'Transaction' },
-          { dataKey: 'product', label: 'Product' },
-          { dataKey: 'amount', label: 'Amount', maxWidth: 110 },
+          { dataKey: 'medication', label: 'Medication' },
+          { dataKey: 'doseWithUnits', label: 'Dose', maxWidth: 100 },
           { dataKey: 'medicationOrderId', label: 'Order ID', maxWidth: 110 },
         ]}
+        view="administrations"
       />
     </React.Fragment>
   );

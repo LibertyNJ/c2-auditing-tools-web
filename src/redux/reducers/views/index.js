@@ -1,3 +1,4 @@
+import getSortedRecords from './get-sorted-records';
 import { CHANGE_PARAMETER, RECEIVE_RECORDS, SORT_RECORDS } from '../../actions/types';
 
 export const INITIAL_STATE = {
@@ -10,8 +11,8 @@ export const INITIAL_STATE = {
       provider: '',
     },
     records: [],
-    sortBy: '',
-    sortDirection: '',
+    sortBy: null,
+    sortDirection: null,
   },
   ledger: {
     parameters: {
@@ -22,8 +23,8 @@ export const INITIAL_STATE = {
       provider: '',
     },
     records: [],
-    sortBy: '',
-    sortDirection: '',
+    sortBy: null,
+    sortDirection: null,
   },
   providers: {
     parameters: {
@@ -34,8 +35,8 @@ export const INITIAL_STATE = {
       middleInitial: '',
     },
     records: [],
-    sortBy: '',
-    sortDirection: '',
+    sortBy: null,
+    sortDirection: null,
   },
   transactions: {
     parameters: {
@@ -47,8 +48,8 @@ export const INITIAL_STATE = {
       transactionTypes: [],
     },
     records: [],
-    sortBy: '',
-    sortDirection: '',
+    sortBy: null,
+    sortDirection: null,
   },
 };
 
@@ -71,6 +72,8 @@ export default function rootReducer(state = INITIAL_STATE, action) {
         [action.view]: {
           ...state[action.view],
           records: [...action.records],
+          sortBy: null,
+          sortDirection: null,
         },
       };
     case SORT_RECORDS:
@@ -78,23 +81,16 @@ export default function rootReducer(state = INITIAL_STATE, action) {
         ...state,
         [action.view]: {
           ...state[action.view],
+          records: getSortedRecords(
+            [...state[action.view].records],
+            action.sortBy,
+            action.sortDirection,
+          ),
           sortBy: action.sortBy,
-          sortDirection: isSameSortBy(state, action) ? getSortDirection(state, action) : 'ASC',
+          sortDirection: action.sortDirection,
         },
       };
     default:
       return state;
   }
-}
-
-function isSameSortBy(state, { sortBy, view }) {
-  return state[view].sortBy === sortBy;
-}
-
-function getSortDirection(state, { view }) {
-  return isSortDirectionAscending(state[view]) ? 'DESC' : 'ASC';
-}
-
-function isSortDirectionAscending(view) {
-  return view.sortDirection === 'ASC';
 }

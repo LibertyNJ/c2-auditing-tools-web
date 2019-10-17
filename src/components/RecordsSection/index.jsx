@@ -1,7 +1,8 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 
-import Table from '../Table';
+import ConnectedTable from '../../redux/containers/ConnectedTable';
+import { reduceClassNames } from '../../util';
 
 RecordsSection.propTypes = {
   channel: PropTypes.string.isRequired,
@@ -14,23 +15,20 @@ RecordsSection.propTypes = {
     }),
   ).isRequired,
   handleTableRowClick: PropTypes.func,
-};
-
-RecordsSection.defaultProps = {
-  className: null,
-  handleTableRowClick: null,
+  view: PropTypes.string.isRequired,
 };
 
 export default function RecordsSection({
-  channel, className, columns, handleTableRowClick,
+  channel, className, columns, handleTableRowClick, view,
 }) {
   return (
-    <section className={`d-flex flex-column ${className}`}>
-      <Table
+    <section className={reduceClassNames('d-flex flex-grow-1 flex-shrink-1', className)}>
+      <ConnectedTable
         channel={channel}
         columns={columns}
         handleTableRowClick={handleTableRowClick}
         wrapperClassName="flex-grow-1 flex-shrink-1"
+        view={view}
       />
     </section>
   );

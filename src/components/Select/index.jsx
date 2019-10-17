@@ -1,8 +1,6 @@
 import 'bootstrap-select';
-import $ from 'jquery';
 import PropTypes from 'prop-types';
-import React, { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import React from 'react';
 
 import Info from '../Info';
 import { reduceClassNames } from '../../util';
@@ -35,8 +33,9 @@ export default function Select({
         </label>
       )}
       <select
-        className={reduceClassNames('selectpicker', className)}
+        className={reduceClassNames('selectpicker form-control', className)}
         data-none-selected-text=""
+        data-selected-text-format="count"
         data-style=""
         data-style-base="form-control"
         id={name}
