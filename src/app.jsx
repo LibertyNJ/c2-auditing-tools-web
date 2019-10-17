@@ -3,37 +3,42 @@ import { Provider } from 'react-redux';
 import { Route, Switch } from 'react-router-dom';
 
 import Layout from './components/Layout';
+import BootstrapSelectReactRouterDomSupport from './components/Select/BootstrapSelectReactRouterDomSupport';
+import store from './redux/store';
 import './scripts/font-awesome-icon-library';
 import AdministrationView from './views/AdministrationView';
 import DataView from './views/DataView';
 import LedgerView from './views/LedgerView';
 import ProviderView from './views/ProviderView';
 import TransactionView from './views/TransactionView';
-import store from './redux/store';
 
-export default function App({ ...restProps }) {
+export default function App() {
   return (
-    <Provider store={store}>
-      <Layout>
-        <Switch>
-          <Route path="/" exact>
-            <LedgerView />
-          </Route>
-          <Route path="/transaction">
-            <TransactionView />
-          </Route>
-          <Route path="/administration">
-            <AdministrationView />
-          </Route>
-          <Route path="/provider">
-            <ProviderView />
-          </Route>
-          <Route path="/data">
-            <DataView />
-          </Route>
-        </Switch>
-      </Layout>
-    </Provider>
+    <React.Fragment>
+      <BootstrapSelectReactRouterDomSupport />
+
+      <Provider store={store}>
+        <Layout>
+          <Switch>
+            <Route path="/" exact>
+              <LedgerView />
+            </Route>
+            <Route path="/transaction">
+              <TransactionView />
+            </Route>
+            <Route path="/administration">
+              <AdministrationView />
+            </Route>
+            <Route path="/provider">
+              <ProviderView />
+            </Route>
+            <Route path="/data">
+              <DataView />
+            </Route>
+          </Switch>
+        </Layout>
+      </Provider>
+    </React.Fragment>
   );
 }
 

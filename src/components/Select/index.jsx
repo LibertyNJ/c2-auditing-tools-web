@@ -7,11 +7,6 @@ import { useLocation } from 'react-router-dom';
 import Info from '../Info';
 import { reduceClassNames } from '../../util';
 
-// Use of jQuery here and in hooks below is to make bootstrap-select
-// compatible with react-router-dom. Bootstrap-select's class implementation
-// only auto-initializes on page load. Switching routes causes problems.
-$.fn.selectpicker.Constructor.BootstrapVersion = '4';
-
 Select.propTypes = {
   children: PropTypes.node.isRequired,
   className: PropTypes.string,
@@ -32,10 +27,6 @@ export default function Select({
   wrapperClassName,
   ...restProps
 }) {
-  const location = useLocation();
-  useEffect(() => {
-    $('.selectpicker').selectpicker();
-  }, [location]);
   return (
     <div className={reduceClassNames('form-group', wrapperClassName)}>
       {label && (
