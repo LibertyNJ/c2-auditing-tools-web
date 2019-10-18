@@ -158,6 +158,30 @@ describe('viewsReducer(state, action)', () => {
           },
         });
       });
+      test('Handles null values.', () => {
+        const action = {
+          sortBy: 'foo',
+          sortDirection: 'ASC',
+          type: SORT_RECORDS,
+          view: 'bar',
+        };
+        const state = {
+          bar: {
+            records: [{ foo: 'c' }, { foo: 'a' }, { foo: null }, { foo: 'c' }, { foo: 'b' }],
+            sortBy: 'baz',
+            sortDirection: 'DESC',
+          },
+        };
+        expect(viewsReducer(state, action)).toEqual({
+          ...state,
+          bar: {
+            ...state.bar,
+            records: [{ foo: null }, { foo: 'a' }, { foo: 'b' }, { foo: 'c' }, { foo: 'c' }],
+            sortBy: 'foo',
+            sortDirection: 'ASC',
+          },
+        });
+      });
     });
   });
 });

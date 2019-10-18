@@ -1,5 +1,4 @@
 export default function getSortedRecords(records, sortBy, sortDirection) {
-  console.log(records, sortBy, sortDirection);
   sortRecords(records, sortBy);
   return isSortDirectionAscending(sortDirection) ? records : records.reverse();
 }

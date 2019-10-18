@@ -1,4 +1,3 @@
-import 'bootstrap-select';
 import PropTypes from 'prop-types';
 import React from 'react';
 
@@ -33,11 +32,7 @@ export default function Select({
         </label>
       )}
       <select
-        className={reduceClassNames('selectpicker form-control', className)}
-        data-none-selected-text=""
-        data-selected-text-format="count"
-        data-style=""
-        data-style-base="form-control"
+        className={reduceClassNames('form-control', className)}
         id={name}
         name={name}
         {...restProps}

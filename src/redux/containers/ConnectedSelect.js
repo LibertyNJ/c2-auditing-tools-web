@@ -1,12 +1,12 @@
 import { connect } from 'react-redux';
 
 import { changeParameter } from '../actions';
-import Select from '../../components/Select';
+import BootstrapSelect from '../../components/BootstrapSelect';
 
 export default connect(
   mapStateToProps,
   mapDispatchToProps,
-)(Select);
+)(BootstrapSelect);
 
 function mapStateToProps(state, ownProps) {
   return {

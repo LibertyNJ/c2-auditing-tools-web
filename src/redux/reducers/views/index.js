@@ -55,41 +55,31 @@ export const INITIAL_STATE = {
 
 export default function rootReducer(state = INITIAL_STATE, action) {
   switch (action.type) {
-    case CHANGE_PARAMETER:
-      return {
-        ...state,
-        [action.view]: {
-          ...state[action.view],
-          parameters: {
-            ...state[action.view].parameters,
-            [action.name]: action.value,
-          },
-        },
-      };
-    case RECEIVE_RECORDS:
-      return {
-        ...state,
-        [action.view]: {
-          ...state[action.view],
-          records: [...action.records],
-          sortBy: null,
-          sortDirection: null,
-        },
-      };
-    case SORT_RECORDS:
-      return {
-        ...state,
-        [action.view]: {
-          ...state[action.view],
-          records: getSortedRecords(
-            [...state[action.view].records],
-            action.sortBy,
-            action.sortDirection,
-          ),
-          sortBy: action.sortBy,
-          sortDirection: action.sortDirection,
-        },
-      };
+    case CHANGE_PARAMETER: {
+      const nextState = { ...state };
+      nextState[action.view].parameters[action.name] = action.value;
+      return nextState;
+    }
+    case RECEIVE_RECORDS: {
+      const nextState = { ...state };
+      const view = nextState[action.view];
+      view.records = [...action.records];
+      view.sortBy = null;
+      view.sortDirection = null;
+      return nextState;
+    }
+    case SORT_RECORDS: {
+      const nextState = { ...state };
+      const view = nextState[action.view];
+      view.records = getSortedRecords(
+        [...state[action.view].records],
+        action.sortBy,
+        action.sortDirection,
+      );
+      view.sortBy = action.sortBy;
+      view.sortDirection = action.sortDirection;
+      return nextState;
+    }
     default:
       return state;
   }

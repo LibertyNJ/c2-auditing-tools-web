@@ -3,7 +3,7 @@ import { Provider } from 'react-redux';
 import { Route, Switch } from 'react-router-dom';
 
 import Layout from './components/Layout';
-import BootstrapSelectReactRouterDomSupport from './components/Select/BootstrapSelectReactRouterDomSupport';
+import BootstrapSelectReactRouterDomSupport from './components/BootstrapSelect/BootstrapSelectReactRouterDomSupport';
 import store from './redux/store';
 import './scripts/font-awesome-icon-library';
 import AdministrationsView from './views/AdministrationsView';
