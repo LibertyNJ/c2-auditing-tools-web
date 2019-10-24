@@ -1,16 +1,14 @@
-'use-strict';
-
 import PropTypes from 'prop-types';
 import React from 'react';
 
 import { reduceClassNames } from '../../util';
 
+export const BASE_CLASS_NAME = 'form-row';
+
 FormRow.propTypes = {
   children: PropTypes.node.isRequired,
   className: PropTypes.string,
 };
-
-export const BASE_CLASS_NAME = 'form-row';
 
 export default function FormRow({ children, className, ...restProps }) {
   return (

@@ -1,10 +1,9 @@
-import React from 'react';
 import PropTypes from 'prop-types';
-
+import React from 'react';
 import { Column } from 'react-virtualized';
-import Header from './Header';
 
 import getCellData from './get-cell-data';
+import Header from './Header';
 
 VirtualizedColumn.propTypes = {
   dataKey: PropTypes.string.isRequired,
@@ -16,7 +15,9 @@ VirtualizedColumn.defaultProps = {
   maxWidth: null,
 };
 
-export default function VirtualizedColumn({ dataKey, label, maxWidth }) {
+export default function VirtualizedColumn({
+  dataKey, label, maxWidth, ...restProps
+}) {
   return (
     <Column
       cellDataGetter={getCellData}
@@ -28,6 +29,7 @@ export default function VirtualizedColumn({ dataKey, label, maxWidth }) {
       label={label}
       maxWidth={maxWidth}
       width={1}
+      {...restProps}
     />
   );
 }

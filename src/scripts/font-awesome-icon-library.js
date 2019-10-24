@@ -2,6 +2,7 @@
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
+  faDatabase,
   faFileCsv,
   faFileExcel,
   faFileImport,
@@ -18,6 +19,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 export default library.add(
+  faDatabase,
   faFileCsv,
   faFileExcel,
   faFileImport,

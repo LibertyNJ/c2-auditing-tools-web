@@ -1,69 +1,41 @@
 import React from 'react';
 
-import { ipcRenderer } from 'electron';
-
+import EditProviderModal from './EditProviderModal';
+import { showModal } from '../../components/Modal';
 import RecordsSection from '../../components/RecordsSection';
 import SearchSection from '../../components/SearchSection';
-import ConnectedInput from '../../redux/containers/ConnectedInput';
+import FormInput from '../../redux/containers/FormInput';
+import { createRequest, sendBackendRequest } from '../../util';
 
-import Modal from './Modal';
-
-import extractProviderId from './extract-provider-id';
-
-export default class ProvidersView extends React.Component {
-  modalRef = React.createRef();
-
-  handleTableRowClick = ({ rowData }) => {
-    const providerId = extractProviderId(rowData);
-    this.sendProviderModalQuery(providerId);
-    this.listenForBackendResponse();
-  };
-
-  sendProviderModalQuery = (providerId) => {
-    ipcRenderer.send('backend', {
-      body: providerId,
-      channel: 'get-provider-modal',
-    });
-  };
-
-  listenForBackendResponse = () => {
-    ipcRenderer.once('get-provider-modal', this.showModal);
-  };
-
-  showModal = () => {
-    this.modalRef.current.show();
-  };
-
-  componentWillUnmount = () => {
-    this.stopListeningForBackendCommunication();
-  };
-
-  stopListeningForBackendCommunication = () => {
-    ipcRenderer.removeAllListeners('provider-modal');
-  };
-
-  render = () => (
+export default function ProvidersView() {
+  return (
     <React.Fragment>
-      <SearchSection view="providers">
-        <ConnectedInput label="Last name" name="lastName" type="text" />
-        <ConnectedInput label="First name" name="firstName" type="text" />
-        <ConnectedInput label="Middle initial" name="middleInitial" type="text" />
-        <ConnectedInput label="ADC ID" name="adcId" type="text" />
-        <ConnectedInput label="EMAR ID" name="emarId" type="text" />
+      <SearchSection formId="providers">
+        <FormInput label="Last name" name="lastName" type="text" />
+        <FormInput label="First name" name="firstName" type="text" />
+        <FormInput label="Middle initial" name="middleInitial" type="text" />
+        <FormInput label="ADC name" name="adcName" type="text" />
+        <FormInput label="EMAR name" name="emarName" type="text" />
       </SearchSection>
       <RecordsSection
-        channel="get-providers"
         columns={[
           { dataKey: 'lastName', label: 'Last name' },
           { dataKey: 'firstName', label: 'First name' },
           { dataKey: 'middleInitial', label: 'MI', maxWidth: 70 },
-          { dataKey: 'adcIds', label: 'ADC IDs' },
-          { dataKey: 'emarIds', label: 'EMAR IDs' },
+          { dataKey: 'adcIds', label: 'ADC names' },
+          { dataKey: 'emarIds', label: 'EMAR names' },
         ]}
-        handleTableRowClick={this.handleTableRowClick}
-        view="providers"
+        onRowClick={handleRowClick}
+        tableName="providers"
       />
-      <Modal ref={this.modalRef} />
+      <EditProviderModal />
     </React.Fragment>
   );
+}
+
+function handleRowClick({ rowData }) {
+  const providerId = rowData.id;
+  const request = createRequest('GET', 'edit-provider', providerId);
+  sendBackendRequest(request);
+  showModal();
 }

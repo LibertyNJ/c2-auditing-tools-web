@@ -1,20 +1,21 @@
-'use-strict';
-
 import {
-  CHANGE_PARAMETER,
+  CHANGE_FORM_FIELD,
   DISMISS_ERROR,
-  QUERY_RECORDS,
-  RECEIVE_RECORDS,
+  RECEIVE_DATABASE_STATUS,
   RECEIVE_ERROR,
-  SORT_RECORDS,
+  RECEIVE_FORM_DATA,
+  RECEIVE_IMPORT_DATA_SUCCESS,
+  RECEIVE_TABLE_RECORDS,
+  RESET_FORM_FIELDS,
+  SORT_TABLE_RECORDS,
 } from './types';
 
-export function changeParameter(view, name, value) {
+export function changeFormField(form, name, value) {
   return {
+    form,
     name,
-    type: CHANGE_PARAMETER,
+    type: CHANGE_FORM_FIELD,
     value,
-    view,
   };
 }
 
@@ -24,9 +25,10 @@ export function dismissError() {
   };
 }
 
-export function queryRecords() {
+export function receiveDatabaseStatus(status) {
   return {
-    type: QUERY_RECORDS,
+    status,
+    type: RECEIVE_DATABASE_STATUS,
   };
 }
 
@@ -37,19 +39,40 @@ export function receiveError(error) {
   };
 }
 
-export function receiveRecords(view, records) {
+export function receiveFormData(form, data) {
   return {
-    records,
-    type: RECEIVE_RECORDS,
-    view,
+    data,
+    form,
+    type: RECEIVE_FORM_DATA,
   };
 }
 
-export function sortRecords(view, sortBy, sortDirection) {
+export function receiveImportDataSuccess() {
+  return {
+    type: RECEIVE_IMPORT_DATA_SUCCESS,
+  };
+}
+
+export function receiveTableRecords(table, records) {
+  return {
+    records,
+    table,
+    type: RECEIVE_TABLE_RECORDS,
+  };
+}
+
+export function resetFormFields(form) {
+  return {
+    form,
+    type: RESET_FORM_FIELDS,
+  };
+}
+
+export function sortTableRecords(table, sortBy, sortDirection) {
   return {
     sortBy,
     sortDirection,
-    type: SORT_RECORDS,
-    view,
+    table,
+    type: SORT_TABLE_RECORDS,
   };
 }

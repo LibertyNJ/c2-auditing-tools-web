@@ -1,17 +1,19 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
+
+import { reduceClassNames } from '../../../util';
+
+const BASE_CLASS_NAME = 'border-bottom navbar-brand px-3 text-primary';
 
 Brand.propTypes = {
   children: PropTypes.string.isRequired,
   className: PropTypes.string,
 };
 
-Brand.defaultProps = {
-  className: null,
-};
-
-export default function Brand({ children, className }) {
+export default function Brand({ children, className, ...restProps }) {
   return (
-    <div className={`navbar-brand text-primary px-3 border-bottom ${className}`}>{children}</div>
+    <div className={reduceClassNames(BASE_CLASS_NAME, className)} {...restProps}>
+      {children}
+    </div>
   );
 }

@@ -1,57 +1,43 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import 'bootstrap/js/dist/modal';
 import $ from 'jquery';
+import PropTypes from 'prop-types';
+import React, { useEffect } from 'react';
 
-import Body from './Body';
-import Footer from './Footer';
 import Header from './Header';
 import Wrapper from './Wrapper';
 
-import '../../../node_modules/bootstrap/js/dist/modal';
+Modal.propTypes = {
+  children: PropTypes.node.isRequired,
+  footerContent: PropTypes.node,
+  heading: PropTypes.string.isRequired,
+};
 
-export default class Modal extends React.Component {
-  static propTypes = {
-    children: PropTypes.node.isRequired,
-    footerContent: PropTypes.node,
-    heading: PropTypes.string.isRequired,
-    level: PropTypes.number.isRequired,
-  };
-
-  static defaultProps = {
-    footerContent: null,
-  };
-
-  componentDidMount = () => {
-    this.initialize();
-  };
-
-  initialize = () => {
-    $('#modal').modal({ show: false });
-  };
-
-  show = () => {
-    $('#modal').modal('show');
-  };
-
-  hide = () => {
-    $('#modal').modal('hide');
-  };
-
-  componentWillUnmount = () => {
-    this.dispose();
-  };
-
-  dispose = () => {
-    $('modal').modal('dispose');
-  };
-
-  render = () => (
-    <Wrapper>
-      <Header hideModal={this.hide} level={this.props.level}>
-        {this.props.heading}
-      </Header>
-      <Body>{this.props.children}</Body>
-      <Footer>{this.props.footerContent}</Footer>
+export default function Modal({
+  children, footerContent, heading, ...restProps
+}) {
+  useEffect(initializeModal, []);
+  return (
+    <Wrapper {...restProps}>
+      <Header heading={heading} hideModal={hideModal} />
+      <div className="modal-body">{children}</div>
+      <footer className="modal-footer">{footerContent}</footer>
     </Wrapper>
   );
+}
+
+function initializeModal() {
+  $('#modal').modal({ show: false });
+  return disposeModal;
+}
+
+function disposeModal() {
+  $('modal').modal('dispose');
+}
+
+function hideModal() {
+  $('#modal').modal('hide');
+}
+
+export function showModal() {
+  $('#modal').modal('show');
 }

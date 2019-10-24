@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Provider } from 'react-redux';
-import { Route, Switch } from 'react-router-dom';
+import { Route, Switch, useLocation } from 'react-router-dom';
 
+import BackendResponseListener from './components/BackendResponseListener';
+import { initializeBootstrapSelect } from './components/BootstrapSelect';
 import Layout from './components/Layout';
-import BootstrapSelectReactRouterDomSupport from './components/BootstrapSelect/BootstrapSelectReactRouterDomSupport';
 import store from './redux/store';
 import './scripts/font-awesome-icon-library';
+import { createRequest, sendBackendRequest } from './util';
 import AdministrationsView from './views/AdministrationsView';
 import DataView from './views/DataView';
 import LedgerView from './views/LedgerView';
@@ -13,10 +15,12 @@ import ProvidersView from './views/ProvidersView';
 import TransactionsView from './views/TransactionsView';
 
 export default function App() {
+  const location = useLocation();
+  useEffect(initializeBootstrapSelect, [location]);
+  useEffect(getDatabaseStatus, []);
   return (
     <React.Fragment>
-      <BootstrapSelectReactRouterDomSupport />
-
+      <BackendResponseListener store={store} />
       <Provider store={store}>
         <Layout>
           <Switch>
@@ -42,65 +46,7 @@ export default function App() {
   );
 }
 
-// export default class App extends React.Component {
-//   state = { databaseStatus: 'Unknown' };
-
-//   componentDidMount = () => {
-//     this.listenForErrors();
-//     this.listenForDatabaseStatus();
-//     this.getDatabaseStatus();
-//   };
-
-//   listenForErrors = () => {
-//     ipcRenderer.on('error', (event, { body }) => {
-//       alert(body);
-//     });
-//   };
-
-//   listenForDatabaseStatus = () => {
-//     ipcRenderer.on('get-database-status', (event, { body }) => {
-//       this.setState({ databaseStatus: body });
-//     });
-//   };
-
-//   getDatabaseStatus = () => {
-//     ipcRenderer.send('backend', { channel: 'get-database-status' });
-//   };
-
-//   componentWillUnmount = () => {
-//     this.stopListeningForDatabaseStatus();
-//     this.stopListeningForErrors();
-//   };
-
-//   stopListeningForDatabaseStatus = () => {
-//     ipcRenderer.removeAllListeners('get-database-status');
-//   };
-
-//   stopListeningForErrors = () => {
-//     ipcRenderer.removeAllListeners('error');
-//   };
-
-//   render = () => (
-//     <Provider store={store}>
-//       <Layout databaseStatus={this.state.databaseStatus}>
-//         <Switch>
-//           <Route path="/" exact>
-//             <LedgerView />
-//           </Route>
-//           <Route path="/transaction">
-//             <TransactionView />
-//           </Route>
-//           <Route path="/administration">
-//             <AdministrationView />
-//           </Route>
-//           <Route path="/provider">
-//             <ProviderView />
-//           </Route>
-//           <Route path="/data">
-//             <DataView />
-//           </Route>
-//         </Switch>
-//       </Layout>
-//     </Provider>
-//   );
-// }
+function getDatabaseStatus() {
+  const request = createRequest('GET', 'database-status');
+  sendBackendRequest(request);
+}

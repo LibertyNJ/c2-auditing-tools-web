@@ -1,6 +1,4 @@
-'use-strict';
-
-const { handleError, isNull } = require('../utilities');
+const { createResponse, isNull } = require('../utilities');
 
 module.exports = function getAdministrations(
   database,
@@ -25,7 +23,7 @@ module.exports = function getAdministrations(
   ].filter(predicate => !isNull(predicate));
 
   try {
-    return database.read({
+    const records = database.read({
       columns: ['doseWithUnits', 'id', 'medication', 'medicationOrderId', 'provider', 'timestamp'],
       predicates: [
         { column: 'timestamp', operator: '>', value: datetimeStart },
@@ -34,7 +32,16 @@ module.exports = function getAdministrations(
       ],
       table: 'administrationView',
     });
+    const responseBody = {
+      records,
+      table: 'administrations',
+    };
+    return createResponse('table-records', 'OK', responseBody);
   } catch (error) {
-    handleError(error);
+    const responseBody = {
+      error,
+      table: 'administrations',
+    };
+    return createResponse('table-records', 'ERROR', responseBody);
   }
 };

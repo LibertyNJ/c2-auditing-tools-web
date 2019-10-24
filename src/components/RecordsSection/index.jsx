@@ -1,11 +1,12 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 
-import ConnectedTable from '../../redux/containers/ConnectedTable';
+import RecordsTable from '../../redux/containers/RecordsTable';
 import { reduceClassNames } from '../../util';
 
+const BASE_CLASS_NAME = 'd-flex flex-grow-1 flex-shrink-1';
+
 RecordsSection.propTypes = {
-  channel: PropTypes.string.isRequired,
   className: PropTypes.string,
   columns: PropTypes.arrayOf(
     PropTypes.shape({
@@ -14,21 +15,20 @@ RecordsSection.propTypes = {
       maxWidth: PropTypes.number,
     }),
   ).isRequired,
-  handleTableRowClick: PropTypes.func,
-  view: PropTypes.string.isRequired,
+  onRowClick: PropTypes.func,
+  tableName: PropTypes.string.isRequired,
 };
 
 export default function RecordsSection({
-  channel, className, columns, handleTableRowClick, view,
+  className, columns, onRowClick, tableName,
 }) {
   return (
-    <section className={reduceClassNames('d-flex flex-grow-1 flex-shrink-1', className)}>
-      <ConnectedTable
-        channel={channel}
+    <section className={reduceClassNames(BASE_CLASS_NAME, className)}>
+      <RecordsTable
         columns={columns}
-        handleTableRowClick={handleTableRowClick}
+        name={tableName}
+        onRowClick={onRowClick}
         wrapperClassName="flex-grow-1 flex-shrink-1"
-        view={view}
       />
     </section>
   );

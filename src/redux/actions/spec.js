@@ -1,53 +1,47 @@
 import {
-  changeParameter,
+  changeFormField,
   dismissError,
-  queryRecords,
+  queryData,
   receiveError,
-  receiveRecords,
-  sortRecords,
+  receiveFormData,
+  receiveTableRecords,
+  resetFormFields,
+  sortTableRecords,
 } from './index';
 import {
-  CHANGE_PARAMETER,
+  CHANGE_FORM_FIELD,
   DISMISS_ERROR,
-  QUERY_RECORDS,
+  QUERY_DATA,
   RECEIVE_ERROR,
-  RECEIVE_RECORDS,
-  SORT_RECORDS,
+  RECEIVE_FORM_DATA,
+  RECEIVE_TABLE_RECORDS,
+  RESET_FORM_FIELDS,
+  SORT_TABLE_RECORDS,
 } from './types';
 
-describe('changeParameter(view, name, value)', () => {
-  test('Returns an object of type CHANGE_PARAMETER with correct properties.', () => {
-    expect(changeParameter('foo', 'bar', 'baz')).toEqual({
+describe('changeFormField(form, name, value)', () => {
+  test('Returns an object of type CHANGE_FORM_FIELD with correct properties.', () => {
+    expect(changeFormField('foo', 'bar', 'baz')).toEqual({
+      form: 'foo',
       name: 'bar',
-      type: CHANGE_PARAMETER,
+      type: CHANGE_FORM_FIELD,
       value: 'baz',
-      view: 'foo',
     });
   });
 });
 
 describe('dismissError()', () => {
-  test('Returns an object of type CHANGE_PARAMETER with correct properties.', () => {
+  test('Returns an object of type DISMISS_ERROR.', () => {
     expect(dismissError()).toEqual({
       type: DISMISS_ERROR,
     });
   });
 });
 
-describe('queryRecords()', () => {
-  test('Returns an object of type QUERY_RECORDS with correct properties.', () => {
-    expect(queryRecords()).toEqual({
-      type: QUERY_RECORDS,
-    });
-  });
-});
-
-describe('receiveRecords()', () => {
-  test('Returns an object of type RECEIVE_RECORDS with correct properties.', () => {
-    expect(receiveRecords('foo', 'bar')).toEqual({
-      records: 'bar',
-      type: RECEIVE_RECORDS,
-      view: 'foo',
+describe('queryData()', () => {
+  test('Returns an object of type QUERY_DATA.', () => {
+    expect(queryData()).toEqual({
+      type: QUERY_DATA,
     });
   });
 });
@@ -61,13 +55,42 @@ describe('receiveError(error)', () => {
   });
 });
 
-describe('sortRecords(view, sortBy, sortDirection)', () => {
+describe('receiveFormData(form, data)', () => {
+  test('Returns an object of type RECEIVE_FORM_DATA with correct properties.', () => {
+    expect(receiveFormData('foo', 'bar')).toEqual({
+      data: 'bar',
+      form: 'foo',
+      type: RECEIVE_FORM_DATA,
+    });
+  });
+});
+
+describe('receiveTableRecords(table, records)', () => {
+  test('Returns an object of type RECEIVE_TABLE_RECORDS with correct properties.', () => {
+    expect(receiveTableRecords('foo', 'bar')).toEqual({
+      records: 'bar',
+      table: 'foo',
+      type: RECEIVE_TABLE_RECORDS,
+    });
+  });
+});
+
+describe('resetFormFields(form)', () => {
+  test('Returns an object of type RESET_FORM_FIELDS with correct properties.', () => {
+    expect(resetFormFields('foo')).toEqual({
+      form: 'foo',
+      type: RESET_FORM_FIELDS,
+    });
+  });
+});
+
+describe('sortTableRecords(table, sortBy, sortDirection)', () => {
   test('Returns an object of type SORT_RECORDS with correct properties.', () => {
-    expect(sortRecords('foo', 'bar', 'baz')).toEqual({
+    expect(sortTableRecords('foo', 'bar', 'baz')).toEqual({
       sortBy: 'bar',
       sortDirection: 'baz',
-      type: SORT_RECORDS,
-      view: 'foo',
+      table: 'foo',
+      type: SORT_TABLE_RECORDS,
     });
   });
 });

@@ -1,6 +1,4 @@
-'use-strict';
-
-const { handleError, isNull } = require('../utilities');
+const { createResponse, isNull } = require('../utilities');
 
 module.exports = function getTransactions(
   database,
@@ -22,24 +20,14 @@ module.exports = function getTransactions(
   const providerPredicate = provider
     ? { column: 'provider', operator: 'LIKE', value: `%${provider}%` }
     : null;
-
   const optionalPredicates = [
     medicationOrderIdPredicate,
     productPredicate,
     providerPredicate,
   ].filter(predicate => !isNull(predicate));
-
   try {
-    return database.read({
-      columns: [
-        'amount',
-        'id',
-        'medicationOrderId',
-        'product',
-        'provider',
-        'timestamp',
-        'type',
-      ],
+    const records = database.read({
+      columns: ['amount', 'id', 'medicationOrderId', 'product', 'provider', 'timestamp', 'type'],
       predicates: [
         { column: 'type', operator: 'IN', value: transactionTypes },
         { column: 'timestamp', operator: '>', value: datetimeStart },
@@ -48,7 +36,16 @@ module.exports = function getTransactions(
       ],
       table: 'transactionView',
     });
+    const responseBody = {
+      records,
+      table: 'transactions',
+    };
+    return createResponse('table-records', 'OK', responseBody);
   } catch (error) {
-    handleError(error);
+    const responseBody = {
+      error,
+      table: 'transactions',
+    };
+    return createResponse('table-records', 'ERROR', responseBody);
   }
 };

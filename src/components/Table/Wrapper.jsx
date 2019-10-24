@@ -1,20 +1,14 @@
-import React from 'react';
 import PropTypes from 'prop-types';
-
+import React from 'react';
 import { AutoSizer } from 'react-virtualized';
 
 Wrapper.propTypes = {
   children: PropTypes.func.isRequired,
-  className: PropTypes.string,
 };
 
-Wrapper.defaultProps = {
-  className: null,
-};
-
-export default function Wrapper({ children, className }) {
+export default function Wrapper({ children, ...restProps }) {
   return (
-    <div className={className}>
+    <div {...restProps}>
       <AutoSizer>{children}</AutoSizer>
     </div>
   );

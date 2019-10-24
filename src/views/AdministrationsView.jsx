@@ -2,13 +2,13 @@ import React from 'react';
 
 import RecordsSection from '../components/RecordsSection';
 import SearchSection from '../components/SearchSection';
-import ConnectedInput from '../redux/containers/ConnectedInput';
+import FormInput from '../redux/containers/FormInput';
 
 export default function AdministrationsView() {
   return (
     <React.Fragment>
-      <SearchSection view="administrations">
-        <ConnectedInput
+      <SearchSection formId="administrations">
+        <FormInput
           info="Required"
           label="Time start"
           max="9999-12-31T23:59"
@@ -16,7 +16,7 @@ export default function AdministrationsView() {
           required
           type="datetime-local"
         />
-        <ConnectedInput
+        <FormInput
           info="Required"
           label="Time end"
           max="9999-12-31T23:59"
@@ -24,12 +24,11 @@ export default function AdministrationsView() {
           required
           type="datetime-local"
         />
-        <ConnectedInput label="Provider" name="provider" type="text" />
-        <ConnectedInput label="Medication" name="medication" type="text" />
-        <ConnectedInput label="Order ID" name="medicationOrderId" type="text" />
+        <FormInput label="Provider" name="provider" type="text" />
+        <FormInput label="Medication" name="medication" type="text" />
+        <FormInput label="Order ID" name="medicationOrderId" type="text" />
       </SearchSection>
       <RecordsSection
-        channel="get-administrations"
         columns={[
           { dataKey: 'timestamp', label: 'Time', maxWidth: 120 },
           { dataKey: 'provider', label: 'Provider' },
@@ -37,7 +36,7 @@ export default function AdministrationsView() {
           { dataKey: 'doseWithUnits', label: 'Dose', maxWidth: 100 },
           { dataKey: 'medicationOrderId', label: 'Order ID', maxWidth: 110 },
         ]}
-        view="administrations"
+        tableName="administrations"
       />
     </React.Fragment>
   );

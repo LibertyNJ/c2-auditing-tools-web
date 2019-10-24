@@ -1,6 +1,4 @@
-'use-strict';
-
-const { handleError, isNull } = require('../utilities');
+const { createResponse, isNull } = require('../utilities');
 
 module.exports = function getProviders(
   database,
@@ -21,7 +19,6 @@ module.exports = function getProviders(
   const middleInitialPredicate = middleInitial
     ? { column: 'middleInitial', operator: 'IS', value: middleInitial }
     : null;
-
   const optionalPredicates = [
     adcIdPredicate,
     emarIdPredicate,
@@ -29,14 +26,22 @@ module.exports = function getProviders(
     lastNamePredicate,
     middleInitialPredicate,
   ].filter(predicate => !isNull(predicate));
-
   try {
-    return database.read({
+    const records = database.read({
       columns: ['adcIds', 'emarIds', 'firstName', 'id', 'lastName', 'middleInitial'],
       predicates: [...optionalPredicates],
       table: 'providerView',
     });
+    const responseBody = {
+      records,
+      table: 'providers',
+    };
+    return createResponse('table-records', 'OK', responseBody);
   } catch (error) {
-    handleError(error);
+    const responseBody = {
+      error,
+      table: 'providers',
+    };
+    return createResponse('table-records', 'ERROR', responseBody);
   }
 };

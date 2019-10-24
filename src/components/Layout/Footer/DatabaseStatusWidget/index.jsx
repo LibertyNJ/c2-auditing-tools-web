@@ -1,9 +1,8 @@
 import PropTypes from 'prop-types';
 import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 import BusySpinner from './BusySpinner';
-import SVGIcon from '../../../SVGIcon';
-
 import { getTextClassName, isDatabaseBusy } from './utilties';
 
 DatabaseStatusWidget.propTypes = {
@@ -13,7 +12,7 @@ DatabaseStatusWidget.propTypes = {
 export default function DatabaseStatusWidget({ databaseStatus, ...restProps }) {
   return (
     <div {...restProps}>
-      <SVGIcon className="align-baseline" fill="white" height="1em" type="database" width="1em" />{' '}
+      <FontAwesomeIcon className="mr-1" icon="database" />
       Database:{' '}
       {isDatabaseBusy(databaseStatus) && (
         <React.Fragment>

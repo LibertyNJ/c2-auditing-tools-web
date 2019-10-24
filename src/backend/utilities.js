@@ -1,6 +1,5 @@
-'use-strict';
-
 module.exports = {
+  createResponse,
   getForm,
   getMedicationName,
   getUnits,
@@ -127,4 +126,14 @@ function isArray(value) {
 
 function isNull(value) {
   return value === null;
+}
+
+function createResponse(type, status, body) {
+  return {
+    body,
+    head: {
+      status,
+      type,
+    },
+  };
 }

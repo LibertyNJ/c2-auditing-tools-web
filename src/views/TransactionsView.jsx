@@ -2,14 +2,14 @@ import React from 'react';
 
 import RecordsSection from '../components/RecordsSection';
 import SearchSection from '../components/SearchSection';
-import ConnectedInput from '../redux/containers/ConnectedInput';
-import ConnectedSelect from '../redux/containers/ConnectedSelect';
+import FormInput from '../redux/containers/FormInput';
+import FormSelect from '../redux/containers/FormSelect';
 
 export default function TransactionsView() {
   return (
     <React.Fragment>
-      <SearchSection view="transactions">
-        <ConnectedInput
+      <SearchSection formId="transactions">
+        <FormInput
           info="Required"
           label="Time start"
           max="9999-12-31T23:59"
@@ -17,7 +17,7 @@ export default function TransactionsView() {
           required
           type="datetime-local"
         />
-        <ConnectedInput
+        <FormInput
           info="Required"
           label="Time end"
           max="9999-12-31T23:59"
@@ -25,7 +25,7 @@ export default function TransactionsView() {
           required
           type="datetime-local"
         />
-        <ConnectedSelect
+        <FormSelect
           info="Required"
           label="Transaction types"
           multiple
@@ -36,13 +36,12 @@ export default function TransactionsView() {
           <option value="Return">Return</option>
           <option value="Waste">Waste</option>
           <option value="Withdrawal">Withdrawal</option>
-        </ConnectedSelect>
-        <ConnectedInput label="Provider" name="provider" type="text" />
-        <ConnectedInput label="Product" name="product" type="text" />
-        <ConnectedInput label="Order ID" name="medicationOrderId" type="text" />
+        </FormSelect>
+        <FormInput label="Provider" name="provider" type="text" />
+        <FormInput label="Product" name="product" type="text" />
+        <FormInput label="Order ID" name="medicationOrderId" type="text" />
       </SearchSection>
       <RecordsSection
-        channel="get-transactions"
         columns={[
           { dataKey: 'timestamp', label: 'Time', maxWidth: 120 },
           { dataKey: 'provider', label: 'Provider' },
@@ -51,7 +50,7 @@ export default function TransactionsView() {
           { dataKey: 'amount', label: 'Amount', maxWidth: 110 },
           { dataKey: 'medicationOrderId', label: 'Order ID', maxWidth: 110 },
         ]}
-        view="transactions"
+        tableName="transactions"
       />
     </React.Fragment>
   );

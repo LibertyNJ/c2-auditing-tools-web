@@ -1,7 +1,13 @@
 import { combineReducers } from 'redux';
 
+import databaseStatus from './database-status';
 import error from './error';
-import isQuerying from './is-querying';
-import views from './views';
+import forms from './forms';
+import tables from './tables';
 
-export default combineReducers({ error, isQuerying, views });
+export default combineReducers({
+  databaseStatus,
+  error,
+  forms,
+  tables,
+});

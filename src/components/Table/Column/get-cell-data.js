@@ -1,5 +1,3 @@
-'use-strict';
-
 export default function getCellData({ dataKey, rowData }) {
   const cellData = rowData[dataKey];
 

@@ -1,71 +1,87 @@
 import { fork } from 'child_process';
-import path from 'path';
 import { app, BrowserWindow, ipcMain } from 'electron';
-import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
 import { enableLiveReload } from 'electron-compile';
+import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
+import path from 'path';
 
-const IS_DEV_MODE = /[\\/]electron/.test(process.execPath);
+const isDevMode = /[\\/]electron/.test(process.execPath);
 
-let mainWindow;
-
-if (IS_DEV_MODE) {
-  enableLiveReload({ strategy: 'react-hmr' });
-}
-
-app.on('ready', () => {
-  createWindow();
-});
-
-app.on('activate', () => {
-  if (mainWindow === null) {
-    createWindow();
-  }
-});
-
-async function createWindow() {
-  mainWindow = new BrowserWindow({
-    show: false,
-    minHeight: 600,
-    minWidth: 800,
-    webPreferences: { nodeIntegration: true },
-  });
-
-  mainWindow.loadURL(`file://${__dirname}/index.html`);
-
-  if (IS_DEV_MODE) {
-    await installExtension(REACT_DEVELOPER_TOOLS);
-  }
-
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.maximize();
-    mainWindow.show();
-
-    if (IS_DEV_MODE) {
-      mainWindow.webContents.openDevTools();
-    }
-  });
-
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
-}
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
-
-const backendProcessPath = IS_DEV_MODE ? path.join(__dirname, 'backend') : 'app.asar/src/backend';
-
-const currentWorkingDirectory = IS_DEV_MODE ? null : path.join(__dirname, '..', '..');
+const backendProcessPath = isDevMode ? path.join(__dirname, 'backend') : 'app.asar/src/backend';
+const currentWorkingDirectory = isDevMode ? null : path.join(__dirname, '..', '..');
 
 const backendProcess = fork(backendProcessPath, [], {
   currentWorkingDirectory,
 });
 
-backendProcess.on('message', (message) => {
-  mainWindow.webContents.send(message.channel, message);
-});
+let mainWindow;
 
-ipcMain.on('backend', (event, message) => backendProcess.send(message));
+if (isDevMode) {
+  enableLiveReload({ strategy: 'react-hmr' });
+}
+
+app.on('activate', handleActivate);
+app.on('ready', handleReady);
+app.on('window-all-closed', handleWindowAllClosed);
+backendProcess.on('message', handleBackendProcessMessage);
+ipcMain.on('backend-request', handleBackendRequest);
+
+function handleActivate() {
+  if (isMainWindowClosed()) {
+    createWindow();
+  }
+}
+
+function isMainWindowClosed() {
+  return mainWindow === null;
+}
+
+function handleReady() {
+  createWindow();
+}
+
+async function createWindow() {
+  mainWindow = new BrowserWindow({
+    minHeight: 600,
+    minWidth: 800,
+    show: false,
+    webPreferences: { nodeIntegration: true },
+  });
+  mainWindow.loadURL(`file://${__dirname}/index.html`);
+  mainWindow.once('ready-to-show', handleReadyToShow);
+  mainWindow.on('closed', handleClosed);
+  if (isDevMode) {
+    await installAndOpenDevTools();
+  }
+}
+
+function handleReadyToShow() {
+  mainWindow.maximize();
+  mainWindow.show();
+}
+
+async function installAndOpenDevTools() {
+  await installExtension(REACT_DEVELOPER_TOOLS);
+  mainWindow.webContents.openDevTools();
+}
+
+function handleClosed() {
+  mainWindow = null;
+}
+
+function handleWindowAllClosed() {
+  if (!isPlatformDarwin()) {
+    app.quit();
+  }
+}
+
+function isPlatformDarwin() {
+  return process.platform === 'darwin';
+}
+
+function handleBackendProcessMessage(message) {
+  mainWindow.webContents.send('backend-response', message);
+}
+
+function handleBackendRequest(event, request) {
+  backendProcess.send(request);
+}

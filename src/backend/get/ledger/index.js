@@ -1,6 +1,4 @@
-'use-strict';
-
-const { handleError, isArray, isNull } = require('../../utilities');
+const { createResponse, isArray, isNull } = require('../../utilities');
 const createLedger = require('./create-ledger');
 
 module.exports = function getLedger(
@@ -15,22 +13,18 @@ module.exports = function getLedger(
       datetimeStart,
       product,
     });
-
     const administrations = getAdministrations(database, {
       datetimeEnd,
       datetimeStart,
       product,
     });
-
     const painReassessments = getPainReassessments(database, {
       datetimeEnd,
       datetimeStart,
       product,
     });
-
     const { otherTransactions, wastes, withdrawals } = splitByTransactionType(transactions);
     const selectedWithdrawals = withdrawals.filter(withdrawal => isMatchingRecord(withdrawal, medicationOrderId, provider));
-
     const ledger = createLedger({
       administrations,
       otherTransactions,
@@ -39,10 +33,18 @@ module.exports = function getLedger(
       wastes,
       withdrawals,
     });
-
-    return ledger.filter(record => isMatchingRecord(record, medicationOrderId, provider));
+    const records = ledger.filter(record => isMatchingRecord(record, medicationOrderId, provider));
+    const responseBody = {
+      records,
+      table: 'ledger',
+    };
+    return createResponse('table-records', 'OK', responseBody);
   } catch (error) {
-    handleError(error);
+    const responseBody = {
+      error,
+      table: 'ledger',
+    };
+    return createResponse('table-records', 'ERROR', responseBody);
   }
 };
 
@@ -50,9 +52,7 @@ function getTransactions(database, { datetimeEnd, datetimeStart, product = null 
   const productPredicate = product
     ? { column: 'product', operator: 'LIKE', value: `%${product}%` }
     : null;
-
   const optionalPredicates = [productPredicate].filter(predicate => !isNull(predicate));
-
   return database.read({
     columns: ['*'],
     predicates: [
@@ -100,7 +100,6 @@ function isType({ type }, matchedType) {
     const regex = new RegExp(pattern);
     return regex.test(type);
   }
-
   return type === matchedType;
 }
 

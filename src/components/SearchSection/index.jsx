@@ -1,33 +1,38 @@
 import PropTypes from 'prop-types';
 import React from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 import FormRow from '../FormRow';
 import Column from '../Column';
+import FormIconButton from '../../redux/containers/FormIconButton';
+import GetTableRecordsForm from '../../redux/containers/GetTableRecordsForm';
 
 SearchSection.propTypes = {
   children: PropTypes.node.isRequired,
-  view: PropTypes.string.isRequired,
+  formId: PropTypes.string.isRequired,
 };
 
-export default function SearchSection({ children, view, ...restProps }) {
+export default function SearchSection({ children, formId, ...restProps }) {
   const FormControlColumns = React.Children.map(children, FormControl => (
     <Column>
-      <FormControl.type {...FormControl.props} view={view} />
+      <FormControl.type {...FormControl.props} form={formId} />
     </Column>
   ));
   return (
     <section {...restProps}>
-      <form>
+      <GetTableRecordsForm id={formId}>
         <FormRow className="flex-nowrap">
           {FormControlColumns}
           <Column className="flex-grow-0">
-            <button className="btn btn-primary d-block text-nowrap" style={{ marginTop: '32px' }}>
-              <FontAwesomeIcon icon="search" /> Search
-            </button>
+            <FormIconButton
+              className="btn-primary text-nowrap"
+              icon="search"
+              style={{ marginTop: '32px' }}
+            >
+              Search
+            </FormIconButton>
           </Column>
         </FormRow>
-      </form>
+      </GetTableRecordsForm>
     </section>
   );
 }

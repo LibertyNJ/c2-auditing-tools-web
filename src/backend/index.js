@@ -1,81 +1,70 @@
-'use-strict';
-
 const path = require('path');
 
 const database = require('./database');
+const router = require('./router');
+const { createResponse } = require('./utilities');
 
-const getAdministrations = require('./get/administrations');
-const getDatabaseStatus = require('./get/database-status');
-const getLedger = require('./get/ledger');
-const getProviderModal = require('./get/provider-modal');
-const getProviders = require('./get/providers');
-const getTransactions = require('./get/transactions');
-const importData = require('./import/data');
-const updateProvider = require('./update/provider');
-
-const IS_DEV_MODE = /[\\/]electron/.test(process.execPath);
-
-process.on('message', handleMessage);
-
-const databasePath = IS_DEV_MODE
+const isDevMode = /[\\/]electron/.test(process.execPath);
+const databasePath = isDevMode
   ? path.join(__dirname, '..', '..', 'database.db')
   : path.join(__dirname, '..', '..', '..', 'database.db');
 
+router.setDatabase(database);
+process.on('message', handleMessage);
 database.open(databasePath);
 database.setStatus('Initializing…');
 database.initialize();
 database.setStatus('Ready');
+sendDatabaseStatusResponse();
 
 function handleMessage(message) {
+  if (isDatabaseStatusRequest(message)) {
+    sendDatabaseStatusResponse();
+  } else {
+    handleRequest(message);
+  }
+}
+
+function isDatabaseStatusRequest(message) {
+  return message.head.resource === 'database-status';
+}
+
+function handleRequest(request) {
   try {
-    database.setStatus('Busy…');
-    sendMessage({ body: database.getStatus(), channel: 'get-database-status' });
-    sendMessage({ body: resolveMessage(message), channel: message.channel });
-    database.setStatus('Ready');
-    sendMessage({ body: database.getStatus(), channel: 'get-database-status' });
+    queryDatabase(request);
   } catch (error) {
     handleError(error);
   }
 }
 
-function resolveMessage({ body = null, channel }) {
-  switch (channel) {
-    case 'get-administrations':
-      return getAdministrations(database, body);
-    case 'get-database-status':
-      return getDatabaseStatus(database);
-    case 'get-ledger':
-      return getLedger(database, body);
-    case 'get-provider-modal':
-      return getProviderModal(database, body);
-    case 'get-providers':
-      return getProviders(database, body);
-    case 'get-transactions':
-      return getTransactions(database, body);
-    case 'import-data':
-      return importData(database, body);
-    case 'update-provider':
-      return updateProvider(database, body);
-    default:
-      throw new Error(`Backend received message on unhandled channel: "${channel}"`);
-  }
+function queryDatabase(request) {
+  database.setStatus('Busy…');
+  sendDatabaseStatusResponse();
+  const response = router.routeRequest(request);
+  sendResponse(response);
+  database.setStatus('Ready');
+  sendDatabaseStatusResponse();
 }
 
 function handleError(error) {
   sendErrorMessage(error);
-
-  if (IS_DEV_MODE) {
+  if (isDevMode) {
     console.error(error);
   }
 }
 
 function sendErrorMessage({ message }) {
-  sendMessage({
+  sendResponse({
     body: `An error occurred: ${message}. Please try again. If the error persists, notify the developer.`,
     channel: 'error',
   });
 }
 
-function sendMessage(message) {
-  process.send(message);
+function sendResponse(response) {
+  process.send(response);
+}
+
+function sendDatabaseStatusResponse() {
+  const response = createResponse('database-status', 'OK', database.getStatus());
+  sendResponse(response);
 }

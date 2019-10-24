@@ -1,7 +1,6 @@
-import React from 'react';
 import PropTypes from 'prop-types';
-
-import SVGIcon from '../../SVGIcon';
+import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 Header.propTypes = {
   dataKey: PropTypes.string.isRequired,
@@ -17,19 +16,12 @@ Header.defaultProps = {
 export default function Header({
   dataKey, label, sortBy, sortDirection,
 }) {
-  const sortIconType = isActiveColumn(sortBy, dataKey) ? getSortIconType(sortDirection) : 'sort';
-
+  const sortIcon = isActiveColumn(sortBy, dataKey) ? getSortIconType(sortDirection) : 'sort';
   return (
     <span className="ReactVirtualized__Table__headerTruncatedText" title={label}>
       {label}
       &nbsp;
-      <SVGIcon
-        className="align-baseline"
-        fill="#53565a"
-        height="1em"
-        type={sortIconType}
-        width="1em"
-      />
+      <FontAwesomeIcon icon={sortIcon} />
     </span>
   );
 }
