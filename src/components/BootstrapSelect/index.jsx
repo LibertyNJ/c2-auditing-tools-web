@@ -1,5 +1,7 @@
+import 'bootstrap/js/dist/dropdown';
 import 'bootstrap-select';
 import $ from 'jquery';
+import 'popper.js';
 import PropTypes from 'prop-types';
 import React, { useEffect } from 'react';
 

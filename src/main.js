@@ -6,7 +6,7 @@ import path from 'path';
 
 const isDevMode = /[\\/]electron/.test(process.execPath);
 
-const backendProcessPath = isDevMode ? path.join(__dirname, 'backend') : 'app.asar/src/backend';
+const backendProcessPath = isDevMode ? path.join(__dirname, 'backend') : 'resources/app.asar/src/backend';
 const currentWorkingDirectory = isDevMode ? null : path.join(__dirname, '..', '..');
 
 const backendProcess = fork(backendProcessPath, [], {

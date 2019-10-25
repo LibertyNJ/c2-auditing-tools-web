@@ -19,7 +19,7 @@
     import {HashRouter} from 'react-router-dom';
 
     const render = () => {
-      const App = require('./app').default;
+      const App = require('./App').default;
       ReactDOM.render(
         <AppContainer>
           <HashRouter>
@@ -33,14 +33,5 @@
     if (module.hot) {
       module.hot.accept(render);
     }
-  </script>
-  <script>
-    const $ = require('jquery');
-  </script>
-  <script>
-    require('popper.js');
-  </script>
-  <script>
-    require('bootstrap');
   </script>
 </html>

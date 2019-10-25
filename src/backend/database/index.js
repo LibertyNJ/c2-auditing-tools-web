@@ -1,5 +1,3 @@
-'use-strict';
-
 const BetterSqlite3Database = require('better-sqlite3');
 
 const SQL = require('./SQL');
