@@ -1,11 +1,9 @@
-'use-strict';
-
 const { handleError } = require('../../utilities');
 
-let database;
+let _database;
 
 module.exports = function createProviders(database) {
-  setDatabase(database);
+  _database = database;
   try {
     const providerEmars = selectProviderEmars();
     providerEmars.forEach(createProvider);
@@ -14,12 +12,8 @@ module.exports = function createProviders(database) {
   }
 };
 
-function setDatabase(value) {
-  database = value;
-}
-
 function selectProviderEmars() {
-  return database.read({ table: 'providerEmar' });
+  return _database.read({ table: 'providerEmar' });
 }
 
 function createProvider(providerEmar) {
@@ -33,7 +27,7 @@ function isAssignedProviderId({ providerId }) {
 }
 
 function insertProviderAndUpdateProviderNames(providerEmar) {
-  const transaction = database.transaction(() => {
+  const transaction = _database.transaction(() => {
     const providerName = getProviderName(providerEmar);
     insertProvider(providerName);
 
@@ -73,7 +67,7 @@ function extractFirstName(remainder) {
 }
 
 function insertProvider({ firstName, lastName, middleInitial = null }) {
-  database.create({
+  _database.create({
     data: { firstName, lastName, middleInitial },
     onConflict: 'IGNORE',
     table: 'provider',
@@ -81,7 +75,7 @@ function insertProvider({ firstName, lastName, middleInitial = null }) {
 }
 
 function selectProviderId({ firstName, lastName, middleInitial = null }) {
-  return database.read({
+  return _database.read({
     columns: ['id'],
     predicates: [
       { column: 'firstName', operator: 'LIKE', value: firstName },
@@ -93,7 +87,7 @@ function selectProviderId({ firstName, lastName, middleInitial = null }) {
 }
 
 function updateProviderEmar(providerId, { id }) {
-  database.update({
+  _database.update({
     data: { providerId },
     predicates: [{ column: 'id', operator: '=', value: id }],
     table: 'providerEmar',
@@ -102,7 +96,7 @@ function updateProviderEmar(providerId, { id }) {
 
 function updateProviderAdc(providerId, { lastName, firstName }) {
   const providerAdcName = createProviderAdcName(lastName, firstName);
-  database.update({
+  _database.update({
     data: { providerId },
     predicates: [{ column: 'name', operator: 'LIKE', value: providerAdcName }],
     table: 'providerAdc',

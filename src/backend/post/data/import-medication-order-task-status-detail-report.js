@@ -1,27 +1,20 @@
-'use-strict';
-
-const fs = require('fs');
-
 const Excel = require('exceljs/modern.nodejs');
+const fs = require('fs');
 
 const {
   getForm, getMedicationName, getUnits, handleError,
 } = require('../../utilities');
 
-let database;
+let _database;
 
 module.exports = async function importMedicationOrderTaskStatusDetailReport(database, filePath) {
-  setDatabase(database);
+  _database = database;
   try {
     await importMedicationOrderTaskStatusDetail(filePath);
   } catch (error) {
     handleError(error);
   }
 };
-
-function setDatabase(value) {
-  database = value;
-}
 
 async function importMedicationOrderTaskStatusDetail(filePath) {
   const readStream = fs.createReadStream(filePath);
@@ -126,7 +119,7 @@ function padTwoLeadingZeros(string) {
 }
 
 function importRow(row) {
-  const transaction = database.transaction(() => {
+  const transaction = _database.transaction(() => {
     insertVisit(row);
     insertMedicationOrder(row);
     insertProviderEmar(row);
@@ -153,7 +146,7 @@ function isPainReassessment(row) {
 }
 
 function insertVisit({ discharged, medicalRecordNumber, visitId }) {
-  database.create({
+  _database.create({
     data: { discharged, medicalRecordNumber, visitId },
     onConflict: 'REPLACE',
     table: 'visit',
@@ -163,7 +156,7 @@ function insertVisit({ discharged, medicalRecordNumber, visitId }) {
 function insertMedicationOrder({
   dose, form, medicationName, medicationOrderId, units, visitId,
 }) {
-  database.create({
+  _database.create({
     data: {
       dose,
       form,
@@ -178,7 +171,7 @@ function insertMedicationOrder({
 }
 
 function insertProviderEmar({ providerEmarName }) {
-  database.create({
+  _database.create({
     data: { name: providerEmarName },
     onConflict: 'IGNORE',
     table: 'providerEmar',
@@ -186,7 +179,7 @@ function insertProviderEmar({ providerEmarName }) {
 }
 
 function insertEmarAdministration({ medicationOrderId, timestamp }, providerEmarId) {
-  database.create({
+  _database.create({
     data: {
       medicationOrderId,
       providerEmarId,
@@ -198,7 +191,7 @@ function insertEmarAdministration({ medicationOrderId, timestamp }, providerEmar
 }
 
 function insertEmarPainReassessment({ medicationOrderId, timestamp }, providerEmarId) {
-  database.create({
+  _database.create({
     data: {
       medicationOrderId,
       providerEmarId,
@@ -210,7 +203,7 @@ function insertEmarPainReassessment({ medicationOrderId, timestamp }, providerEm
 }
 
 function selectIdByName(table, name) {
-  return database.read({
+  return _database.read({
     columns: ['id'],
     predicates: [{ column: 'name', operator: '=', value: name }],
     table,

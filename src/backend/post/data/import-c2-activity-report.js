@@ -1,27 +1,20 @@
-'use-strict';
-
-const fs = require('fs');
-
 const Excel = require('exceljs/modern.nodejs');
+const fs = require('fs');
 
 const {
   getForm, getMedicationName, getUnits, handleError,
 } = require('../../utilities');
 
-let database;
+let _database;
 
 module.exports = async function importC2ActivityReport(database, filePath) {
-  setDatabase(database);
+  _database = database;
   try {
     await importC2Activity(filePath);
   } catch (error) {
     handleError(error);
   }
 };
-
-function setDatabase(value) {
-  database = value;
-}
 
 async function importC2Activity(filePath) {
   const readStream = fs.createReadStream(filePath);
@@ -99,7 +92,7 @@ function isTrackedMedication(medicationProductAdcName) {
 }
 
 function importRow(row) {
-  const transaction = database.transaction(() => {
+  const transaction = _database.transaction(() => {
     insertProviderAdc(row);
     insertMedicationProductAdc(row);
 
@@ -124,7 +117,7 @@ function isTrackedTransactionType({ adcTransactionTypeName }) {
 }
 
 function insertProviderAdc({ providerAdcName }) {
-  database.create({
+  _database.create({
     data: {
       name: providerAdcName,
     },
@@ -134,7 +127,7 @@ function insertProviderAdc({ providerAdcName }) {
 }
 
 function insertMedicationProductAdc({ medicationProductAdcName }) {
-  database.create({
+  _database.create({
     data: {
       name: medicationProductAdcName,
     },
@@ -149,7 +142,7 @@ function getMedicationId({ medicationProductAdcName }) {
 }
 
 function insertMedicationOrder({ medicationOrderId }, medicationId) {
-  database.create({
+  _database.create({
     data: {
       id: medicationOrderId,
       medicationId,
@@ -165,7 +158,7 @@ function insertMedicationProduct(
   },
   medicationId,
 ) {
-  database.create({
+  _database.create({
     data: {
       adcId: selectIdByName('medicationProductAdc', medicationProductAdcName),
       form,
@@ -187,7 +180,7 @@ function insertAdcTransaction({
   providerAdcName,
   timestamp,
 }) {
-  database.create({
+  _database.create({
     data: {
       amount,
       medicalRecordNumber,
@@ -204,7 +197,7 @@ function insertAdcTransaction({
 
 function selectMedicationProductIdByAdcName(adcName) {
   const adcId = selectIdByName('medicationProductAdc', adcName);
-  return database.read({
+  return _database.read({
     columns: ['id'],
     predicates: [{ column: 'adcId', operator: '=', value: adcId }],
     table: 'medicationProduct',
@@ -223,7 +216,7 @@ function insertWasteAdcTransaction({
   timestamp,
   waste,
 }) {
-  database.create({
+  _database.create({
     data: {
       amount: getWasteAmount(waste),
       medicalRecordNumber,
@@ -243,7 +236,7 @@ function getWasteAmount(waste) {
 }
 
 function selectIdByName(table, name) {
-  return database.read({
+  return _database.read({
     columns: ['id'],
     predicates: [{ column: 'name', operator: '=', value: name }],
     table,
