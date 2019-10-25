@@ -1,38 +1,35 @@
-'use-strict';
-
 const reconciledRecords = new WeakSet();
 
-let administrations = [];
-let otherTransactions = [];
-let painReassessments = [];
-let wastes = [];
-let withdrawals = [];
+let _administrations = [];
+let _otherTransactions = [];
+let _painReassessments = [];
+let _wastes = [];
+let _withdrawals = [];
 
 let lastWaste;
 let nextWithdrawal;
 
 module.exports = function getLedger({ selectedWithdrawals, ...records }) {
   setRecords(records);
-  return selectedWithdrawals.map(createLedgerRecord);
+  const ledger = selectedWithdrawals.map(createLedgerRecord);
+  return ledger;
 };
 
 function setRecords(records) {
-  administrations = [...records.administrations];
-  otherTransactions = [...records.otherTransactions];
-  painReassessments = [...records.painReassessments];
-  wastes = [...records.wastes];
-  withdrawals = [...records.withdrawals];
+  _administrations = [...records.administrations];
+  _otherTransactions = [...records.otherTransactions];
+  _painReassessments = [...records.painReassessments];
+  _wastes = [...records.wastes];
+  _withdrawals = [...records.withdrawals];
 }
 
 function createLedgerRecord(withdrawal) {
-  setNextWithdrawal(withdrawal);
-
+  nextWithdrawal = getNextWithdrawal(withdrawal);
   const waste = getWaste(withdrawal);
   const disposition = getDisposition(withdrawal, waste);
   const painReassessment = !!disposition && isAdministration(disposition)
     ? getPainReassessment(withdrawal, disposition)
     : null;
-
   return {
     dispositionProvider: disposition ? disposition.provider : null,
     dispositionTimestamp: disposition ? disposition.timestamp : null,
@@ -44,12 +41,8 @@ function createLedgerRecord(withdrawal) {
   };
 }
 
-function setNextWithdrawal(withdrawal) {
-  nextWithdrawal = findNextWithdrawal(withdrawal);
-}
-
-function findNextWithdrawal(currentWithdrawal) {
-  return withdrawals.find(withdrawal => isNextWithdrawal(withdrawal, currentWithdrawal));
+function getNextWithdrawal(currentWithdrawal) {
+  return _withdrawals.find(withdrawal => isNextWithdrawal(withdrawal, currentWithdrawal));
 }
 
 function isNextWithdrawal(withdrawal, currentWithdrawal) {
@@ -62,25 +55,17 @@ function isNextWithdrawal(withdrawal, currentWithdrawal) {
 }
 
 function getWaste(withdrawal) {
-  const matchingWastes = findMatchingWastes(withdrawal);
-  reconcileRecords(matchingWastes);
-  setLastWaste(matchingWastes);
-
-  if (lastWaste) {
-    return {
-      amount: getWasteAmount(matchingWastes),
-      units: lastWaste.units,
-    };
-  }
-
-  return null;
+  const relatedWastes = getRelatedWastes(withdrawal);
+  reconcileRecords(relatedWastes);
+  lastWaste = getLastWaste(relatedWastes);
+  return lastWaste ? createWaste(relatedWastes) : null;
 }
 
-function findMatchingWastes(withdrawal) {
-  return wastes.filter(waste => isMatchingWaste(waste, withdrawal));
+function getRelatedWastes(withdrawal) {
+  return _wastes.filter(waste => isRelatedWaste(waste, withdrawal));
 }
 
-function isMatchingWaste(waste, withdrawal) {
+function isRelatedWaste(waste, withdrawal) {
   return (
     !isReconciled(waste)
     && occurredConcurrentlyOrAfter(waste, withdrawal)
@@ -91,12 +76,16 @@ function isMatchingWaste(waste, withdrawal) {
   );
 }
 
-function setLastWaste(matchingWastes) {
-  lastWaste = findLastWaste(matchingWastes);
+function getLastWaste(wastes) {
+  const lastWasteIndex = wastes.length - 1;
+  return wastes[lastWasteIndex];
 }
 
-function findLastWaste(matchingWastes) {
-  return matchingWastes[matchingWastes.length - 1];
+function createWaste(wastes) {
+  return {
+    amount: getWasteAmount(wastes),
+    units: lastWaste.units,
+  };
 }
 
 function getWasteAmount(matchingWastes) {
@@ -104,16 +93,14 @@ function getWasteAmount(matchingWastes) {
   return matchingWastes.reduce(sumWasteAmount, INITIAL_WASTE_AMOUNT);
 }
 
-function sumWasteAmount(sum, { amount }) {
-  return sum + amount;
+function sumWasteAmount(wasteSum, waste) {
+  return wasteSum + waste.amount;
 }
 
 function getDisposition(withdrawal, waste) {
-  if (isWithdrawalWasted(withdrawal, waste)) {
-    return createDisposition(lastWaste, 'Waste');
-  }
-
-  return getAdministration(withdrawal, waste);
+  return isWithdrawalWasted(withdrawal, waste)
+    ? createDisposition(lastWaste, 'Waste')
+    : getAdministration(withdrawal, waste);
 }
 
 function getAdministration(withdrawal, waste) {
@@ -122,7 +109,6 @@ function getAdministration(withdrawal, waste) {
     reconcileRecord(administration);
     return createDisposition(administration, 'Administration');
   }
-
   return getOtherTransaction(withdrawal);
 }
 
@@ -132,17 +118,13 @@ function getOtherTransaction(withdrawal) {
     reconcileRecord(otherTransaction);
     return createDisposition(otherTransaction, otherTransaction.type);
   }
-
   return null;
 }
 
 function isWithdrawalWasted(withdrawal, waste) {
-  if (!waste) {
-    return false;
-  }
-
-  const totalWithdrawnStrength = calculateTotalWithdrawnStrength(withdrawal);
-  return waste.amount >= totalWithdrawnStrength;
+  if (!waste) return false;
+  const totalWithdrawalStrength = getTotalWithdrawalStrength(withdrawal);
+  return waste.amount >= totalWithdrawalStrength;
 }
 
 function isFound(record) {
@@ -150,22 +132,23 @@ function isFound(record) {
 }
 
 function findAdministration(withdrawal, waste) {
-  return administrations.find(administration => isMatchingAdministration(administration, withdrawal, waste));
+  const foundAdministration = _administrations.find(administration => isMatchingAdministration(administration, withdrawal, waste));
+  return foundAdministration;
 }
 
 function isMatchingAdministration(administration, withdrawal, waste) {
-  const MILLISECONDS_IN_FIVE_MINUTES = 300000; // Adjustment for Pyxis-Sunrise clock desync.
-
+  const MILLISECONDS_IN_FIVE_MINUTES = 300000; // Adjustment for Pyxis-Sunrise time desync.
   const administrationTimestamp = convertTimestampToMilliseconds(administration.timestamp);
   const withdrawalTimestamp = convertTimestampToMilliseconds(withdrawal.timestamp);
-
+  const fiveMinutesBeforeWithdrawalTimestamp = withdrawalTimestamp - MILLISECONDS_IN_FIVE_MINUTES;
+  const nextWithdrawalTimestamp = hasNextWithdrawal()
+    ? convertTimestampToMilliseconds(nextWithdrawal.timestamp)
+    : null;
   return (
     !isReconciled(administration)
-    && occurredAfterTimestamp(
-      administrationTimestamp,
-      withdrawalTimestamp - MILLISECONDS_IN_FIVE_MINUTES,
-    )
-    && (!hasNextWithdrawal() || occurredBeforeTimestamp(administration, nextWithdrawal))
+    && occurredAfterTimestamp(administrationTimestamp, fiveMinutesBeforeWithdrawalTimestamp)
+    && (!hasNextWithdrawal()
+      || occurredBeforeTimestamp(administrationTimestamp, nextWithdrawalTimestamp))
     && (!hasWaste(waste) || isRemainingStrengthSameAsDose(withdrawal, waste, administration))
     && (isOverride(withdrawal) || isSameMedicationOrder(administration, withdrawal))
     && (!isOverride(withdrawal) || isSamePatient(administration, withdrawal))
@@ -174,11 +157,11 @@ function isMatchingAdministration(administration, withdrawal, waste) {
 }
 
 function findOtherTransaction(withdrawal) {
-  const predicate = otherTransaction => isMatchingOtherTransaction(otherTransaction, withdrawal);
-  return otherTransactions.find(predicate);
+  const predicate = otherTransaction => isOtherRelatedTransaction(otherTransaction, withdrawal);
+  return _otherTransactions.find(predicate);
 }
 
-function isMatchingOtherTransaction(otherTransaction, withdrawal) {
+function isOtherRelatedTransaction(otherTransaction, withdrawal) {
   return (
     !isReconciled(otherTransaction)
     && occurredConcurrentlyOrAfter(otherTransaction, withdrawal)
@@ -189,42 +172,40 @@ function isMatchingOtherTransaction(otherTransaction, withdrawal) {
   );
 }
 
-function createDisposition({ provider, timestamp }, type) {
-  return { provider, timestamp, type };
+function createDisposition(record, recordType) {
+  return {
+    provider: record.provider,
+    timestamp: record.timestamp,
+    type: recordType,
+  };
 }
 
 function getPainReassessment(withdrawal, disposition) {
   const painReassessement = findPainReassessment(withdrawal, disposition);
-
   if (isFound(painReassessement)) {
     reconcileRecord(painReassessement);
     return createPainReassessment(painReassessement);
   }
-
   return null;
 }
 
-function isAdministration({ type }) {
-  return type === 'Administration';
+function isAdministration(disposition) {
+  return disposition.type === 'Administration';
 }
 
 function findPainReassessment(withdrawal, administration) {
-  return painReassessments.find(painReassessment => isMatchingPainReassessment(withdrawal, painReassessment, administration));
+  return _painReassessments.find(painReassessment => isMatchingPainReassessment(withdrawal, painReassessment, administration));
 }
 
 function isMatchingPainReassessment(withdrawal, painReassessment, administration) {
   const MILLISECONDS_PER_HOUR = 3600000; // One hour window for pain reassessment.
-
   const painReassessmentTimestamp = convertTimestampToMilliseconds(painReassessment.timestamp);
   const administrationTimestamp = convertTimestampToMilliseconds(administration.timestamp);
-
+  const oneHourAfterAdministrationTimestamp = administrationTimestamp + MILLISECONDS_PER_HOUR;
   return (
     !isReconciled(painReassessment)
     && occurredAfterTimestamp(painReassessmentTimestamp, administrationTimestamp)
-    && occurredBeforeTimestamp(
-      painReassessmentTimestamp,
-      administrationTimestamp + MILLISECONDS_PER_HOUR,
-    )
+    && occurredBeforeTimestamp(painReassessmentTimestamp, oneHourAfterAdministrationTimestamp)
     && (!hasNextWithdrawal() || occurredBefore(painReassessment, nextWithdrawal))
     && (isOverride(withdrawal) || isSameMedicationOrder(painReassessment, administration))
     && (!isOverride(withdrawal) || isSamePatient(painReassessment, administration))
@@ -293,16 +274,16 @@ function hasWaste(waste) {
 }
 
 function isRemainingStrengthSameAsDose(withdrawal, waste, { dose }) {
-  const remainingStrength = calculateRemainingStrength(withdrawal, waste);
-  return remainingStrength === dose;
+  const remainingWithdrawalStrength = getRemainingWithdrawalStrength(withdrawal, waste);
+  return remainingWithdrawalStrength === dose;
 }
 
-function calculateRemainingStrength(withdrawal, waste) {
-  const totalStrength = calculateTotalWithdrawnStrength(withdrawal);
-  return totalStrength - waste.amount;
+function getRemainingWithdrawalStrength(withdrawal, waste) {
+  const totalWithdrawalStrength = getTotalWithdrawalStrength(withdrawal);
+  return totalWithdrawalStrength - waste.amount;
 }
 
-function calculateTotalWithdrawnStrength({ strength, amount }) {
+function getTotalWithdrawalStrength({ strength, amount }) {
   return strength * amount;
 }
 
