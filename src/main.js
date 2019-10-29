@@ -4,16 +4,13 @@ import { enableLiveReload } from 'electron-compile';
 import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
 import path from 'path';
 
+let mainWindow;
+
 const isDevMode = /[\\/]electron/.test(process.execPath);
 
-const backendProcessPath = isDevMode ? path.join(__dirname, 'backend') : 'resources/app.asar/src/backend';
-const currentWorkingDirectory = isDevMode ? null : path.join(__dirname, '..', '..');
-
-const backendProcess = fork(backendProcessPath, [], {
-  currentWorkingDirectory,
-});
-
-let mainWindow;
+const backendProcessPath = isDevMode ? path.join(__dirname, 'backend') : 'app.asar/src/backend/index.js';
+const cwd = isDevMode ? null : process.resourcesPath;
+const backendProcess = fork(backendProcessPath, [], { cwd });
 
 if (isDevMode) {
   enableLiveReload({ strategy: 'react-hmr' });
@@ -26,9 +23,7 @@ backendProcess.on('message', handleBackendProcessMessage);
 ipcMain.on('backend-request', handleBackendRequest);
 
 function handleActivate() {
-  if (isMainWindowClosed()) {
-    createWindow();
-  }
+  if (isMainWindowClosed()) createWindow();
 }
 
 function isMainWindowClosed() {
@@ -47,11 +42,9 @@ async function createWindow() {
     webPreferences: { nodeIntegration: true },
   });
   mainWindow.loadURL(`file://${__dirname}/index.html`);
+  if (isDevMode) await installAndOpenDevTools();
   mainWindow.once('ready-to-show', handleReadyToShow);
   mainWindow.on('closed', handleClosed);
-  if (isDevMode) {
-    await installAndOpenDevTools();
-  }
 }
 
 function handleReadyToShow() {
@@ -69,9 +62,7 @@ function handleClosed() {
 }
 
 function handleWindowAllClosed() {
-  if (!isPlatformDarwin()) {
-    app.quit();
-  }
+  if (!isPlatformDarwin()) app.quit();
 }
 
 function isPlatformDarwin() {

@@ -10,6 +10,7 @@ const databasePath = isDevMode
   : path.join(__dirname, '..', '..', '..', 'database.db');
 
 router.setDatabase(database);
+
 process.on('message', handleMessage);
 database.open(databasePath);
 database.setStatus('Initializing…');

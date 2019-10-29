@@ -1,4 +1,4 @@
-const Excel = require('exceljs/modern.nodejs');
+const Excel = require('exceljs');
 const fs = require('fs');
 
 const {

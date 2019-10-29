@@ -35,13 +35,9 @@
         "appCopyright": "© Nathaniel J. Liberty 2019",
         "asar": true,
         "executableName": "c2-auditing-tools",
-        "name": "C2 Auditing Tools",
+        "name": "c2-auditing-tools",
         "icon": "src/assets/images/icon.ico",
-        "ignore": [
-          ".scss",
-          "coverage/",
-          ".db"
-        ],
+        "ignore": [".scss"],
         "win32metadata": {
           "CompanyName": "Nathaniel J. Liberty",
           "FileDescription": "Tools for auditing C2 medication chain of custody from withdrawal to administration in a hospital setting."
@@ -72,7 +68,7 @@
     "electron-compile": "^6.4.4",
     "electron-devtools-installer": "^2.2.4",
     "electron-squirrel-startup": "^1.0.0",
-    "exceljs": "^1.12.2",
+    "exceljs": "^3.3.0",
     "jquery": "^3.4.0",
     "popper.js": "^1.14.7",
     "prop-types": "^15.7.2",
