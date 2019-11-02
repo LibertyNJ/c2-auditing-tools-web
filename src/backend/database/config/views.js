@@ -30,6 +30,7 @@ module.exports = [
       SELECT emarAdministration.id, 
              medicalRecordNumber,
              medication.name AS medication,
+             medication.name || ' ' || medicationOrder.form AS medicationWithForm,
              medicationOrder.dose,
              medicationOrder.dose || ' ' || medicationOrder.units AS doseWithUnits,
              medicationOrderId,

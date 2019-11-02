@@ -1,43 +1,37 @@
-const getAdministrations = require('./get/administrations');
-const getLedger = require('./get/ledger');
-const getEditProvider = require('./get/edit-provider');
-const getProviders = require('./get/providers');
-const getTransactions = require('./get/transactions');
-const postData = require('./post/data');
-const putProvider = require('./put/provider');
+const { get, post, put } = require('./methods');
 
 module.exports = {
-  routeRequest,
+  route,
   setDatabase,
 };
 
 let _database;
 
-function routeRequest(request) {
+function route(request) {
   switch (request.head.method) {
     case 'GET':
-      return routeGetRequest(request);
+      return routeGet(request);
     case 'POST':
-      return routePostRequest(request);
+      return routePost(request);
     case 'PUT':
-      return routePutRequest(request);
+      return routePut(request);
     default:
       throw new Error(`Backend received request with unhandled method: ${request.head.method}.`);
   }
 }
 
-function routeGetRequest(request) {
+function routeGet(request) {
   switch (request.head.resource) {
     case 'administrations':
-      return getAdministrations(_database, request.body);
+      return get.administrations(_database, request.body);
     case 'edit-provider':
-      return getEditProvider(_database, request.body);
+      return get.editProvider(_database, request.body);
     case 'ledger':
-      return getLedger(_database, request.body);
+      return get.ledger(_database, request.body);
     case 'providers':
-      return getProviders(_database, request.body);
+      return get.providers(_database, request.body);
     case 'transactions':
-      return getTransactions(_database, request.body);
+      return get.transactions(_database, request.body);
     default:
       throw new Error(
         `Backend received GET request for unhandled resource: ${request.head.resource}.`,
@@ -45,10 +39,10 @@ function routeGetRequest(request) {
   }
 }
 
-function routePostRequest(request) {
+function routePost(request) {
   switch (request.head.resource) {
     case 'data':
-      return postData(_database, request.body);
+      return post.data(_database, request.body);
     default:
       throw new Error(
         `Backend received POST request for unhandled resource: ${request.head.resource}.`,
@@ -56,10 +50,10 @@ function routePostRequest(request) {
   }
 }
 
-function routePutRequest(request) {
+function routePut(request) {
   switch (request.head.resource) {
     case 'provider':
-      return putProvider(_database, request.body);
+      return put.provider(_database, request.body);
     default:
       throw new Error(
         `Backend received PUT request for unhandled resource: ${request.head.resource}.`,

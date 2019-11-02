@@ -1,9 +1,7 @@
 const Excel = require('exceljs');
 const fs = require('fs');
 
-const {
-  getForm, getMedicationName, getUnits, handleError,
-} = require('../../utilities');
+const { getForm, getMedicationName, getUnits } = require('./util');
 
 let _database;
 
@@ -12,7 +10,7 @@ module.exports = async function importMedicationOrderTaskStatusDetailReport(data
   try {
     await importMedicationOrderTaskStatusDetail(filePath);
   } catch (error) {
-    handleError(error);
+    throw error;
   }
 };
 
@@ -25,11 +23,23 @@ async function importMedicationOrderTaskStatusDetail(filePath) {
 
 async function getWorksheet(readStream) {
   const workbook = new Excel.Workbook();
-  return workbook.csv.read(readStream);
+  const options = {
+    map(value, index) {
+      switch (index) {
+        case 5:
+          return +value;
+        case 6:
+          return +value;
+        default:
+          return value;
+      }
+    },
+  };
+  return workbook.csv.read(readStream, options);
 }
 
 function importWorksheet(worksheet) {
-  worksheet.eachRow((row, rowNumber) => processRow(row, rowNumber));
+  worksheet.eachRow(processRow);
 }
 
 function processRow(row, rowNumber) {
@@ -45,22 +55,24 @@ function isPastHeaderRow(rowNumber) {
 }
 
 function parseRow(row) {
-  const dischargeDtm = row.getCell('L').value;
+  const dischargeDate = row.getCell('L').value;
   const medName = row.getCell('P').value;
   const genericName = row.getCell('O').value;
-  const performedDateTime = row.getCell('AM').value;
+  const performedDate = row.getCell('AM').value;
   const medOrderDose = row.getCell('R').value;
   const [dose, units] = medOrderDose.split(/\s/);
 
   return {
-    discharged: createTimestamp(dischargeDtm),
+    discharged: /\S/.test(dischargeDate) ? createTimestamp(dischargeDate) : null,
     dose,
     form: getForm(medName),
-    medicalRecordNumber: +row.getCell('G').value,
+    isNonMedAdminTask: row.getCell('Q').value,
+    medName,
+    medicalRecordNumber: row.getCell('G').value,
     medicationName: getMedicationName(genericName),
     medicationOrderId: row.getCell('M').value,
     providerEmarName: row.getCell('AP').value,
-    timestamp: createTimestamp(performedDateTime),
+    timestamp: createTimestamp(performedDate),
     units: getUnits(units),
     visitId: row.getCell('F').value,
   };
@@ -79,7 +91,7 @@ function getDatetimeElements(datetime) {
 
 function getDateElements(date) {
   const [month, day, year] = date.split(/\//);
-  return [year, month, day];
+  return [year, padTwoLeadingZeros(month), padTwoLeadingZeros(day)];
 }
 
 function getTimeElements(time, meridian) {
@@ -93,11 +105,9 @@ function formatHours(hours, meridian) {
   if (isPastNoon(hours, meridian)) {
     return convertBase12HoursToBase24Hours(hours);
   }
-
   if (isMidnight(hours, meridian)) {
     return '00';
   }
-
   return padTwoLeadingZeros(hours);
 }
 
@@ -117,37 +127,31 @@ function isMidnight(hours, meridian) {
 function padTwoLeadingZeros(string) {
   return string.padStart(2, '0');
 }
-
 function importRow(row) {
-  const transaction = _database.transaction(() => {
-    insertVisit(row);
-    insertMedicationOrder(row);
-    insertProviderEmar(row);
+  insertVisit(row);
+  insertMedicationOrder(row);
+  insertProviderEmar(row);
 
-    const providerEmarId = selectIdByName('providerEmar', row.providerEmarName);
+  const providerEmarId = selectIdByName('providerEmar', row.providerEmarName);
 
-    if (isAdministration(row)) {
-      insertEmarAdministration(row, providerEmarId);
-    } else if (isPainReassessment(row)) {
-      insertEmarPainReassessment(row, providerEmarId);
-    }
-  });
-
-  transaction();
+  if (isAdministration(row)) {
+    insertEmarAdministration(row, providerEmarId);
+  } else if (isPainReassessment(row)) {
+    insertEmarPainReassessment(row, providerEmarId);
+  }
 }
 
-function isAdministration(row) {
-  return row.getCell('Q').value;
+function isAdministration({ isNonMedAdminTask }) {
+  return isNonMedAdminTask === 'N';
 }
 
-function isPainReassessment(row) {
-  const medName = row.getCell('P').value;
+function isPainReassessment({ medName }) {
   return /^Reassess Pain Response/.test(medName);
 }
 
 function insertVisit({ discharged, medicalRecordNumber, visitId }) {
   _database.create({
-    data: { discharged, medicalRecordNumber, visitId },
+    data: { discharged, medicalRecordNumber, id: visitId },
     onConflict: 'REPLACE',
     table: 'visit',
   });
@@ -166,7 +170,7 @@ function insertMedicationOrder({
       visitId,
     },
     onConflict: 'IGNORE',
-    table: 'visit',
+    table: 'medicationOrder',
   });
 }
 
@@ -203,9 +207,10 @@ function insertEmarPainReassessment({ medicationOrderId, timestamp }, providerEm
 }
 
 function selectIdByName(table, name) {
-  return _database.read({
+  const result = _database.read({
     columns: ['id'],
     predicates: [{ column: 'name', operator: '=', value: name }],
     table,
   });
+  return result[0].id || null;
 }

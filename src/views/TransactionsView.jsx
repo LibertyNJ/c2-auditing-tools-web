@@ -48,7 +48,7 @@ export default function TransactionsView() {
           { dataKey: 'type', label: 'Transaction' },
           { dataKey: 'product', label: 'Product' },
           { dataKey: 'amount', label: 'Amount', maxWidth: 110 },
-          { dataKey: 'medicationOrderId', label: 'Order ID', maxWidth: 110 },
+          { dataKey: 'medicationOrderId', label: 'Order ID', maxWidth: 120 },
         ]}
         tableName="transactions"
       />

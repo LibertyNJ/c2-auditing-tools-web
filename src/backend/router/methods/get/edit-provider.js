@@ -1,4 +1,4 @@
-const { createResponse } = require('../utilities');
+const { createResponse } = require('../../../util');
 
 module.exports = function getEditProvider(database, providerId) {
   try {
@@ -42,6 +42,7 @@ function getProviderName(database, providerId) {
 function getAssignedProviderAdcs(database, providerId) {
   return database.read({
     columns: ['id', 'name'],
+    orderBy: { columns: ['name'], direction: 'ASC' },
     predicates: [{ column: 'providerId', operator: '=', value: providerId }],
     table: 'providerAdc',
   });
@@ -50,6 +51,7 @@ function getAssignedProviderAdcs(database, providerId) {
 function getAssignedProviderEmars(database, providerId) {
   return database.read({
     columns: ['id', 'name'],
+    orderBy: { columns: ['name'], direction: 'ASC' },
     predicates: [{ column: 'providerId', operator: '=', value: providerId }],
     table: 'providerEmar',
   });
@@ -58,6 +60,7 @@ function getAssignedProviderEmars(database, providerId) {
 function getUnassignedProviderAdcs(database) {
   return database.read({
     columns: ['id', 'name'],
+    orderBy: { columns: ['name'], direction: 'ASC' },
     predicates: [{ column: 'providerId', operator: 'IS', value: null }],
     table: 'providerAdc',
   });
@@ -66,6 +69,7 @@ function getUnassignedProviderAdcs(database) {
 function getUnassignedProviderEmars(database) {
   return database.read({
     columns: ['id', 'name'],
+    orderBy: { columns: ['name'], direction: 'ASC' },
     predicates: [{ column: 'providerId', operator: 'IS', value: null }],
     table: 'providerEmar',
   });

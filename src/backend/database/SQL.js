@@ -1,4 +1,4 @@
-const { isArray } = require('./utilities');
+const { isArray } = require('../util');
 
 module.exports = {
   formulateCreateTableStatement,
@@ -52,13 +52,17 @@ function formulateInsertStatement({ columns, onConflict = null, table }) {
   `;
 }
 
-function formulateSelectStatement({ columns = null, predicates = null, table }) {
+function formulateSelectStatement({
+  columns = null, orderBy = null, predicates = [], table,
+}) {
   const resultColumns = columns ? columns.join(', ') : '*';
   const whereClause = predicates.length ? formulateWhereClause(predicates) : '';
+  const orderByClause = orderBy ? formulateOrderByClause(orderBy) : '';
   return `
     SELECT ${resultColumns}
     FROM ${table}
-    ${whereClause};
+    ${whereClause}
+    ${orderByClause};
   `;
 }
 
@@ -84,6 +88,10 @@ function formulateAssignment(assignmentColumn) {
 function formulateWhereClause(predicates) {
   const predicateExpressions = formulatePredicateExpressions(predicates);
   return `WHERE ${predicateExpressions}`;
+}
+
+function formulateOrderByClause({ columns, direction }) {
+  return `ORDER BY ${columns.join(', ')} ${direction}`;
 }
 
 function formulatePredicateExpressions(predicates) {

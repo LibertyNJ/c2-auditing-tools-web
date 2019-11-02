@@ -1,4 +1,4 @@
-const { createResponse, isNull } = require('../utilities');
+const { createResponse, isNull } = require('../../../util');
 
 module.exports = function getAdministrations(
   database,
@@ -24,7 +24,7 @@ module.exports = function getAdministrations(
 
   try {
     const records = database.read({
-      columns: ['doseWithUnits', 'id', 'medication', 'medicationOrderId', 'provider', 'timestamp'],
+      columns: ['doseWithUnits', 'id', 'medicationWithForm', 'medicationOrderId', 'provider', 'timestamp'],
       predicates: [
         { column: 'timestamp', operator: '>', value: datetimeStart },
         { column: 'timestamp', operator: '<', value: datetimeEnd },

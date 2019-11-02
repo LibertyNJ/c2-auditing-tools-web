@@ -1,4 +1,4 @@
-const { createResponse } = require('../utilities');
+const { createResponse } = require('../../../util');
 
 let database;
 

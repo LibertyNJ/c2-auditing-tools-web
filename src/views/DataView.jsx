@@ -1,11 +1,8 @@
 import React from 'react';
 
-import Column from '../components/Column';
-import FormRow from '../components/FormRow';
+import ImportDataForm from '../components/ImportDataForm';
 import Italic from '../components/Italic';
 import FormFileInput from '../redux/containers/FormFileInput';
-import FormIconButton from '../redux/containers/FormIconButton';
-import ImportDataForm from '../redux/containers/ImportDataForm';
 
 export default function DataView() {
   return (
@@ -27,37 +24,20 @@ export default function DataView() {
           <li>Press the import button.</li>
         </ol>
         <ImportDataForm id="importData">
-          <FormRow>
-            <Column>
-              <FormFileInput
-                accept=".csv"
-                form="importData"
-                label="MOTS Detail Report"
-                name="medicationOrderTaskStatusDetailReport"
-                required
-                wrapperClassName="mb-3"
-              />
-            </Column>
-          </FormRow>
-          <FormRow>
-            <Column>
-              <FormFileInput
-                accept=".xlsx"
-                form="importData"
-                label="C2 Activity Report"
-                name="c2ActivityReport"
-                required
-                wrapperClassName="mb-3"
-              />
-            </Column>
-          </FormRow>
-          <FormRow>
-            <Column>
-              <FormIconButton className="btn-primary mb-3 ml-auto text-nowrap" icon="file-import">
-                Search
-              </FormIconButton>
-            </Column>
-          </FormRow>
+          <FormFileInput
+            accept=".csv"
+            label="MOTS Detail Report"
+            name="medicationOrderTaskStatusDetailReport"
+            required
+            wrapperClassName="mb-3"
+          />
+          <FormFileInput
+            accept=".xlsx"
+            label="C2 Activity Report"
+            name="c2ActivityReport"
+            required
+            wrapperClassName="mb-3"
+          />
         </ImportDataForm>
       </section>
     </React.Fragment>

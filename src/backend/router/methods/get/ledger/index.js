@@ -1,4 +1,4 @@
-const { createResponse, isArray, isNull } = require('../../utilities');
+const { createResponse, isArray, isNull } = require('../../../../util');
 const createLedger = require('./create-ledger');
 
 module.exports = function getLedger(

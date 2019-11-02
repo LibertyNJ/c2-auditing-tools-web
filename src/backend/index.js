@@ -1,8 +1,7 @@
 const path = require('path');
-
 const database = require('./database');
 const router = require('./router');
-const { createResponse } = require('./utilities');
+const { createResponse } = require('./util');
 
 const isDevMode = /[\\/]electron/.test(process.execPath);
 const databasePath = isDevMode
@@ -10,7 +9,6 @@ const databasePath = isDevMode
   : path.join(__dirname, '..', '..', '..', 'database.db');
 
 router.setDatabase(database);
-
 process.on('message', handleMessage);
 database.open(databasePath);
 database.setStatus('Initializing…');
@@ -38,27 +36,17 @@ function handleRequest(request) {
   }
 }
 
-function queryDatabase(request) {
+async function queryDatabase(request) {
   database.setStatus('Busy…');
   sendDatabaseStatusResponse();
-  const response = router.routeRequest(request);
+  const response = await router.route(request);
   sendResponse(response);
   database.setStatus('Ready');
   sendDatabaseStatusResponse();
 }
 
 function handleError(error) {
-  sendErrorMessage(error);
-  if (isDevMode) {
-    console.error(error);
-  }
-}
-
-function sendErrorMessage({ message }) {
-  sendResponse({
-    body: `An error occurred: ${message}. Please try again. If the error persists, notify the developer.`,
-    channel: 'error',
-  });
+  if (isDevMode) console.error(error);
 }
 
 function sendResponse(response) {

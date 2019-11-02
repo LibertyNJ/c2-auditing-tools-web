@@ -1,4 +1,4 @@
-const { createResponse, isNull } = require('../utilities');
+const { createResponse, isNull } = require('../../../util');
 
 module.exports = function getTransactions(
   database,

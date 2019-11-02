@@ -29,15 +29,16 @@ function listenForBackendResponse() {
 
 function handleBackendResponse(event, response) {
   if (response.head.status === 'ERROR') {
-    handleError(response.body.error);
+    // _store.dispatch(receiveError());
+    handleErrorResponse(response);
   } else {
     routeResponse(response);
   }
 }
 
-function handleError(error) {
-  _store.dispatch(receiveError(error));
-  alert();
+function handleErrorResponse(response) {
+  const alertText = `The following error has occurred: \n${response.body.stack}`;
+  alert(alertText);
 }
 
 function routeResponse(response) {
@@ -68,6 +69,7 @@ function handlePostResponse(response) {
   switch (response.body.resource) {
     case 'data':
       alert('Data imported successfully!');
+      break;
     default:
       throw new Error(
         `BackendResponseListener received post response to unhandled resource: ${response.body.resource}.`,

@@ -174,6 +174,7 @@ function isOtherRelatedTransaction(otherTransaction, withdrawal) {
 
 function createDisposition(record, recordType) {
   return {
+    medicationOrderId: record.medicationOrderId,
     provider: record.provider,
     timestamp: record.timestamp,
     type: recordType,
@@ -181,10 +182,10 @@ function createDisposition(record, recordType) {
 }
 
 function getPainReassessment(withdrawal, disposition) {
-  const painReassessement = findPainReassessment(withdrawal, disposition);
-  if (isFound(painReassessement)) {
-    reconcileRecord(painReassessement);
-    return createPainReassessment(painReassessement);
+  const painReassessment = findPainReassessment(withdrawal, disposition);
+  if (isFound(painReassessment)) {
+    reconcileRecord(painReassessment);
+    return createPainReassessment(painReassessment);
   }
   return null;
 }

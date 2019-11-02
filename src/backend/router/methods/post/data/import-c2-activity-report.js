@@ -1,9 +1,7 @@
 const Excel = require('exceljs');
 const fs = require('fs');
 
-const {
-  getForm, getMedicationName, getUnits, handleError,
-} = require('../../utilities');
+const { getForm, getMedicationName, getUnits } = require('./util');
 
 let _database;
 
@@ -12,7 +10,7 @@ module.exports = async function importC2ActivityReport(database, filePath) {
   try {
     await importC2Activity(filePath);
   } catch (error) {
-    handleError(error);
+    throw error;
   }
 };
 
@@ -43,12 +41,13 @@ function processRow(row, rowNumber) {
 }
 
 function isPastHeaderRow(rowNumber) {
-  const HEADER_ROW_NUMBER = 1;
+  const HEADER_ROW_NUMBER = 11;
   return rowNumber > HEADER_ROW_NUMBER;
 }
 
 function parseRow(row) {
   const medDescription = row.getCell('C').value;
+  const orderId = row.getCell('J').value;
   const transaction = row.getCell('E').value;
   const transactionDate = row.getCell('A').value;
   const transactionTime = row.getCell('B').value;
@@ -58,10 +57,10 @@ function parseRow(row) {
     amount: row.getCell('D').value,
     form: getForm(medDescription),
     medicalRecordNumber: +row.getCell('I').value,
-    medicationOrderId: row.getCell('J').value,
+    medicationOrderId: orderId === 'OVERRIDE' ? 'OVERRIDE' : orderId.slice(1),
     medicationProductAdcName: medDescription,
     providerAdcName: row.getCell('K').value,
-    strength: row.getCell('O').value,
+    strength: /hycodan/i.test(medDescription) ? 5.0 : +row.getCell('O').value, // Tests for special case of hycodan, which does not have an indicated strength in Pyxis database.
     timestamp: createTimestamp(transactionDate, transactionTime),
     units: getUnits(medDescription),
     waste: row.getCell('F').value,
@@ -92,24 +91,23 @@ function isTrackedMedication(medicationProductAdcName) {
 }
 
 function importRow(row) {
-  const transaction = _database.transaction(() => {
-    insertProviderAdc(row);
-    insertMedicationProductAdc(row);
-
-    const medicationId = getMedicationId(row);
+  insertProviderAdc(row);
+  insertMedicationProductAdc(row);
+  const medicationId = getMedicationId(row);
+  insertMedicationProduct(row, medicationId);
+  if (hasMedicationOrderId(row)) {
     insertMedicationOrder(row, medicationId);
-    insertMedicationProduct(row, medicationId);
+  }
+  if (isTrackedTransactionType(row)) {
+    insertAdcTransaction(row);
+  }
+  if (hasWaste(row)) {
+    insertWasteAdcTransaction(row);
+  }
+}
 
-    if (isTrackedTransactionType(row)) {
-      insertAdcTransaction(row);
-    }
-
-    if (hasWaste(row)) {
-      insertWasteAdcTransaction(row);
-    }
-  });
-
-  transaction();
+function hasMedicationOrderId({ medicationOrderId }) {
+  return /\w|\d/.test(medicationOrderId);
 }
 
 function isTrackedTransactionType({ adcTransactionTypeName }) {
@@ -191,17 +189,18 @@ function insertAdcTransaction({
       typeId: selectIdByName('adcTransactionType', adcTransactionTypeName),
     },
     onConflict: 'IGNORE',
-    table: 'medicationProduct',
+    table: 'adcTransaction',
   });
 }
 
 function selectMedicationProductIdByAdcName(adcName) {
   const adcId = selectIdByName('medicationProductAdc', adcName);
-  return _database.read({
+  const result = _database.read({
     columns: ['id'],
     predicates: [{ column: 'adcId', operator: '=', value: adcId }],
     table: 'medicationProduct',
   });
+  return result[0].id || null;
 }
 
 function hasWaste({ waste = '' }) {
@@ -224,7 +223,7 @@ function insertWasteAdcTransaction({
       medicationProductId: selectMedicationProductIdByAdcName(medicationProductAdcName),
       providerAdcId: selectIdByName('providerAdc', providerAdcName),
       timestamp,
-      typeId: selectIdByName('adcTransactionType', 'waste'),
+      typeId: selectIdByName('adcTransactionType', 'Waste'),
     },
     onConflict: 'IGNORE',
     table: 'adcTransaction',
@@ -236,9 +235,10 @@ function getWasteAmount(waste) {
 }
 
 function selectIdByName(table, name) {
-  return _database.read({
+  const result = _database.read({
     columns: ['id'],
     predicates: [{ column: 'name', operator: '=', value: name }],
     table,
   });
+  return result[0].id || null;
 }

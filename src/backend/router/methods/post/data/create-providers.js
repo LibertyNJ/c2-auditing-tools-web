@@ -1,5 +1,3 @@
-const { handleError } = require('../../utilities');
-
 let _database;
 
 module.exports = function createProviders(database) {
@@ -8,7 +6,7 @@ module.exports = function createProviders(database) {
     const providerEmars = selectProviderEmars();
     providerEmars.forEach(createProvider);
   } catch (error) {
-    handleError(error);
+    throw error;
   }
 };
 
@@ -27,16 +25,12 @@ function isAssignedProviderId({ providerId }) {
 }
 
 function insertProviderAndUpdateProviderNames(providerEmar) {
-  const transaction = _database.transaction(() => {
-    const providerName = getProviderName(providerEmar);
-    insertProvider(providerName);
+  const providerName = getProviderName(providerEmar);
+  insertProvider(providerName);
 
-    const providerId = selectProviderId(providerName);
-    updateProviderEmar(providerEmar, providerId);
-    updateProviderAdc(providerName, providerId);
-  });
-
-  transaction();
+  const providerId = selectProviderId(providerName);
+  updateProviderEmar(providerEmar, providerId);
+  updateProviderAdc(providerName, providerId);
 }
 
 function getProviderName({ name }) {
@@ -75,7 +69,7 @@ function insertProvider({ firstName, lastName, middleInitial = null }) {
 }
 
 function selectProviderId({ firstName, lastName, middleInitial = null }) {
-  return _database.read({
+  const result = _database.read({
     columns: ['id'],
     predicates: [
       { column: 'firstName', operator: 'LIKE', value: firstName },
@@ -84,9 +78,10 @@ function selectProviderId({ firstName, lastName, middleInitial = null }) {
     ],
     table: 'provider',
   });
+  return result[0].id || null;
 }
 
-function updateProviderEmar(providerId, { id }) {
+function updateProviderEmar({ id }, providerId) {
   _database.update({
     data: { providerId },
     predicates: [{ column: 'id', operator: '=', value: id }],
@@ -94,7 +89,7 @@ function updateProviderEmar(providerId, { id }) {
   });
 }
 
-function updateProviderAdc(providerId, { lastName, firstName }) {
+function updateProviderAdc({ lastName, firstName }, providerId) {
   const providerAdcName = createProviderAdcName(lastName, firstName);
   _database.update({
     data: { providerId },

@@ -1,13 +1,13 @@
 import { connect } from 'react-redux';
 
-import Form from '../../components/Form';
+import ImportDataForm from '../../components/ImportDataForm';
 import { createRequest, sendBackendRequest } from '../../util';
 
 export default connect(
   mapStateToProps,
   mapDispatchToProps,
   mergeProps,
-)(Form);
+)(ImportDataForm);
 
 function mapStateToProps(state) {
   return {

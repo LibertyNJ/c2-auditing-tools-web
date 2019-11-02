@@ -1,14 +1,16 @@
-const { createResponse, isNull } = require('../utilities');
+const { createResponse, isNull } = require('../../../util');
 
 module.exports = function getProviders(
   database,
   {
-    adcId = null, emarId = null, firstName = null, lastName = null, middleInitial = null,
+    adcName = null, emarName = null, firstName = null, lastName = null, middleInitial = null,
   },
 ) {
-  const adcIdPredicate = adcId ? { column: 'adcIds', operator: 'LIKE', value: `%${adcId}%` } : null;
-  const emarIdPredicate = emarId
-    ? { column: 'emarIds', operator: 'LIKE', value: `%${emarId}%` }
+  const adcIdPredicate = adcName
+    ? { column: 'adcIds', operator: 'LIKE', value: `%${adcName}%` }
+    : null;
+  const emarIdPredicate = emarName
+    ? { column: 'emarIds', operator: 'LIKE', value: `%${emarName}%` }
     : null;
   const firstNamePredicate = firstName
     ? { column: 'firstName', operator: 'LIKE', value: `%${firstName}%` }

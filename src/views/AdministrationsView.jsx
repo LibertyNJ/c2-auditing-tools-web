@@ -32,9 +32,9 @@ export default function AdministrationsView() {
         columns={[
           { dataKey: 'timestamp', label: 'Time', maxWidth: 120 },
           { dataKey: 'provider', label: 'Provider' },
-          { dataKey: 'medication', label: 'Medication' },
+          { dataKey: 'medicationWithForm', label: 'Medication' },
           { dataKey: 'doseWithUnits', label: 'Dose', maxWidth: 100 },
-          { dataKey: 'medicationOrderId', label: 'Order ID', maxWidth: 110 },
+          { dataKey: 'medicationOrderId', label: 'Order ID', maxWidth: 120 },
         ]}
         tableName="administrations"
       />

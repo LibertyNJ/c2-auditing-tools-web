@@ -38,9 +38,9 @@ export default function LedgerView() {
           { dataKey: 'dispositionType', label: 'Disposition', maxWidth: 130 },
           { dataKey: 'dispositionProvider', label: 'Disposed by' },
           { dataKey: 'dispositionTimestamp', label: 'Time', maxWidth: 120 },
-          { dataKey: 'painReassessmentTimestamp', label: 'Pain reassessed' },
-          { dataKey: 'painReassessmentProvider', label: 'Pain reassessed by', maxWidth: 110 },
-          { dataKey: 'medicationOrderId', label: 'Order ID', maxWidth: 110 },
+          { dataKey: 'painReassessmentProvider', label: 'Reassessed by', maxWidth: 150 },
+          { dataKey: 'painReassessmentTimestamp', label: 'Time', maxWidth: 120 },
+          { dataKey: 'medicationOrderId', label: 'Order ID', maxWidth: 120 },
         ]}
         tableName="ledger"
       />

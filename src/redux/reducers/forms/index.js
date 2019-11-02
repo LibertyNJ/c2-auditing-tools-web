@@ -12,15 +12,6 @@ export const INITIAL_STATE = {
       provider: '',
     },
   },
-  importData: {
-    data: {},
-    fields: {
-      c2ActivityReport: '',
-      c2ActivityReportPath: '',
-      medicationOrderTaskStatusDetailReport: '',
-      medicationOrderTaskStatusDetailReportPath: '',
-    },
-  },
   editProvider: {
     data: {
       assignedProviderAdcs: [],

@@ -6,8 +6,7 @@ const adcTransactionTypeNames = require('./config/adc-transaction-type-names');
 const medicationNames = require('./config/medication-names');
 const schema = require('./config/schema');
 const views = require('./config/views');
-
-const { isArray } = require('./utilities');
+const { isArray } = require('../util');
 
 module.exports = {
   open,
@@ -20,6 +19,7 @@ module.exports = {
 };
 
 const IS_DEV_MODE = /[\\/]electron/.test(process.execPath);
+// const IS_DEV_MODE = false;
 
 let sqlite;
 let status;
@@ -98,16 +98,18 @@ function create({ data, onConflict = null, table }) {
   statement.run(...values);
 }
 
-function read({ columns = null, predicates = null, table }) {
-  const sql = SQL.formulateSelectStatement({ columns, predicates, table });
+function read({
+  columns = null, orderBy = null, predicates = [], table,
+}) {
+  const sql = SQL.formulateSelectStatement({
+    columns,
+    orderBy,
+    predicates,
+    table,
+  });
   const statement = sqlite.prepare(sql);
-  const values = predicates ? predicates.reduce(reduceToValues, []) : [];
-
-  if (predicates && isQueryingByUniqueId(predicates)) {
-    return statement.get(...values);
-  }
-
-  return statement.all(...values);
+  const values = predicates.reduce(reduceToValues, []);
+  return isQueryingByUniqueId(predicates) ? statement.get(...values) : statement.all(...values);
 }
 
 function update({ data, predicates = null, table }) {
@@ -135,9 +137,5 @@ function isNull(value) {
 }
 
 function reduceToValues(previousArray, { value }) {
-  if (isArray(value)) {
-    return [...previousArray, ...value];
-  }
-
-  return [...previousArray, value];
+  return isArray(value) ? [...previousArray, ...value] : [...previousArray, value];
 }
