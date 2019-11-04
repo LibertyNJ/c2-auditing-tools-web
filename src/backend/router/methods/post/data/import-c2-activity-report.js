@@ -57,7 +57,7 @@ function parseRow(row) {
     amount: row.getCell('D').value,
     form: getForm(medDescription),
     medicalRecordNumber: +row.getCell('I').value,
-    medicationOrderId: orderId === 'OVERRIDE' ? 'OVERRIDE' : orderId.slice(1),
+    medicationOrderId: getMedicationOrderId(orderId),
     medicationProductAdcName: medDescription,
     providerAdcName: row.getCell('K').value,
     strength: /hycodan/i.test(medDescription) ? 5.0 : +row.getCell('O').value, // Tests for special case of hycodan, which does not have an indicated strength in Pyxis database.
@@ -77,6 +77,17 @@ function getAdcTransactionTypeName(transaction) {
       return 'Return';
     default:
       return 'Other';
+  }
+}
+
+function getMedicationOrderId(orderId) {
+  switch (orderId) {
+    case 'OVERRIDE':
+      return 'OVERRIDE';
+    case ' ':
+      return null;
+    default:
+      return orderId.slice(1);
   }
 }
 
@@ -107,7 +118,7 @@ function importRow(row) {
 }
 
 function hasMedicationOrderId({ medicationOrderId }) {
-  return /\w|\d/.test(medicationOrderId);
+  return medicationOrderId !== null || medicationOrderId !== 'OVERRIDE';
 }
 
 function isTrackedTransactionType({ adcTransactionTypeName }) {

@@ -20,7 +20,7 @@ module.exports = [
       {
         name: 'medicationOrderId',
         type: 'CHAR(9)',
-        constraint: 'REFERENCES medicationOrder(id) NOT NULL',
+        constraint: 'REFERENCES medicationOrder(id)',
       },
       {
         name: 'medicationProductId',
