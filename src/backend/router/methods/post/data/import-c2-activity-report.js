@@ -106,7 +106,7 @@ function isTrackedMedication(medicationProductAdcName) {
 }
 
 function isIgnoredProduct(medDescription) {
-  return ignoredProducts.find(medDescription);
+  return ignoredProducts.find(ignoredProduct => ignoredProduct === medDescription);
 }
 
 function importRow(row) {
