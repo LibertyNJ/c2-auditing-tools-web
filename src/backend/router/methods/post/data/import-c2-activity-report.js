@@ -56,7 +56,7 @@ function parseRow(row) {
     adcTransactionTypeName: getAdcTransactionTypeName(transaction),
     amount: row.getCell('D').value,
     form: getForm(medDescription),
-    medicalRecordNumber: +row.getCell('I').value,
+    medicalRecordNumber: +row.getCell('I').value || null,
     medicationOrderId: getMedicationOrderId(orderId),
     medicationProductAdcName: medDescription,
     providerAdcName: row.getCell('K').value,
@@ -118,7 +118,7 @@ function importRow(row) {
 }
 
 function hasMedicationOrderId({ medicationOrderId }) {
-  return medicationOrderId !== null || medicationOrderId !== 'OVERRIDE';
+  return medicationOrderId !== null && medicationOrderId !== 'OVERRIDE';
 }
 
 function isTrackedTransactionType({ adcTransactionTypeName }) {

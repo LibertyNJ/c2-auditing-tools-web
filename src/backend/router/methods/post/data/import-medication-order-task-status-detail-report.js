@@ -169,7 +169,7 @@ function insertMedicationOrder({
       units,
       visitId,
     },
-    onConflict: 'IGNORE',
+    onConflict: 'REPLACE',
     table: 'medicationOrder',
   });
 }

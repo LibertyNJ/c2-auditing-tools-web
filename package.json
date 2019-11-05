@@ -37,7 +37,9 @@
         "executableName": "c2-auditing-tools",
         "name": "c2-auditing-tools",
         "icon": "src/assets/images/icon.ico",
-        "ignore": [".scss"],
+        "ignore": [
+          ".scss"
+        ],
         "win32metadata": {
           "CompanyName": "Nathaniel J. Liberty",
           "FileDescription": "Tools for auditing C2 medication chain of custody from withdrawal to administration in a hospital setting."
