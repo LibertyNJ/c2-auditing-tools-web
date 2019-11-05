@@ -2,6 +2,7 @@ const Excel = require('exceljs');
 const fs = require('fs');
 
 const { getForm, getMedicationName, getUnits } = require('./util');
+const ignoredProducts = require('../../../config/ignored-products');
 
 let _database;
 
@@ -33,8 +34,11 @@ function importWorksheet(worksheet) {
 
 function processRow(row, rowNumber) {
   const medDescription = row.getCell('C').value;
-
-  if (isPastHeaderRow(rowNumber) && isTrackedMedication(medDescription)) {
+  if (
+    isPastHeaderRow(rowNumber)
+    && isTrackedMedication(medDescription)
+    && !isIgnoredProduct(medDescription)
+  ) {
     const parsedRow = parseRow(row);
     importRow(parsedRow);
   }
@@ -99,6 +103,10 @@ function createTimestamp(date, time) {
 function isTrackedMedication(medicationProductAdcName) {
   const regex = /fentanyl|oxycodone|hydromorphone|morphine|hydrocodone\/homatrop/i;
   return regex.test(medicationProductAdcName);
+}
+
+function isIgnoredProduct(medDescription) {
+  return ignoredProducts.find(medDescription);
 }
 
 function importRow(row) {

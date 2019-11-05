@@ -131,9 +131,7 @@ function importRow(row) {
   insertVisit(row);
   insertMedicationOrder(row);
   insertProviderEmar(row);
-
   const providerEmarId = selectIdByName('providerEmar', row.providerEmarName);
-
   if (isAdministration(row)) {
     insertEmarAdministration(row, providerEmarId);
   } else if (isPainReassessment(row)) {
