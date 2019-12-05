@@ -2,7 +2,7 @@ import { connect } from 'react-redux';
 
 import { resetFormFields } from '../actions';
 import Form from '../../components/Form';
-import { createRequest, sendBackendRequest } from '../../util';
+import { createRequest } from '../../util';
 
 export default connect(
   mapStateToProps,
@@ -40,5 +40,4 @@ function mergeProps({ fields, providerId }, dispatchProps, { id, ...restOwnProps
 function handleSubmit(event, providerId, fields) {
   event.preventDefault();
   const request = createRequest('PUT', 'provider', { providerId, ...fields });
-  sendBackendRequest(request);
 }

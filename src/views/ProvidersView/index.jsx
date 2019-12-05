@@ -5,7 +5,7 @@ import { showModal } from '../../components/Modal';
 import RecordsSection from '../../components/RecordsSection';
 import SearchSection from '../../components/SearchSection';
 import FormInput from '../../redux/containers/FormInput';
-import { createRequest, sendBackendRequest } from '../../util';
+import { createRequest } from '../../util';
 
 export default function ProvidersView() {
   return (
@@ -36,6 +36,5 @@ export default function ProvidersView() {
 function handleRowClick({ rowData }) {
   const providerId = rowData.id;
   const request = createRequest('GET', 'edit-provider', providerId);
-  sendBackendRequest(request);
   showModal();
 }

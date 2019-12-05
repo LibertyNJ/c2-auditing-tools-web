@@ -1,7 +1,7 @@
 import { connect } from 'react-redux';
 
 import Form from '../../components/Form';
-import { createRequest, sendBackendRequest } from '../../util';
+import { createRequest } from '../../util';
 
 export default connect(
   mapStateToProps,
@@ -30,5 +30,4 @@ function mergeProps({ fields }, dispatchProps, { id, ...restOwnProps }) {
 function handleSubmit(event, id, fields) {
   event.preventDefault();
   const request = createRequest('GET', id, { ...fields });
-  sendBackendRequest(request);
 }

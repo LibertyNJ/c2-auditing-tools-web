@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Column from '../Column';
 import FormRow from '../FormRow';
 import FormIconButton from '../../redux/containers/FormIconButton';
-import { createRequest, sendBackendRequest } from '../../util';
+import { createRequest } from '../../util';
 
 const INITIAL_STATE = {
   c2ActivityReport: '',
@@ -29,7 +29,6 @@ export default function Form({ children, id, ...restProps }) {
   const handleSubmit = (event) => {
     event.preventDefault();
     const request = createRequest('POST', 'data', { ...state });
-    sendBackendRequest(request);
   };
   const FormControlRows = React.Children.map(children, FormControl => (
     <FormRow>

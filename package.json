@@ -1,65 +1,17 @@
 {
-  "name": "c2-auditing-tools",
+  "name": "c2-auditing-tools-web",
   "productName": "C2 Auditing Tools",
   "version": "1.0.0",
   "description": "Tools for auditing C2 medication chain of custody from withdrawal to administration in a hospital setting.",
-  "main": "src/main.js",
   "scripts": {
+    "build": "webpack --config webpak.prod.js",
     "lint": "eslint --cache --color --ext .jsx,.js src",
-    "make": "electron-forge make",
-    "package": "electron-forge package --arch=ia32",
-    "publish": "electron-forge publish",
-    "start": "electron-forge start",
+    "start": "webpack-dev-server --open --config webpack.dev.js",
     "test": "jest --coverage",
     "watch-my-sass": "start node-sass --watch --output-style=compressed ./src/styles/scss/style.scss ./src/styles/css/style.css && start postcss ./src/styles/css/style.css --use autoprefixer --verbose --output ./src/styles/style.css --watch"
   },
-  "keywords": [],
   "author": "Nathaniel J. Liberty <nathaniel.liberty@gmail.com>",
   "license": "UNLICENSED",
-  "config": {
-    "forge": {
-      "make_targets": {
-        "win32": [
-          "squirrel"
-        ],
-        "darwin": [
-          "zip"
-        ],
-        "linux": [
-          "deb",
-          "rpm"
-        ]
-      },
-      "electronPackagerConfig": {
-        "packageManager": "npm",
-        "appCopyright": "© Nathaniel J. Liberty 2019",
-        "asar": true,
-        "executableName": "c2-auditing-tools",
-        "name": "c2-auditing-tools",
-        "icon": "src/assets/images/icon.ico",
-        "ignore": [
-          ".scss"
-        ],
-        "win32metadata": {
-          "CompanyName": "Nathaniel J. Liberty",
-          "FileDescription": "Tools for auditing C2 medication chain of custody from withdrawal to administration in a hospital setting."
-        }
-      },
-      "electronWinstallerConfig": {
-        "name": "c2_auditing_tools"
-      },
-      "electronInstallerDebian": {},
-      "electronInstallerRedhat": {},
-      "github_repository": {
-        "owner": "",
-        "name": ""
-      },
-      "windowsStoreConfig": {
-        "packageName": "",
-        "name": "c2auditingtools"
-      }
-    }
-  },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^1.2.24",
     "@fortawesome/free-solid-svg-icons": "^5.11.1",
@@ -67,9 +19,6 @@
     "better-sqlite3": "^5.4.0",
     "bootstrap": "^4.3.1",
     "bootstrap-select": "^1.13.12",
-    "electron-compile": "^6.4.4",
-    "electron-devtools-installer": "^2.2.4",
-    "electron-squirrel-startup": "^1.0.0",
     "exceljs": "^3.3.0",
     "jquery": "^3.4.0",
     "popper.js": "^1.14.7",
@@ -83,22 +32,15 @@
     "redux": "^4.0.4"
   },
   "devDependencies": {
+    "@babel/core": "^7.7.4",
     "@babel/plugin-proposal-class-properties": "^7.4.4",
     "@babel/preset-env": "^7.4.5",
     "@babel/preset-react": "^7.0.0",
     "@testing-library/jest-dom": "^4.1.0",
     "@testing-library/react": "^9.2.0",
     "autoprefixer": "^9.6.0",
-    "babel-eslint": "^10.0.1",
-    "babel-jest": "^24.8.0",
-    "babel-plugin-transform-async-to-generator": "^6.24.1",
-    "babel-plugin-transform-class-properties": "^6.24.1",
-    "babel-plugin-transform-es2015-classes": "^6.24.1",
-    "babel-plugin-transform-object-rest-spread": "^6.26.0",
-    "babel-preset-env": "^1.7.0",
-    "babel-preset-react": "^6.24.1",
-    "electron-forge": "^5.2.4",
-    "electron-prebuilt-compile": "4.0.0",
+    "babel-loader": "^8.0.6",
+    "css-loader": "^3.2.1",
     "eslint": "^5.16.0",
     "eslint-config-airbnb": "^17.1.0",
     "eslint-plugin-babel": "^5.3.0",
@@ -109,11 +51,10 @@
     "jest": "^24.8.0",
     "node-sass": "^4.12.0",
     "postcss-cli": "^6.1.2",
-    "react-test-renderer": "^16.8.6"
-  },
-  "jest": {
-    "moduleNameMapper": {
-      "electron": "<rootDir>/src/components/tests/mock/electron.js"
-    }
+    "style-loader": "^1.0.1",
+    "webpack": "^4.41.2",
+    "webpack-cli": "^3.3.10",
+    "webpack-dev-server": "^3.9.0",
+    "webpack-merge": "^4.2.2"
   }
 }
