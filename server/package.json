@@ -1,0 +1,20 @@
+{
+  "name": "c2-auditing-tools-web-server",
+  "version": "1.0.0",
+  "description": "Server for c2-auditing-tools-web-client.",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon",
+    "test": "jest --coverage"
+  },
+  "author": "Nathaniel J. Liberty <nathaniel.liberty@gmail.com>",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "mongoose": "^5.7.13"
+  },
+  "devDependencies": {
+    "jest": "^24.9.0",
+    "nodemon": "^2.0.1"
+  }
+}

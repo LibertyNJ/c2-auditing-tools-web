@@ -1,59 +1,21 @@
-const path = require('path');
-const database = require('./database');
-const router = require('./router');
-const { createResponse } = require('./util');
+require('dotenv').config();
+const mongoose = require('mongoose');
 
-const isDevMode = /[\\/]electron/.test(process.execPath);
-const databasePath = isDevMode
-  ? path.join(__dirname, '..', '..', 'database.db')
-  : path.join(__dirname, '..', '..', '..', 'database.db');
+const DATABASE_URL = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_CLUSTER}.mongodb.net/test?retryWrites=true&w=majority`;
+mongoose.connect(DATABASE_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
 
-router.setDatabase(database);
-process.on('message', handleMessage);
-database.open(databasePath);
-database.setStatus('Initializing…');
-database.initialize();
-database.setStatus('Ready');
-sendDatabaseStatusResponse();
-
-function handleMessage(message) {
-  if (isDatabaseStatusRequest(message)) {
-    sendDatabaseStatusResponse();
-  } else {
-    handleRequest(message);
-  }
-}
-
-function isDatabaseStatusRequest(message) {
-  return message.head.resource === 'database-status';
-}
-
-function handleRequest(request) {
-  try {
-    queryDatabase(request);
-  } catch (error) {
-    handleError(error);
-  }
-}
-
-async function queryDatabase(request) {
-  database.setStatus('Busy…');
-  sendDatabaseStatusResponse();
-  const response = await router.route(request);
-  sendResponse(response);
-  database.setStatus('Ready');
-  sendDatabaseStatusResponse();
-}
+const db = mongoose.connection;
+db.on('error', handleError);
+db.once('open', handleOpen);
 
 function handleError(error) {
-  if (isDevMode) console.error(error);
+  console.error('Encountered error connecting to database:\n', error);
 }
 
-function sendResponse(response) {
-  process.send(response);
-}
-
-function sendDatabaseStatusResponse() {
-  const response = createResponse('database-status', 'OK', database.getStatus());
-  sendResponse(response);
+function handleOpen() {
+  console.log('Connected to database.');
+  db.close();
 }
