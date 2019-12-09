@@ -1,8 +1,10 @@
-require('dotenv').config();
 const mongoose = require('mongoose');
 
-const DATABASE_URL = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_CLUSTER}.mongodb.net/test?retryWrites=true&w=majority`;
-mongoose.connect(DATABASE_URL, {
+const { database } = require('./config');
+
+const databaseUri = `mongodb+srv://${database.user}:${database.password}@${database.cluster}.mongodb.net/test?retryWrites=true&w=majority`;
+
+mongoose.connect(databaseUri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
