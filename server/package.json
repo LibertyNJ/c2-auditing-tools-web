@@ -2,7 +2,7 @@
   "name": "c2-auditing-tools-web-server",
   "version": "1.0.0",
   "description": "Server for c2-auditing-tools-web-client.",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "start": "nodemon",
     "test": "jest --coverage"
@@ -11,6 +11,7 @@
   "license": "UNLICENSED",
   "dependencies": {
     "dotenv": "^8.2.0",
+    "express": "^4.17.1",
     "mongoose": "^5.7.13"
   },
   "devDependencies": {
