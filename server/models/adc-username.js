@@ -1,12 +1,18 @@
-const { model, Schema } = require('mongoose');
+const Sequelize = require('sequelize');
 
-const adcUsernameSchema = new Schema({
-  username: {
-    required: [true, 'ADC username must have a username.'],
-    type: String,
+const AdcUsername = Sequelize.define('adcUsername', {
+  providerId: {
+    references: {
+      key: 'id',
+      model: 'provider',
+    },
+    type: Sequelize.STRING,
+  },
+  value: {
+    allowNull: false,
+    type: Sequelize.STRING,
+    unique: true,
   },
 });
 
-const AdcUsernameModel = model('AdcUsername', adcUsernameSchema);
-
-module.exports = AdcUsernameModel;
+module.exports = AdcUsername;

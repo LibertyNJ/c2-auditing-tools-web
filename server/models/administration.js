@@ -1,26 +1,28 @@
-const { model, Schema } = require('mongoose');
+const Sequelize = require('sequelize');
 
-const administrationSchema = new Schema({
+const Administration = Sequelize.define('administration', {
   date: {
-    required: [true, 'Administration must have a date.'],
-    type: Date,
+    allowNull: false,
+    type: Sequelize.DATE,
+    unique: 'aggregate',
   },
-  medicationOrder: {
-    maxlength: [
-      9,
-      'Medication order ID may not be longer than 9 characters.',
-    ],
-    ref: 'medicationOrder',
-    required: [true, 'Administration must have a medication order.'],
-    type: String,
+  orderId: {
+    allowNull: false,
+    references: {
+      key: 'id',
+      model: 'order',
+    },
+    type: Sequelize.STRING(9),
+    unique: 'aggregate',
   },
-  username: {
-    ref: 'emarUsername',
-    required: [true, 'Administration must have a username.'],
-    type: Schema.Types.ObjectId,
+  usernameId: {
+    allowNull: false,
+    references: {
+      key: 'id',
+      model: 'emarUsername',
+    },
+    type: Sequelize.INTEGER,
   },
 });
 
-const AdministrationModel = model('Administration', administrationSchema);
-
-module.exports = AdministrationModel;
+module.exports = Administration;

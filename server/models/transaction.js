@@ -1,45 +1,51 @@
-const { model, Schema } = require('mongoose');
+const Sequelize = require('sequelize');
 
-const transactionSchema = new Schema({
+const Transaction = Sequelize.define('transaction', {
   amount: {
-    required: [true, 'Transaction must have an amount.'],
-    type: Number,
+    allowNull: false,
+    type: Sequelize.REAL,
   },
   date: {
-    required: [true, 'Transaction must have a date.'],
-    type: Date,
+    allowNull: false,
+    type: Sequelize.DATE,
+    unique: 'aggregate',
   },
-  medicalRecordNumber: {
-    type: String,
-    maxlength: [
-      8,
-      'Medical record numbers may not be longer than 8 characters.',
-    ],
+  mrn: {
+    type: Sequelize.INTEGER(8),
   },
-  medicationOrder: {
-    maxlength: [
-      9,
-      'Medication order ID may not be longer than 9 characters.',
-    ],
-    ref: 'medicationOrder',
-    type: String,
+  orderId: {
+    references: {
+      key: 'id',
+      model: 'order',
+    },
+    type: Sequelize.STRING(9),
   },
-  medicationProduct: {
-    ref: 'medicationProduct',
-    type: Schema.Types.ObjectId,
+  productId: {
+    allowNull: false,
+    references: {
+      key: 'id',
+      model: 'product',
+    },
+    type: Sequelize.INTEGER,
   },
-  type: {
-    enum: ['Restock', 'Return', 'Waste', 'Withdrawal'],
-    required: [true, 'Transaction must have a type.'],
-    type: String,
+  typeId: {
+    allowNull: false,
+    references: {
+      key: 'id',
+      model: 'transactionType',
+    },
+    type: Sequelize.INTEGER,
+    unique: 'aggregate',
   },
-  username: {
-    ref: 'adcUsername',
-    required: [true, 'Transaction must have a username.'],
-    type: Schema.Types.ObjectId,
+  usernameId: {
+    allowNull: false,
+    references: {
+      key: 'id',
+      model: 'adcUsername',
+    },
+    type: Sequelize.INTEGER,
+    unique: 'aggregate',
   },
 });
 
-const TransactionModel = model('Transaction', transactionSchema);
-
-module.exports = TransactionModel;
+module.exports = Transaction;

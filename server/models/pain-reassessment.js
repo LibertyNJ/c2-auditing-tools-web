@@ -1,26 +1,28 @@
-const { model, Schema } = require('mongoose');
+const Sequelize = require('sequelize');
 
-const painReassessmentSchema = new Schema({
+const PainReassessment = Sequelize.define('painReassessment', {
   date: {
-    required: [true, 'Pain reassessment must have a date.'],
-    type: Date,
+    allowNull: false,
+    type: Sequelize.DATE,
+    unique: 'aggregate',
   },
-  medicationOrder: {
-    maxlength: [
-      9,
-      'Medication order ID may not be longer than 9 characters.',
-    ],
-    ref: 'medicationOrder',
-    required: [true, 'Pain reassessment must have a medication order.'],
-    type: String,
+  orderId: {
+    allowNull: false,
+    references: {
+      key: 'id',
+      model: 'order',
+    },
+    type: Sequelize.STRING(9),
+    unique: 'aggregate',
   },
-  username: {
-    ref: 'emarUsername',
-    required: [true, 'Pain reassessment must have a username.'],
-    type: Schema.Types.ObjectId,
+  usernameId: {
+    allowNull: false,
+    references: {
+      key: 'id',
+      model: 'emarUsername',
+    },
+    type: Sequelize.INTEGER,
   },
 });
 
-const PainReassessmentModel = model('PainReassessment', painReassessmentSchema);
-
-module.exports = PainReassessmentModel;
+module.exports = PainReassessment;

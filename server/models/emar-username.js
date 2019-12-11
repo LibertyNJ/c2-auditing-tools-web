@@ -1,12 +1,18 @@
-const { model, Schema } = require('mongoose');
+const Sequelize = require('sequelize');
 
-const emarUsernameSchema = new Schema({
-  username: {
-    required: [true, 'eMAR username must have a username.'],
-    type: String,
+const EmarUsername = Sequelize.define('emarUsername', {
+  providerId: {
+    references: {
+      key: 'id',
+      model: 'provider',
+    },
+    type: Sequelize.STRING,
+  },
+  value: {
+    allowNull: false,
+    type: Sequelize.STRING,
+    unique: true,
   },
 });
 
-const EmarUsernameModel = model('EmarUsername', emarUsernameSchema);
-
-module.exports = EmarUsernameModel;
+module.exports = EmarUsername;

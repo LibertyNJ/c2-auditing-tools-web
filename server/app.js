@@ -1,22 +1,42 @@
 const express = require('express');
-const mongoose = require('mongoose');
+const Sequelize = require('sequelize');
 
 const config = require('./config');
-const routes = require('./routes');
+// const router = require('./routes');
 
-const databaseUri = `mongodb+srv://${config.database.user}:${config.database.password}@${config.database.cluster}.mongodb.net/test?retryWrites=true&w=majority`;
-mongoose.connect(databaseUri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+const sequelize = new Sequelize(
+  config.database.name,
+  config.database.username,
+  config.database.password,
+  {
+    dialect: 'postgres',
+    dialectOptions: {
+      ssl: true,
+    },
+    host: config.database.host,
+    port: config.database.port,
+  }
+);
 
-const db = mongoose.connection;
-db.on('error', handleError);
-db.once('open', handleOpen);
+authenticateDatabase();
 
 const app = express();
-app.use('/', routes);
+// app.use('/', router);
 app.listen(config.port, handleListen);
+
+async function authenticateDatabase() {
+  try {
+    await sequelize.authenticate();
+    handleAuthentication();
+  } catch (error) {
+    handleError(error);
+  }
+}
+
+function handleAuthentication() {
+  const date = new Date();
+  console.log(`Server connected to database. Date: ${date.toUTCString()}`);
+}
 
 function handleError(error) {
   const date = new Date();
@@ -27,12 +47,9 @@ function handleError(error) {
   );
 }
 
-function handleOpen() {
-  const date = new Date();
-  console.log(`Server connected to database. Date: ${date.toUTCString()}`);
-}
-
 function handleListen() {
   const date = new Date();
-  console.log(`Server listening on port: ${config.port}. Date: ${date.toUTCString()}`);
+  console.log(
+    `Server listening on port: ${config.port}. Date: ${date.toUTCString()}`
+  );
 }
