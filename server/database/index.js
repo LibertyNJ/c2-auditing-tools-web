@@ -1,141 +1,60 @@
-const BetterSqlite3Database = require('better-sqlite3');
+const fs = require('fs');
+const path = require('path');
+const { Sequelize } = require('sequelize');
 
-const SQL = require('./SQL');
+const { database } = require('../config');
 
-const adcTransactionTypeNames = require('./config/adc-transaction-type-names');
-const medicationNames = require('./config/medication-names');
-const schema = require('./config/schema');
-const views = require('./config/views');
-const { isArray } = require('../util');
+const db = connect();
+testConnection(db);
+importModels(db);
+syncModels(db);
 
-module.exports = {
-  open,
-  initialize,
-  setStatus,
-  getStatus,
-  create,
-  read,
-  update,
-};
+module.exports = db;
 
-const IS_DEV_MODE = /[\\/]electron/.test(process.execPath);
-// const IS_DEV_MODE = false;
-
-let sqlite;
-let status;
-
-function open(databasePath) {
-  sqlite = IS_DEV_MODE
-    ? new BetterSqlite3Database(databasePath, { verbose: console.log })
-    : new BetterSqlite3Database(databasePath);
-}
-
-function setStatus(newStatus) {
-  status = newStatus;
-}
-
-function getStatus() {
-  return status;
-}
-
-function initialize() {
-  createTables();
-  createViews();
-  createMedications();
-  createAdcTransactionTypes();
-  createOverrideMedicationOrder();
-}
-
-function createTables() {
-  schema.forEach(createTable);
-}
-
-function createTable(tableDefinition) {
-  const sql = SQL.formulateCreateTableStatement(tableDefinition);
-  const statement = sqlite.prepare(sql);
-  statement.run();
-}
-
-function createViews() {
-  views.forEach(createView);
-}
-
-function createView(viewDefinition) {
-  const sql = SQL.formulateCreateViewStatement(viewDefinition);
-  const statement = sqlite.prepare(sql);
-  statement.run();
-}
-
-function createMedications() {
-  const medications = medicationNames.map(name => ({
-    data: { name },
-    onConflict: 'IGNORE',
-    table: 'medication',
-  }));
-
-  medications.forEach(create);
-}
-
-function createAdcTransactionTypes() {
-  const adcTransactionTypes = adcTransactionTypeNames.map(name => ({
-    data: { name },
-    onConflict: 'IGNORE',
-    table: 'adcTransactionType',
-  }));
-
-  adcTransactionTypes.forEach(create);
-}
-
-function createOverrideMedicationOrder() {
-  create({ data: { id: 'OVERRIDE' }, onConflict: 'IGNORE', table: 'medicationOrder' });
-}
-
-function create({ data, onConflict = null, table }) {
-  const columns = Object.keys(data);
-  const sql = SQL.formulateInsertStatement({ columns, onConflict, table });
-  const statement = sqlite.prepare(sql);
-  const values = Object.values(data);
-  statement.run(...values);
-}
-
-function read({
-  columns = null, orderBy = null, predicates = [], table,
-}) {
-  const sql = SQL.formulateSelectStatement({
-    columns,
-    orderBy,
-    predicates,
-    table,
+function connect() {
+  return new Sequelize(database.name, database.username, database.password, {
+    dialect: 'postgres',
+    dialectOptions: {
+      ssl: true,
+    },
+    host: database.host,
+    port: database.port,
   });
-  const statement = sqlite.prepare(sql);
-  const values = predicates.reduce(reduceToValues, []);
-  return isQueryingByUniqueId(predicates) ? statement.get(...values) : statement.all(...values);
 }
 
-function update({ data, predicates = null, table }) {
-  const sql = SQL.formulateUpdateStatement({ data, predicates, table });
-  const statement = sqlite.prepare(sql);
-  const setValues = Object.values(data);
-  const whereValues = predicates ? predicates.reduce(reduceToValues, []) : [];
-  statement.run(...setValues, ...whereValues);
+async function testConnection(db) {
+  try {
+    await db.authenticate();
+    logConnection();
+  } catch (error) {
+    handleError(error);
+  }
 }
 
-function isQueryingByUniqueId(predicates) {
-  return predicates.reduce(reduceToIsUniqueId, false);
+function importModels(db) {
+  const directoryPath = path.join(__dirname, '..', 'models');
+  const filenames = fs.readdirSync(directoryPath);
+  const filepaths = filenames.map(filename => {
+    return path.join(directoryPath, filename);
+  });
+
+  filepaths.forEach(db.import);
 }
 
-function reduceToIsUniqueId(previousResult, { column, value }) {
-  return previousResult || (isId(column) && !isNull(value));
+function logConnection() {
+  const date = new Date();
+  console.log(`Server connected to database. Date: ${date.toUTCString()}`);
 }
 
-function isId(column) {
-  return column === 'id';
+function handleError(error) {
+  const date = new Date();
+  console.error(
+    `Server encountered an error while connecting to database. Date:${date.toUTCString()}`,
+    '\n',
+    error
+  );
 }
 
-function isNull(value) {
-  return value === null;
-}
-
-function reduceToValues(previousArray, { value }) {
-  return isArray(value) ? [...previousArray, ...value] : [...previousArray, value];
+function syncModels(db) {
+  db.sync();
 }
