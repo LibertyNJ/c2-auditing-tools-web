@@ -1,66 +1,64 @@
-const Sequelize = require('sequelize');
-
-const Product = Sequelize.define('product', {
-  descriptionId: {
-    allowNull: false,
-    references: {
-      key: 'id',
-      model: 'productDescription',
+module.exports = (sequelize, DataTypes) => {
+  return sequelize.define('product', {
+    descriptionId: {
+      allowNull: false,
+      references: {
+        key: 'id',
+        model: 'productDescription',
+      },
+      type: DataTypes.UUID,
+      unique: true,
+      validate: {
+        isUUID: 4,
+        notNull: true,
+      },
     },
-    type: Sequelize.UUID,
-    unique: true,
-    validate: {
-      isUUID: 4,
-      notNull: true,
+    form: {
+      allowNull: false,
+      type: DataTypes.STRING,
+      validate: {
+        notEmpty: true,
+        notNull: true,
+      },
     },
-  },
-  form: {
-    allowNull: false,
-    type: Sequelize.STRING,
-    validate: {
-      notEmpty: true,
-      notNull: true,
+    id: {
+      allowNull: false,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+      type: DataTypes.UUID,
+      unique: true,
+      validate: {
+        isUUID: 4,
+        notNull: true,
+      },
     },
-  },
-  id: {
-    allowNull: false,
-    defaultValue: Sequelize.UUIDV4,
-    primaryKey: true,
-    type: Sequelize.UUID,
-    unique: true,
-    validate: {
-      isUUID: 4,
-      notNull: true,
+    medicationId: {
+      allowNull: false,
+      references: {
+        key: 'id',
+        model: 'medication',
+      },
+      type: DataTypes.UUID,
+      validate: {
+        isUUID: 4,
+        notNull: true,
+      },
     },
-  },
-  medicationId: {
-    allowNull: false,
-    references: {
-      key: 'id',
-      model: 'medication',
+    strength: {
+      allowNull: false,
+      type: DataTypes.REAL,
+      validate: {
+        isDecimal: true,
+        notNull: true,
+      },
     },
-    type: Sequelize.UUID,
-    validate: {
-      isUUID: 4,
-      notNull: true,
+    units: {
+      allowNull: false,
+      type: DataTypes.STRING,
+      validate: {
+        notEmpty: true,
+        notNull: true,
+      },
     },
-  },
-  strength: {
-    allowNull: false,
-    type: Sequelize.REAL,
-    validate: {
-      isDecimal: true,
-      notNull: true,
-    },
-  },
-  units: {
-    allowNull: false,
-    type: Sequelize.STRING,
-    validate: {
-      notEmpty: true,
-      notNull: true,
-    },
-  },
-});
-
-module.exports = Product;
+  });
+};
