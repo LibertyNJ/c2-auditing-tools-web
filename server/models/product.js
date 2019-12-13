@@ -1,64 +1,78 @@
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('product', {
-    descriptionId: {
-      allowNull: false,
-      references: {
-        key: 'id',
-        model: 'productDescription',
+  const Product = sequelize.define(
+    'Product',
+    {
+      form: {
+        allowNull: false,
+        field: 'form',
+        type: DataTypes.STRING,
+        unique: 'composite',
+        validate: {
+          notEmpty: true,
+          notNull: true,
+        },
       },
-      type: DataTypes.UUID,
-      unique: true,
-      validate: {
-        isUUID: 4,
-        notNull: true,
+      id: {
+        allowNull: false,
+        defaultValue: DataTypes.UUIDV4,
+        field: 'id',
+        primaryKey: true,
+        type: DataTypes.UUID,
+        unique: true,
+        validate: {
+          isUUID: 4,
+          notNull: true,
+        },
+      },
+      medicationId: {
+        allowNull: false,
+        field: 'medication_id',
+        references: {
+          key: 'id',
+          model: 'Medication',
+        },
+        type: DataTypes.UUID,
+        unique: 'composite',
+        validate: {
+          isUUID: 4,
+          notNull: true,
+        },
+      },
+      strength: {
+        allowNull: false,
+        field: 'strength',
+        type: DataTypes.REAL,
+        unique: 'composite',
+        validate: {
+          isDecimal: true,
+          notNull: true,
+        },
+      },
+      units: {
+        allowNull: false,
+        field: 'units',
+        type: DataTypes.STRING,
+        unique: 'composite',
+        validate: {
+          notEmpty: true,
+          notNull: true,
+        },
       },
     },
-    form: {
-      allowNull: false,
-      type: DataTypes.STRING,
-      validate: {
-        notEmpty: true,
-        notNull: true,
-      },
-    },
-    id: {
-      allowNull: false,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
-      type: DataTypes.UUID,
-      unique: true,
-      validate: {
-        isUUID: 4,
-        notNull: true,
-      },
-    },
-    medicationId: {
-      allowNull: false,
-      references: {
-        key: 'id',
-        model: 'medication',
-      },
-      type: DataTypes.UUID,
-      validate: {
-        isUUID: 4,
-        notNull: true,
-      },
-    },
-    strength: {
-      allowNull: false,
-      type: DataTypes.REAL,
-      validate: {
-        isDecimal: true,
-        notNull: true,
-      },
-    },
-    units: {
-      allowNull: false,
-      type: DataTypes.STRING,
-      validate: {
-        notEmpty: true,
-        notNull: true,
-      },
-    },
-  });
+    {
+      freezeTableName: true,
+      tableName: 'product',
+      underscored: true,
+    }
+  );
+
+  Product.associate = () => {
+    const Medication = sequelize.model('Medication');
+    Product.belongsTo(Medication);
+  
+    const ProductDescription = sequelize.model('ProductDescription');
+    Product.hasOne(ProductDescription);
+  };
+
+  return Product;
 };

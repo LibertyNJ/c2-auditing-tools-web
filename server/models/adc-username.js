@@ -1,35 +1,56 @@
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('adcUsername', {
-    id: {
-      allowNull: false,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
-      type: DataTypes.UUID,
-      unique: true,
-      validate: {
-        isUUID: 4,
-        notNull: true,
+  const AdcUsername = sequelize.define(
+    'AdcUsername',
+    {
+      id: {
+        allowNull: false,
+        defaultValue: DataTypes.UUIDV4,
+        field: 'id',
+        primaryKey: true,
+        type: DataTypes.UUID,
+        unique: true,
+        validate: {
+          isUUID: 4,
+          notNull: true,
+        },
+      },
+      providerId: {
+        allowNull: true,
+        field: 'provider_id',
+        references: {
+          key: 'id',
+          model: 'Provider',
+        },
+        type: DataTypes.UUID,
+        validate: {
+          isUUID: 4,
+        },
+      },
+      value: {
+        allowNull: false,
+        field: 'value',
+        type: DataTypes.STRING,
+        unique: true,
+        validate: {
+          notEmpty: true,
+          notNull: true,
+        },
       },
     },
-    providerId: {
-      allowNull: true,
-      references: {
-        key: 'id',
-        model: 'provider',
-      },
-      type: DataTypes.UUID,
-      validate: {
-        isUUID: 4,
-      },
-    },
-    value: {
-      allowNull: false,
-      type: DataTypes.STRING,
-      unique: true,
-      validate: {
-        notEmpty: true,
-        notNull: true,
-      },
-    },
-  });
+    {
+      freezeTableName: true,
+      tableName: 'adc_username',
+      underscored: true,
+    }
+  );
+
+  AdcUsername.associate = () => {
+    const Provider = sequelize.model('Provider');
+    AdcUsername.belongsTo(Provider);
+
+    const Transaction = sequelize.model('Transaction');
+    AdcUsername.hasMany(Transaction);
+  };
+
+  return AdcUsername;
 };

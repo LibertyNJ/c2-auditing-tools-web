@@ -1,9 +1,10 @@
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define(
-    'provider',
+  const Provider = sequelize.define(
+    'Provider',
     {
       firstName: {
         allowNull: false,
+        field: 'first_name',
         type: DataTypes.STRING,
         unique: 'composite',
         validate: {
@@ -14,6 +15,7 @@ module.exports = (sequelize, DataTypes) => {
       id: {
         allowNull: false,
         defaultValue: DataTypes.UUIDV4,
+        field: 'id',
         primaryKey: true,
         type: DataTypes.UUID,
         unique: true,
@@ -24,6 +26,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       lastName: {
         allowNull: false,
+        field: 'last_name',
         type: DataTypes.STRING,
         unique: 'composite',
         validate: {
@@ -33,6 +36,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       middleInitial: {
         allowNull: true,
+        field: 'middle_initial',
         type: DataTypes.STRING(1),
         unique: 'composite',
         validate: {
@@ -42,6 +46,7 @@ module.exports = (sequelize, DataTypes) => {
       },
     },
     {
+      freezeTableName: true,
       getterMethods: {
         fullName() {
           let fullName = `${this.lastName}, ${this.firstName}`;
@@ -53,6 +58,18 @@ module.exports = (sequelize, DataTypes) => {
           return fullName;
         },
       },
+      tableName: 'provider',
+      underscored: true,
     }
   );
+
+  Provider.associate = () => {
+    const AdcUsername = sequelize.model('AdcUsername');
+    Provider.hasMany(AdcUsername);
+
+    const EmarUsername = sequelize.model('EmarUsername');
+    Provider.hasMany(EmarUsername);
+  };
+
+  return Provider;
 };
