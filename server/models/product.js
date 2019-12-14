@@ -66,11 +66,8 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  Product.associate = () => {
-    const Medication = sequelize.model('Medication');
+  Product.associate = ({ Medication, ProductDescription }) => {
     Product.belongsTo(Medication);
-  
-    const ProductDescription = sequelize.model('ProductDescription');
     Product.hasOne(ProductDescription);
   };
 

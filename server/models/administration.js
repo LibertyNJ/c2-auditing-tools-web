@@ -60,11 +60,8 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  Administration.associate = () => {
-    const EmarUsername = sequelize.model('EmarUsername');
+  Administration.associate = ({ EmarUsername, Order }) => {
     Administration.belongsTo(EmarUsername);
-
-    const Order = sequelize.model('Order');
     Administration.belongsTo(Order);
   };
 

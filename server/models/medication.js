@@ -31,11 +31,8 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  Medication.associate = () => {
-    const Order = sequelize.model('Order');
+  Medication.associate = ({ Order, Product }) => {
     Medication.hasMany(Order);
-
-    const Product = sequelize.model('Product');
     Medication.hasMany(Product);
   };
 

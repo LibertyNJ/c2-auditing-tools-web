@@ -1,55 +1,28 @@
 const express = require('express');
-const Sequelize = require('sequelize');
 
-const config = require('./config');
-// const router = require('./routes');
+const { port } = require('./config');
+const load = require('./loaders');
 
-const sequelize = new Sequelize(
-  config.database.name,
-  config.database.username,
-  config.database.password,
-  {
-    dialect: 'postgres',
-    dialectOptions: {
-      ssl: true,
-    },
-    host: config.database.host,
-    port: config.database.port,
-  }
-);
+startServer();
 
-authenticateDatabase();
-
-const app = express();
-// app.use('/', router);
-app.listen(config.port, handleListen);
-
-async function authenticateDatabase() {
-  try {
-    await sequelize.authenticate();
-    handleAuthentication();
-  } catch (error) {
-    handleError(error);
-  }
+async function startServer() {
+  const app = express();
+  await load(app);
+  app.listen(port, handleListen);
 }
 
-function handleAuthentication() {
-  const date = new Date();
-  console.log(`Server connected to database. Date: ${date.toUTCString()}`);
+function handleListen(error) {
+  if (error) {
+    handleError(error);
+  } else {
+    handleSuccess();
+  }
 }
 
 function handleError(error) {
-  const date = new Date();
-  console.error(
-    `Server encountered error connecting to database. Date:${date.toUTCString()}`,
-    '\n',
-    error
-  );
+  console.error(`Server encountered an error: ${error.stack}`);
 }
 
-function handleListen() {
-  const date = new Date();
-  console.log(
-    `Server listening on port: ${config.port}. Date: ${date.toUTCString()}`
-  );
+function handleSuccess() {
+  console.log(`Server listening on port: ${port}.`);
 }

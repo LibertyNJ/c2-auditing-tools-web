@@ -63,11 +63,8 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  Provider.associate = () => {
-    const AdcUsername = sequelize.model('AdcUsername');
+  Provider.associate = ({ AdcUsername, EmarUsername }) => {
     Provider.hasMany(AdcUsername);
-
-    const EmarUsername = sequelize.model('EmarUsername');
     Provider.hasMany(EmarUsername);
   };
 

@@ -58,14 +58,9 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  Order.associate = () => {
-    const Administration = sequelize.model('Administration');
+  Order.associate = ({ Administration, Medication, PainReassessment }) => {
     Order.hasMany(Administration);
-
-    const Medication = sequelize.model('Medication');
     Order.belongsTo(Medication);
-
-    const PainReassessment = sequelize.model('PainReassessment');
     Order.hasMany(PainReassessment);
   };
 

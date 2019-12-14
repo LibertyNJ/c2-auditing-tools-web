@@ -33,8 +33,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  TransactionType.associate = () => {
-    const Transaction = sequelize.model('Transaction');
+  TransactionType.associate = ({ Transaction }) => {
     TransactionType.hasMany(Transaction);
   };
 

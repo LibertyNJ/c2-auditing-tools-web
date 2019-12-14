@@ -106,17 +106,15 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  Transaction.associate = () => {
-    const AdcUsername = sequelize.model('AdcUsername');
+  Transaction.associate = ({
+    AdcUsername,
+    Order,
+    Product,
+    TransactionType,
+  }) => {
     Transaction.belongsTo(AdcUsername);
-
-    const Order = sequelize.model('Order');
     Transaction.belongsTo(Order);
-
-    const Product = sequelize.model('Product');
     Transaction.belongsTo(Product);
-
-    const TransactionType = sequelize.model('TransactionType');
     Transaction.belongsTo(TransactionType);
   };
 

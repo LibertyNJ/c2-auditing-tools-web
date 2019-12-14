@@ -45,10 +45,9 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  ProductDescription.associate = () => {
-    const Product = sequelize.model('Product');
+  ProductDescription.associate = ({ Product }) => {
     ProductDescription.belongsTo(Product);
-  }
+  };
 
   return ProductDescription;
 };

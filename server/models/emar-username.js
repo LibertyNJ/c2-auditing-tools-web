@@ -44,14 +44,9 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  EmarUsername.associate = () => {
-    const Administration = sequelize.model('Administration');
+  EmarUsername.associate = ({ Administration, PainReassessment, Provider }) => {
     EmarUsername.hasMany(Administration);
-
-    const PainReassessment = sequelize.model('PainReassessment');
     EmarUsername.hasMany(PainReassessment);
-
-    const Provider = sequelize.model('Provider');
     EmarUsername.belongsTo(Provider);
   };
 

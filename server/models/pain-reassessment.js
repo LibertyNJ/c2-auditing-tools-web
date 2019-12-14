@@ -60,11 +60,8 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  PainReassessment.associate = () => {
-    const EmarUsername = sequelize.model('EmarUsername');
+  PainReassessment.associate = ({ EmarUsername, Order }) => {
     PainReassessment.belongsTo(EmarUsername);
-
-    const Order = sequelize.model('Order');
     PainReassessment.belongsTo(Order);
   };
 
