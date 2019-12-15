@@ -1,4 +1,4 @@
-const express = require('express');
+const { Router } = require('express');
 
 const administration = require('./administration');
 const data = require('./data');
@@ -6,11 +6,14 @@ const ledger = require('./ledger');
 const provider = require('./provider');
 const transaction = require('./transaction');
 
-const router = express.Router();
-router.use('/administration', administration);
-router.use('/data', data);
-router.use('/ledger', ledger);
-router.use('/provider', provider);
-router.use('/transaction', transaction);
+module.exports = db => {
+  const router = Router();
 
-module.exports = router;
+  router.use('/administration', administration(db));
+  router.use('/data', data(db));
+  router.use('/ledger', ledger(db));
+  router.use('/provider', provider(db));
+  router.use('/transaction', transaction(db));
+
+  return router;
+};

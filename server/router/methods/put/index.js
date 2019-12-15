@@ -1,1 +1,0 @@
-exports.provider = require('./provider');

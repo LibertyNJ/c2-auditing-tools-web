@@ -1,8 +1,12 @@
-const express = require('express');
+const { Router } = require('express');
 
-const router = express.Router();
-router.post('/', (req, res) => {
-  res.status(200).send('data POST');
-});
+const { data: Controller } = require('../controllers');
 
-module.exports = router;
+module.exports = db => {
+  const controller = Controller(db);
+  const router = Router();
+
+  router.post('/', controller.post);
+
+  return router;
+};

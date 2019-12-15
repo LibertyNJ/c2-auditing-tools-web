@@ -1,8 +1,12 @@
-const express = require('express');
+const { Router } = require('express');
 
-const router = express.Router();
-router.get('/', (req, res) => {
-  res.status(200).send('administration GET');
-});
+const { administration: Controller } = require('../controllers');
 
-module.exports = router;
+module.exports = db => {
+  const controller = Controller(db);
+  const router = Router();
+
+  router.get('/', controller.get);
+
+  return router;
+};

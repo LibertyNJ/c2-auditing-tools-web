@@ -1,13 +1,15 @@
-const express = require('express');
+const { Router } = require('express');
 
-const router = express.Router();
-router
-  .route('/')
-  .get((req, res) => {
-    res.status(200).send('provider GET');
-  })
-  .put((req, res) => {
-    res.status(200).send('provider PUT');
-  });
+const { provider: Controller } = require('../controllers');
 
-module.exports = router;
+module.exports = db => {
+  const controller = Controller(db);
+  const router = Router();
+
+  router
+    .route('/')
+    .get(controller.get)
+    .put(controller.put);
+
+  return router;
+};
