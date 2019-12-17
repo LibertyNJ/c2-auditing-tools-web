@@ -2,6 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const { Sequelize } = require('sequelize');
 
+const medicationNames = require('../database/medication');
+const transactionTypeValues = require('../database/transaction-type');
+
 module.exports = async (config, modelsDirectory) => {
   try {
     const db = new Sequelize(config);
@@ -10,6 +13,10 @@ module.exports = async (config, modelsDirectory) => {
     importModels(db, modelsDirectory);
     associateModels(db);
     await db.sync();
+
+    await createMedications(medicationNames, db);
+    await createTransactionTypes(transactionTypeValues, db);
+    await createOverrideMedicationOrder(db);
 
     return db;
   } catch (error) {
@@ -35,8 +42,33 @@ function hasAssociatedModels(model) {
   return Object.prototype.hasOwnProperty.call(model, 'associate');
 }
 
-function handleError(error) {
-  throw new Error(
-    `An error occurred while loading the database: ${error.stack}`
+async function createMedications(names, db) {
+  const medications = names.map(name => ({
+    name,
+  }));
+
+  await db.models.Medication.bulkCreate(medications, {
+    ignoreDuplicates: true,
+  });
+}
+
+async function createTransactionTypes(values, db) {
+  const transactionTypes = values.map(value => ({
+    value,
+  }));
+
+  await db.models.TransactionType.bulkCreate(transactionTypes, {
+    ignoreDuplicates: true,
+  });
+}
+
+async function createOverrideMedicationOrder(db) {
+  await db.models.MedicationOrder.create(
+    { id: 'OVERRIDE' },
+    { ignoreDuplicates: true }
   );
+}
+
+function handleError(error) {
+  console.error(`An error occurred while initializing the database: ${error.stack}`);
 }

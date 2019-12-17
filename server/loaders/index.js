@@ -1,12 +1,12 @@
 const path = require('path');
 
-const loadDatabase = require('./database');
-const loadRouter = require('./router');
+const initDatabase = require('./database');
+const mountRoutes = require('../routes');
 const { database: dbConfig } = require('../config');
 
 module.exports = async app => {
   const modelsDirectory = path.join(__dirname, '..', 'models');
-  const db = await loadDatabase(dbConfig, modelsDirectory);
+  const db = await initDatabase(dbConfig, modelsDirectory);
   console.log('Database initialized.');
-  loadRouter(app, db);
+  mountRoutes(app, db);
 };

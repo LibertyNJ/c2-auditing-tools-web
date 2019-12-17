@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
-  const Order = sequelize.define(
-    'Order',
+  const MedicationOrder = sequelize.define(
+    'MedicationOrder',
     {
       dose: {
         allowNull: true,
@@ -53,16 +53,16 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       freezeTableName: true,
-      tableName: 'order',
+      tableName: 'medication_order',
       underscored: true,
     }
   );
 
-  Order.associate = ({ Administration, Medication, PainReassessment }) => {
-    Order.hasMany(Administration);
-    Order.belongsTo(Medication);
-    Order.hasMany(PainReassessment);
+  MedicationOrder.associate = ({ Administration, Medication, PainReassessment }) => {
+    MedicationOrder.hasMany(Administration);
+    MedicationOrder.belongsTo(Medication);
+    MedicationOrder.hasMany(PainReassessment);
   };
 
-  return Order;
+  return MedicationOrder;
 };

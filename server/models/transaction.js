@@ -57,12 +57,12 @@ module.exports = (sequelize, DataTypes) => {
           notEmpty: true,
         },
       },
-      orderId: {
+      medicationOrderId: {
         allowNull: true,
-        field: 'order_id',
+        field: 'medication_order_id',
         references: {
           key: 'id',
-          model: 'Order',
+          model: 'MedicationOrder',
         },
         type: DataTypes.STRING(9),
         validate: {
@@ -108,12 +108,12 @@ module.exports = (sequelize, DataTypes) => {
 
   Transaction.associate = ({
     AdcUsername,
-    Order,
+    MedicationOrder,
     Product,
     TransactionType,
   }) => {
     Transaction.belongsTo(AdcUsername);
-    Transaction.belongsTo(Order);
+    Transaction.belongsTo(MedicationOrder);
     Transaction.belongsTo(Product);
     Transaction.belongsTo(TransactionType);
   };

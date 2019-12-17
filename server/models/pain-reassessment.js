@@ -24,12 +24,12 @@ module.exports = (sequelize, DataTypes) => {
           notNull: true,
         },
       },
-      orderId: {
+      medicationOrderId: {
         allowNull: false,
-        field: 'order_id',
+        field: 'medication_order_id',
         references: {
           key: 'id',
-          model: 'Order',
+          model: 'MedicationOrder',
         },
         type: DataTypes.STRING(9),
         unique: 'composite',
@@ -60,9 +60,9 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  PainReassessment.associate = ({ EmarUsername, Order }) => {
+  PainReassessment.associate = ({ EmarUsername, MedicationOrder }) => {
     PainReassessment.belongsTo(EmarUsername);
-    PainReassessment.belongsTo(Order);
+    PainReassessment.belongsTo(MedicationOrder);
   };
 
   return PainReassessment;

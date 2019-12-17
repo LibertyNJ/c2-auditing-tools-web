@@ -31,8 +31,8 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  Medication.associate = ({ Order, Product }) => {
-    Medication.hasMany(Order);
+  Medication.associate = ({ MedicationOrder, Product }) => {
+    Medication.hasMany(MedicationOrder);
     Medication.hasMany(Product);
   };
 
