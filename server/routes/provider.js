@@ -1,9 +1,9 @@
 const { Router } = require('express');
 
-const { provider: Controller } = require('../controllers');
+const { provider: initController } = require('../controllers');
 
 module.exports = db => {
-  const controller = Controller(db);
+  const controller = initController(db);
   const router = Router();
 
   router

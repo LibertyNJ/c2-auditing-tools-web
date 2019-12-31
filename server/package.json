@@ -10,6 +10,7 @@
   "author": "Nathaniel J. Liberty <nathaniel.liberty@gmail.com>",
   "license": "UNLICENSED",
   "dependencies": {
+    "body-parser": "^1.19.0",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "pg": "^7.14.0",

@@ -2,8 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const { Sequelize } = require('sequelize');
 
-const medicationNames = require('../database/medication');
-const transactionTypeValues = require('../database/transaction-type');
+const {
+  medicationNames,
+  transactionTypeValues,
+} = require('../config/database');
 
 module.exports = async (config, modelsDirectory) => {
   try {
@@ -70,5 +72,7 @@ async function createOverrideMedicationOrder(db) {
 }
 
 function handleError(error) {
-  console.error(`An error occurred while initializing the database: ${error.stack}`);
+  console.error(
+    `An error occurred while initializing the database: ${error.stack}`
+  );
 }
