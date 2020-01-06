@@ -34,7 +34,7 @@ export function getFormData(form, parameters) {
     dispatch(requestFormData(form));
 
     try {
-      const response = await axios.get(`http://localhost:8000/api/${form}`, {
+      const response = await axios.get(`https://c2-auditing-tools-web.herokuapp.com/api/${form}`, {
         params: parameters,
       });
 
@@ -53,7 +53,7 @@ export function getTableRecords(table, parameters) {
     dispatch(requestTableRecords(table));
 
     try {
-      const response = await axios.get(`http://localhost:8000/api/${table}`, {
+      const response = await axios.get(`https://c2-auditing-tools-web.herokuapp.com/api/${table}`, {
         params: parameters,
       });
 

@@ -17,7 +17,7 @@ export default function App() {
   const location = useLocation();
   useEffect(initializeBootstrapSelect, [location]);
   window.alert(
-    'This sample application contains sanitized data from between between 00:00 and 02:00, August 1, 2019. Try it on a desktop or laptop computer for the best experience.'
+    'This sample application contains sanitized data from between 00:00 and 02:00, August 1, 2019. Try it on a desktop or laptop computer for the best experience.'
   );
   return (
     <React.Fragment>
