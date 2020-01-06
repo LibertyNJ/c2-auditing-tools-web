@@ -18,8 +18,8 @@ export default function Navigation({ className, ...restProps }) {
         <NavItem to="/">Ledger</NavItem>
         <NavItem to="/transaction">Transactions</NavItem>
         <NavItem to="/administration">Administrations</NavItem>
-        <NavItem to="/provider">Providers</NavItem>
-        <NavItem to="/data">Data</NavItem>
+        {/* <NavItem to="/provider">Providers</NavItem>
+        <NavItem to="/data">Data</NavItem> */}
       </NavTabs>
     </nav>
   );

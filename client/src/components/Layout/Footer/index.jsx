@@ -3,7 +3,6 @@ import React from 'react';
 
 import CopyrightWidget from './CopyrightWidget';
 import VersionWidget from './VersionWidget';
-import ConnectedDatabaseStatusWidget from '../../../redux/containers/ConnectedDatabaseStatusWidget';
 import { reduceClassNames } from '../../../util';
 
 const BASE_CLASS_NAME = 'bg-dark d-flex justify-content-between px-3 py-1 text-light';
@@ -17,7 +16,6 @@ export default function Footer({ className, ...restProps }) {
     <footer className={reduceClassNames(BASE_CLASS_NAME, className)} {...restProps}>
       <VersionWidget />
       <CopyrightWidget />
-      <ConnectedDatabaseStatusWidget />
     </footer>
   );
 }

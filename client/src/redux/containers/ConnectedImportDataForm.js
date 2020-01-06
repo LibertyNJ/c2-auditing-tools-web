@@ -1,12 +1,11 @@
 import { connect } from 'react-redux';
 
 import ImportDataForm from '../../components/ImportDataForm';
-import { createRequest, sendBackendRequest } from '../../util';
 
 export default connect(
   mapStateToProps,
   mapDispatchToProps,
-  mergeProps,
+  mergeProps
 )(ImportDataForm);
 
 function mapStateToProps(state) {
@@ -33,6 +32,5 @@ function mergeProps({ paths }, dispatchProps, { id, ...restOwnProps }) {
 
 function handleSubmit(event, paths) {
   event.preventDefault();
-  const request = createRequest('POST', 'data', { ...paths });
   sendBackendRequest(request);
 }

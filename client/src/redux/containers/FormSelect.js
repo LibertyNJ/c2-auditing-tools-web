@@ -3,20 +3,17 @@ import { connect } from 'react-redux';
 import { changeFormField } from '../actions';
 import BootstrapSelect from '../../components/BootstrapSelect';
 
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps,
-)(BootstrapSelect);
+export default connect(mapStateToProps, mapDispatchToProps)(BootstrapSelect);
 
 function mapStateToProps(state, ownProps) {
   return {
-    disabled: !isDatabaseReady(state.databaseStatus),
+    disabled: isFormSubmitted(state.forms[ownProps.form]),
     value: getValue(state.forms, ownProps.form, ownProps.name),
   };
 }
 
-function isDatabaseReady(databaseStatus) {
-  return databaseStatus === 'Ready';
+function isFormSubmitted(formState) {
+  return formState.isSubmitted === true;
 }
 
 function getValue(forms, formName, fieldName) {
@@ -31,6 +28,8 @@ function mapDispatchToProps(dispatch, ownProps) {
 
 function handleChange(event, dispatch, form) {
   const { name, selectedOptions } = event.target;
-  const values = [...selectedOptions].map(selectedOption => selectedOption.value);
+  const values = [...selectedOptions].map(
+    selectedOption => selectedOption.value
+  );
   dispatch(changeFormField(form, name, [...values]));
 }

@@ -1,5 +1,3 @@
-'use-strict';
-
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
   faDatabase,

@@ -39,7 +39,7 @@ module.exports = (sequelize, DataTypes) => {
           notNull: true,
         },
       },
-      usernameId: {
+      emarUsernameId: {
         allowNull: false,
         field: 'emar_username_id',
         references: {

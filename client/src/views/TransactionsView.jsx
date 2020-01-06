@@ -13,7 +13,7 @@ export default function TransactionsView() {
           info="Required"
           label="Time start"
           max="9999-12-31T23:59"
-          name="datetimeStart"
+          name="dateStart"
           required
           type="datetime-local"
         />
@@ -21,7 +21,7 @@ export default function TransactionsView() {
           info="Required"
           label="Time end"
           max="9999-12-31T23:59"
-          name="datetimeEnd"
+          name="dateEnd"
           required
           type="datetime-local"
         />
@@ -43,9 +43,9 @@ export default function TransactionsView() {
       </SearchSection>
       <RecordsSection
         columns={[
-          { dataKey: 'timestamp', label: 'Time', maxWidth: 120 },
-          { dataKey: 'provider', label: 'Provider' },
-          { dataKey: 'type', label: 'Transaction' },
+          { dataKey: 'date', label: 'Time', maxWidth: 120 },
+          { dataKey: 'providerName', label: 'Provider' },
+          { dataKey: 'TransactionType.value', label: 'Transaction' },
           { dataKey: 'product', label: 'Product' },
           { dataKey: 'amount', label: 'Amount', maxWidth: 110 },
           { dataKey: 'medicationOrderId', label: 'Order ID', maxWidth: 120 },

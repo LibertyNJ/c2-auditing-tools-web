@@ -3,46 +3,107 @@ const { Op, Sequelize } = require('sequelize');
 module.exports = ({ models: { AdcUsername, EmarUsername, Provider } }) => {
   return {
     async get(req, res) {
-      const parameters = req.body;
+      const parameters = req.query;
+
+      console.log(parameters);
+
+      const whereClause = {
+        first_name: {
+          [Op.iLike]: `%${parameters.firstName || ''}%`,
+        },
+        last_name: {
+          [Op.iLike]: `%${parameters.lastName || ''}%`,
+        },
+      };
+
+      if (parameters.middleInitial) {
+        whereClause.middle_initial = {
+          [Op.iLike]: `%${parameters.middleInitial || ''}%`,
+        };
+      }
+
+      if (parameters.adcUsername) {
+        whereClause['$AdcUsernames.value$'] = {
+          [Op.iLike]: `%${parameters.adcUsername || ''}%`,
+        };
+      }
+
+      if (parameters.emarUsername) {
+        whereClause['$EmarUsernames.value$'] = {
+          [Op.iLike]: `%${parameters.emarUsername || ''}%`,
+        };
+      }
 
       try {
         const providers = await Provider.findAll({
-          attributes: {
-            include: [
-              'adc_username.value',
-              'emar_username.value',
-              'first_name',
-              'id',
-              'last_name',
-              'middle_initial',
-            ],
-          },
           include: [
             { association: 'AdcUsernames' },
             { association: 'EmarUsernames' },
           ],
-          where: {
-            first_name: {
-              [Op.iLike]: `%${parameters.firstName || ''}%`,
-            },
-            last_name: {
-              [Op.iLike]: `%${parameters.lastName || ''}%`,
-            },
-            middle_initial: {
-              [Op.iLike]: `%${parameters.middleInitial || ''}%`,
-            },
-            '$AdcUsername.value$': {
-              [Op.iLike]: `%${parameters.adcUsername || ''}%`,
-            },
-            '$EmarUsername.value$': {
-              [Op.iLike]: `%${parameters.emarUsername || ''}%`,
-            },
-          },
-          order: [[['last_name', 'first_name', 'middle_initial'], 'ASC']],
+          where: whereClause,
+          order: [
+            ['last_name', 'ASC'],
+            ['first_name', 'ASC'],
+            ['middle_initial', 'ASC'],
+          ],
           raw: true,
         });
 
-        res.status(200).send();
+        console.log(providers);
+
+        res.status(200).json(providers);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send('Something went wrong.');
+      }
+    },
+
+    async getEdit(req, res) {
+      const parameters = req.query;
+
+      try {
+        const provider = Provider.findOne({
+          raw: true,
+          where: {
+            id: parameters.id,
+          },
+        });
+
+        const assignedAdcUsernames = AdcUsername.findAll({
+          raw: true,
+          where: {
+            providerId: parameters.id,
+          },
+        });
+
+        const assignedEmarUsernames = EmarUsername.findAll({
+          raw: true,
+          where: {
+            providerId: parameters.id,
+          },
+        });
+
+        const unassignedAdcUsernames = AdcUsername.findAll({
+          raw: true,
+          where: {
+            providerId: null,
+          },
+        });
+
+        const unassignedEmarUsernames = EmarUsername.findAll({
+          raw: true,
+          where: {
+            providerId: null,
+          },
+        });
+
+        res.status(200).json({
+          provider,
+          assignedAdcUsernames,
+          assignedEmarUsernames,
+          unassignedAdcUsernames,
+          unassignedEmarUsernames,
+        });
       } catch (error) {
         console.error(error);
         res.status(500).send('Something went wrong.');
@@ -55,9 +116,9 @@ module.exports = ({ models: { AdcUsername, EmarUsername, Provider } }) => {
       try {
         await Provider.update(
           {
-            first_name: parameters.firstName,
-            last_name: parameters.lastName,
-            middle_initial: parameters.middleInitial,
+            first_name: parameters.editFirstName,
+            last_name: parameters.editLastName,
+            middle_initial: parameters.editMiddleInitial,
           },
           {
             where: { id: parameters.providerId },

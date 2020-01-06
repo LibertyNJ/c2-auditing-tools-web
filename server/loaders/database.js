@@ -20,6 +20,12 @@ module.exports = async (config, modelsDirectory) => {
     await createTransactionTypes(transactionTypeValues, db);
     await createOverrideMedicationOrder(db);
 
+    // const adcUsernames = await db.models.AdcUsername.findAll({ raw: true });
+    // console.log('ADC', adcUsernames);
+
+    // const emarUsernames = await db.models.EmarUsername.findAll({ raw: true });
+    // console.log('EMAR', emarUsernames);
+
     return db;
   } catch (error) {
     handleError(error);
@@ -72,7 +78,7 @@ async function createOverrideMedicationOrder(db) {
 }
 
 function handleError(error) {
-  console.error(
-    `An error occurred while initializing the database: ${error.stack}`
-  );
+  error.message =
+    'An error occurred while initializing the database: ' + error.message;
+  throw error;
 }

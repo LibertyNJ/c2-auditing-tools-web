@@ -1,5 +1,8 @@
 import getSortedRecords from './get-sorted-records';
-import { RECEIVE_TABLE_RECORDS, SORT_TABLE_RECORDS } from '../../actions/types';
+import {
+  RECEIVE_TABLE_RECORDS,
+  SORT_TABLE_RECORDS,
+} from '../../actions/types';
 import { deepCloneObject } from '../../../util';
 
 export const INITIAL_STATE = {
@@ -25,7 +28,10 @@ export const INITIAL_STATE = {
   },
 };
 
-export default function tablesReducer(state = deepCloneObject(INITIAL_STATE), action) {
+export default function tablesReducer(
+  state = deepCloneObject(INITIAL_STATE),
+  action
+) {
   switch (action.type) {
     case RECEIVE_TABLE_RECORDS: {
       const nextState = { ...state };
@@ -41,7 +47,7 @@ export default function tablesReducer(state = deepCloneObject(INITIAL_STATE), ac
       table.records = getSortedRecords(
         [...state[action.table].records],
         action.sortBy,
-        action.sortDirection,
+        action.sortDirection
       );
       table.sortBy = action.sortBy;
       table.sortDirection = action.sortDirection;

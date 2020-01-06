@@ -1,15 +1,17 @@
+import axios from 'axios';
 import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 
 import Column from '../Column';
 import FormRow from '../FormRow';
 import FormIconButton from '../../redux/containers/FormIconButton';
-import { createRequest } from '../../util';
 
 const INITIAL_STATE = {
   c2ActivityReport: '',
+  c2ActivityReportFile: null,
   c2ActivityReportPath: '',
   medicationOrderTaskStatusDetailReport: '',
+  medicationOrderTaskStatusDetailReportFile: null,
   medicationOrderTaskStatusDetailReportPath: '',
 };
 
@@ -20,16 +22,41 @@ Form.propTypes = {
 
 export default function Form({ children, id, ...restProps }) {
   const [state, setState] = useState(INITIAL_STATE);
-  const handleChange = (event) => {
+
+  const handleChange = event => {
     const { files, name, value } = event.target;
+    const fileName = `${name}File`;
     const pathName = `${name}Path`;
     const pathValue = files.length ? files[0].path : '';
-    setState({ ...state, [name]: value, [pathName]: pathValue });
+
+    setState({
+      ...state,
+      [fileName]: files[0],
+      [name]: value,
+      [pathName]: pathValue,
+    });
   };
-  const handleSubmit = (event) => {
+
+  const handleSubmit = event => {
     event.preventDefault();
-    const request = createRequest('POST', 'data', { ...state });
+    const formData = new FormData();
+    formData.append('adcReport', state.c2ActivityReportFile);
+    formData.append(
+      'emarReport',
+      state.medicationOrderTaskStatusDetailReportFile
+    );
+
+    try {
+      axios.post('http://localhost:8000/data', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    } catch (error) {
+      console.error(error);
+    }
   };
+
   const FormControlRows = React.Children.map(children, FormControl => (
     <FormRow>
       <Column>
@@ -43,7 +70,12 @@ export default function Form({ children, id, ...restProps }) {
     </FormRow>
   ));
   return (
-    <form id={id} onSubmit={handleSubmit} {...restProps}>
+    <form
+      encType="multipart/form-data"
+      id={id}
+      onSubmit={handleSubmit}
+      {...restProps}
+    >
       {FormControlRows}
       <FormRow>
         <Column>

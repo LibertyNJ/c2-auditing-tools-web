@@ -2,135 +2,194 @@ const { Op, Sequelize } = require('sequelize');
 
 const createLedger = require('../services/ledger');
 
+const { isArray } = require('../util');
+
 module.exports = ({
   models: { Administration, PainReassessment, Transaction },
 }) => {
   return {
     async get(req, res) {
-      const parameters = req.body;
+      const parameters = req.query;
 
-      const administrations = await Administration.findAll({
-        attributes: {
+      try {
+        const administrations = await Administration.findAll({
+          attributes: {
+            include: [[concatProviderName(), 'providerName']],
+          },
           include: [
-            'date',
-            [concatDoseWithUnits(), 'dose_with_units'],
-            'medication_order_id',
-            [concatMedicationWithForm(), 'medication_with_form'],
-            [concatProviderName(), 'provider_name'],
+            {
+              association: 'EmarUsername',
+              include: [{ association: 'Provider' }],
+            },
+            {
+              association: 'MedicationOrder',
+              include: [{ association: 'Medication' }],
+            },
           ],
-        },
-        include: [
-          {
-            association: 'EmarUsername',
-            include: [{ association: 'Provider' }],
+          order: [['date', 'ASC']],
+          raw: true,
+          where: {
+            date: {
+              [Op.gte]: parameters.dateStart,
+              [Op.lte]: parameters.dateEnd,
+            },
           },
-          {
-            association: 'MedicationOrder',
-            include: [{ association: 'Medication' }],
-          },
-        ],
-        where: {
-          [Op.and]: [
-            Sequelize.where(concatProduct(), {
-              [Op.iLike]: `%${parameters.product}%`,
-            }),
-          ],
-          date: {
-            [Op.gte]: parameters.dateStart,
-            [Op.lte]: parameters.dateEnd,
-          },
-        },
-        order: [['date', 'ASC']],
-        raw: true,
-      });
+        });
 
-      const painReassessments = await PainReassessment.findAll({
-        attributes: {
+        const painReassessments = await PainReassessment.findAll({
+          attributes: {
+            include: [[concatProviderName(), 'providerName']],
+          },
           include: [
-            'date',
-            [concatDoseWithUnits(), 'dose_with_units'],
-            'medication_order_id',
-            [concatMedicationWithForm(), 'medication_with_form'],
-            [concatProviderName(), 'provider_name'],
+            {
+              association: 'EmarUsername',
+              include: [{ association: 'Provider' }],
+            },
+            {
+              association: 'MedicationOrder',
+              include: [{ association: 'Medication' }],
+            },
           ],
-        },
-        include: [
-          {
-            association: 'EmarUsername',
-            include: [{ association: 'Provider' }],
+          order: [['date', 'ASC']],
+          raw: true,
+          where: {
+            date: {
+              [Op.gte]: parameters.dateStart,
+              [Op.lte]: parameters.dateEnd,
+            },
           },
-          {
-            association: 'MedicationOrder',
-            include: [{ association: 'Medication' }],
-          },
-        ],
-        where: {
-          [Op.and]: [
-            Sequelize.where(concatProduct(), {
-              [Op.iLike]: `%${parameters.product}%`,
-            }),
-          ],
-          date: {
-            [Op.gte]: parameters.dateStart,
-            [Op.lte]: parameters.dateEnd,
-          },
-        },
-        order: [['date', 'ASC']],
-        raw: true,
-      });
+        });
 
-      const transactions = await Transaction.findAll({
-        attributes: {
+        const transactions = await Transaction.findAll({
+          attributes: {
+            include: [
+              [concatProduct(), 'product'],
+              [concatProviderName(), 'providerName'],
+            ],
+          },
           include: [
-            'amount',
-            'date',
-            ['$Medication.name$', 'medication'],
-            'medication_order_id',
-            [concatProduct(), 'product'],
-            [concatProviderName(), 'provider_name'],
-            'type',
+            {
+              association: 'AdcUsername',
+              include: [{ association: 'Provider' }],
+            },
+            {
+              association: 'Product',
+              include: [{ association: 'Medication' }],
+            },
+            {
+              association: 'TransactionType',
+            },
           ],
-        },
-        include: [
-          {
-            association: 'AdcUsername',
-            include: [{ association: 'Provider' }],
+          where: {
+            date: {
+              [Op.gte]: parameters.dateStart,
+              [Op.lte]: parameters.dateEnd,
+            },
+            [Op.and]: [
+              Sequelize.where(concatProduct(), {
+                [Op.iLike]: `%${parameters.product || ''}%`,
+              }),
+            ],
           },
-          {
-            association: 'MedicationProduct',
-            include: [{ association: 'Medication' }],
-          },
-          {
-            association: 'TransactionType',
-          },
-        ],
-        where: {
-          [Op.and]: [
-            Sequelize.where(concatProduct(), {
-              [Op.iLike]: `%${parameters.product}%`,
-            }),
-          ],
-          date: {
-            [Op.gte]: parameters.dateStart,
-            [Op.lte]: parameters.dateEnd,
-          },
-        },
-        order: [['date', 'ASC']],
-        raw: true,
-      });
+          order: [['date', 'ASC']],
+          raw: true,
+        });
 
-      const ledger = createLedger(selectedWithdrawals, {
-        administrations,
-        otherTransactions,
-        painReassessments,
-        wastes,
-        withdrawals,
-      });
+        const {
+          otherTransactions,
+          wastes,
+          withdrawals,
+        } = splitByTransactionType(transactions);
 
-      res.status(200).json(ledger);
+        const selectedWithdrawals = withdrawals.filter(withdrawal =>
+          isMatchingRecord(
+            withdrawal,
+            parameters.medicationOrderId,
+            parameters.provider
+          )
+        );
+
+        const ledger = createLedger({
+          administrations,
+          otherTransactions,
+          painReassessments,
+          selectedWithdrawals,
+          wastes,
+          withdrawals,
+        });
+
+        const records = ledger.filter(record =>
+          isMatchingRecord(
+            record,
+            parameters.medicationOrderId,
+            parameters.provider
+          )
+        );
+
+        res.status(200).json(records);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send('Something went wrong.');
+      }
     },
   };
 };
+
+function concatProduct() {
+  return Sequelize.fn(
+    'concat',
+    Sequelize.col('name'),
+    ' ',
+    Sequelize.col('strength'),
+    ' ',
+    Sequelize.col('units'),
+    ' ',
+    Sequelize.col('form')
+  );
+}
+
+function splitByTransactionType(transactions) {
+  return {
+    otherTransactions: transactions.filter(transaction =>
+      isType(transaction, ['Restock', 'Return'])
+    ),
+    wastes: transactions.filter(transaction => isType(transaction, 'Waste')),
+    withdrawals: transactions.filter(transaction =>
+      isType(transaction, 'Withdrawal')
+    ),
+  };
+}
+
+function isType(transaction, matchedType) {
+  const type = transaction['TransactionType.value'];
+
+  if (isArray(matchedType)) {
+    const pattern = matchedType.join('|');
+    const regex = new RegExp(pattern);
+
+    return regex.test(type);
+  }
+
+  return type === matchedType;
+}
+
+function isMatchingRecord(record, medicationOrderId, provider) {
+  return (
+    (!medicationOrderId ||
+      isMatchingMedicationOrderId(record, medicationOrderId)) &&
+    (!provider || isMatchingProvider(record, provider))
+  );
+}
+
+function isMatchingMedicationOrderId(record, medicationOrderId) {
+  const regex = new RegExp(medicationOrderId, 'i');
+  return regex.test(record.medicationOrderId);
+}
+
+function isMatchingProvider(record, provider) {
+  const regex = new RegExp(provider, 'i');
+  return regex.test(record.provider);
+}
 
 function concatDoseWithUnits() {
   return Sequelize.fn(
@@ -150,19 +209,6 @@ function concatMedicationWithForm() {
   );
 }
 
-function concatProduct() {
-  return Sequelize.fn(
-    'concat',
-    Sequelize.col('name'),
-    ' ',
-    Sequelize.col('strength'),
-    ' ',
-    Sequelize.col('units'),
-    ' ',
-    Sequelize.col('form')
-  );
-}
-
 function concatProviderName() {
   return Sequelize.fn(
     'concat',
@@ -171,7 +217,8 @@ function concatProviderName() {
     Sequelize.col('first_name'),
     Sequelize.fn(
       'coalesce',
-      Sequelize.fn('concat', ' ', Sequelize.col('middle_initial'))
+      Sequelize.fn('concat', ' ', Sequelize.col('middle_initial')),
+      ''
     )
   );
 }

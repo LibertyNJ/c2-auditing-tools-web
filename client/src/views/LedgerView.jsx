@@ -12,7 +12,7 @@ export default function LedgerView() {
           info="Required"
           label="Time start"
           max="9999-12-31T23:59"
-          name="datetimeStart"
+          name="dateStart"
           required
           type="datetime-local"
         />
@@ -20,7 +20,7 @@ export default function LedgerView() {
           info="Required"
           label="Time end"
           max="9999-12-31T23:59"
-          name="datetimeEnd"
+          name="dateEnd"
           required
           type="datetime-local"
         />
@@ -30,16 +30,20 @@ export default function LedgerView() {
       </SearchSection>
       <RecordsSection
         columns={[
-          { dataKey: 'provider', label: 'Withdrawn by' },
-          { dataKey: 'timestamp', label: 'Time', maxWidth: 120 },
+          { dataKey: 'providerName', label: 'Withdrawn by' },
+          { dataKey: 'date', label: 'Time', maxWidth: 120 },
           { dataKey: 'product', label: 'Product' },
           { dataKey: 'amount', label: 'Amount', maxWidth: 110 },
           { dataKey: 'waste', label: 'Waste', maxWidth: 110 },
           { dataKey: 'dispositionType', label: 'Disposition', maxWidth: 130 },
-          { dataKey: 'dispositionProvider', label: 'Disposed by' },
-          { dataKey: 'dispositionTimestamp', label: 'Time', maxWidth: 120 },
-          { dataKey: 'painReassessmentProvider', label: 'Reassessed by', maxWidth: 150 },
-          { dataKey: 'painReassessmentTimestamp', label: 'Time', maxWidth: 120 },
+          { dataKey: 'dispositionProviderName', label: 'Disposed by' },
+          { dataKey: 'dispositionDate', label: 'Time', maxWidth: 120 },
+          {
+            dataKey: 'painReassessmentProviderName',
+            label: 'Reassessed by',
+            maxWidth: 150,
+          },
+          { dataKey: 'painReassessmentDate', label: 'Time', maxWidth: 120 },
           { dataKey: 'medicationOrderId', label: 'Order ID', maxWidth: 120 },
         ]}
         tableName="ledger"

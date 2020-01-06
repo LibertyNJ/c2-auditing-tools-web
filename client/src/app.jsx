@@ -30,12 +30,12 @@ export default function App() {
             <Route path="/administration">
               <AdministrationsView />
             </Route>
-            <Route path="/provider">
+            {/* <Route path="/provider">
               <ProvidersView />
             </Route>
             <Route path="/data">
               <DataView />
-            </Route>
+            </Route> */}
           </Switch>
         </Layout>
       </Provider>

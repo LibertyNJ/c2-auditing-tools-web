@@ -2,19 +2,16 @@ import { connect } from 'react-redux';
 
 import FileInput from '../../components/FileInput';
 
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps,
-)(FileInput);
+export default connect(mapStateToProps, mapDispatchToProps)(FileInput);
 
-function mapStateToProps(state) {
+function mapStateToProps(state, ownProps) {
   return {
-    disabled: !isDatabaseReady(state.databaseStatus),
+    disabled: isFormSubmitted(state.forms[ownProps.form]),
   };
 }
 
-function isDatabaseReady(databaseStatus) {
-  return databaseStatus === 'Ready';
+function isFormSubmitted(formState) {
+  return formState.isSubmitted === true;
 }
 
 function mapDispatchToProps() {

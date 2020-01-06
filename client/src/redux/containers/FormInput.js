@@ -3,20 +3,17 @@ import { connect } from 'react-redux';
 import { changeFormField } from '../actions';
 import Input from '../../components/Input';
 
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps,
-)(Input);
+export default connect(mapStateToProps, mapDispatchToProps)(Input);
 
 function mapStateToProps(state, ownProps) {
   return {
-    disabled: !isDatabaseReady(state.databaseStatus),
+    disabled: isFormSubmitted(state.forms[ownProps.form]),
     value: getValue(state.forms, ownProps.form, ownProps.name),
   };
 }
 
-function isDatabaseReady(databaseStatus) {
-  return databaseStatus === 'Ready';
+function isFormSubmitted(formState) {
+  return formState.isSubmitted === true;
 }
 
 function getValue(forms, formName, fieldName) {

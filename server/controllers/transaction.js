@@ -3,7 +3,7 @@ const { Op, Sequelize } = require('sequelize');
 module.exports = ({ models: { Transaction } }) => {
   return {
     async get(req, res) {
-      const parameters = req.body;
+      const parameters = req.query;
 
       console.log(parameters);
 
@@ -13,9 +13,9 @@ module.exports = ({ models: { Transaction } }) => {
             include: [
               'amount',
               'date',
-              'medication_order_id',
+              ['medication_order_id', 'medicationOrderId'],
               [concatProduct(), 'product'],
-              [concatProviderName(), 'provider_name'],
+              [concatProviderName(), 'providerName'],
             ],
           },
           include: [
@@ -47,12 +47,14 @@ module.exports = ({ models: { Transaction } }) => {
               [Op.lte]: parameters.dateEnd,
             },
             medication_order_id: {
-              [Op.iLike]: `%${parameters.orderId || ''}%`,
+              [Op.iLike]: `%${parameters.medicationOrderId || ''}%`,
             },
           },
           order: [['date', 'ASC']],
           raw: true,
         });
+
+        console.log(transactions);
 
         res.status(200).json(transactions);
       } catch (error) {

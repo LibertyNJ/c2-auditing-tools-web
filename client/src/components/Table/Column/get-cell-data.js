@@ -1,18 +1,18 @@
 export default function getCellData({ dataKey, rowData }) {
   const cellData = rowData[dataKey];
 
-  if (isTimestamp(dataKey) && !isNull(cellData)) {
-    return formatTimestamp(cellData);
+  if (isDate(dataKey) && !isNull(cellData)) {
+    return formatDate(cellData);
   }
 
   return cellData;
 }
 
-function isTimestamp(dataKey) {
-  return /timestamp/i.test(dataKey);
+function isDate(dataKey) {
+  return /date/i.test(dataKey);
 }
 
-function formatTimestamp(isoString) {
+function formatDate(isoString) {
   const DATE_FORMAT = {
     month: '2-digit',
     day: '2-digit',

@@ -13,9 +13,11 @@
   "author": "Nathaniel J. Liberty <nathaniel.liberty@gmail.com>",
   "license": "UNLICENSED",
   "dependencies": {
+    "@babel/polyfill": "^7.7.0",
     "@fortawesome/fontawesome-svg-core": "^1.2.24",
     "@fortawesome/free-solid-svg-icons": "^5.11.1",
     "@fortawesome/react-fontawesome": "^0.1.4",
+    "axios": "^0.19.0",
     "better-sqlite3": "^5.4.0",
     "bootstrap": "^4.3.1",
     "bootstrap-select": "^1.13.12",
@@ -29,13 +31,16 @@
     "react-redux": "^7.1.1",
     "react-router-dom": "^5.1.2",
     "react-virtualized": "^9.21.0",
-    "redux": "^4.0.4"
+    "redux": "^4.0.4",
+    "redux-thunk": "^2.3.0"
   },
   "devDependencies": {
     "@babel/core": "^7.7.4",
     "@babel/plugin-proposal-class-properties": "^7.4.4",
+    "@babel/plugin-transform-runtime": "^7.7.6",
     "@babel/preset-env": "^7.4.5",
     "@babel/preset-react": "^7.0.0",
+    "@babel/runtime": "^7.7.7",
     "@testing-library/jest-dom": "^4.1.0",
     "@testing-library/react": "^9.2.0",
     "autoprefixer": "^9.6.0",

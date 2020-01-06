@@ -1,33 +1,28 @@
 import { connect } from 'react-redux';
 
 import Form from '../../components/Form';
-import { createRequest } from '../../util';
+import { requestTableRecords, getTableRecords } from '../actions';
 
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps,
-  mergeProps,
-)(Form);
+export default connect(mapStateToProps, mapDispatchToProps, mergeProps)(Form);
 
 function mapStateToProps(state, ownProps) {
   return {
-    fields: state.forms[ownProps.id].fields,
+    parameters: state.forms[ownProps.id].fields,
   };
 }
 
-function mapDispatchToProps() {
-  return {};
+function mapDispatchToProps(dispatch, ownProps) {
+  return {
+    handleSubmit: (event, parameters) => {
+      event.preventDefault();
+      dispatch(getTableRecords(ownProps.id, parameters));
+    },
+  };
 }
 
-function mergeProps({ fields }, dispatchProps, { id, ...restOwnProps }) {
+function mergeProps({ parameters }, { handleSubmit }, { ...restOwnProps }) {
   return {
-    id,
-    onSubmit: event => handleSubmit(event, id, fields),
+    onSubmit: event => handleSubmit(event, parameters),
     ...restOwnProps,
   };
-}
-
-function handleSubmit(event, id, fields) {
-  event.preventDefault();
-  const request = createRequest('GET', id, { ...fields });
 }

@@ -10,17 +10,27 @@ export default function NameSection({ ...restProps }) {
       <h3>Name</h3>
       <FormRow>
         <Column span={5}>
-          <FormInput form="editProvider" label="Last" name="lastName" type="text" />
+          <FormInput
+            form="editProvider"
+            label="Last"
+            name="editLastName"
+            type="text"
+          />
         </Column>
         <Column span={5}>
-          <FormInput form="editProvider" label="First" name="firstName" type="text" />
+          <FormInput
+            form="editProvider"
+            label="First"
+            name="editFirstName"
+            type="text"
+          />
         </Column>
         <Column span={2}>
           <FormInput
             form="editProvider"
             label="MI"
             maxLength={1}
-            name="middleInitial"
+            name="editMiddleInitial"
             type="text"
           />
         </Column>

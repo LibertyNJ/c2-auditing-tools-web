@@ -25,6 +25,7 @@ export default function SearchSection({ children, formId, ...restProps }) {
           <Column className="flex-grow-0">
             <FormIconButton
               className="btn-primary text-nowrap"
+              form={formId}
               icon="search"
               style={{ marginTop: '32px' }}
             >

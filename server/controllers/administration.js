@@ -3,19 +3,17 @@ const { Op, Sequelize } = require('sequelize');
 module.exports = ({ models: { Administration } }) => {
   return {
     async get(req, res) {
-      const parameters = req.body;
-
-      console.log(parameters);
+      const parameters = req.query;
 
       try {
         const administrations = await Administration.findAll({
           attributes: {
             include: [
               'date',
-              [concatDoseWithUnits(), 'dose_with_units'],
+              [concatDoseWithUnits(), 'doseWithUnits'],
               'medication_order_id',
-              [concatMedicationWithForm(), 'medication_with_form'],
-              [concatProviderName(), 'provider_name'],
+              [concatMedicationWithForm(), 'medicationWithForm'],
+              [concatProviderName(), 'providerName'],
             ],
           },
           include: [
@@ -41,7 +39,9 @@ module.exports = ({ models: { Administration } }) => {
               [Op.gte]: parameters.dateStart,
               [Op.lte]: parameters.dateEnd,
             },
-            medication_order_id: { [Op.iLike]: `%${parameters.orderId}%` },
+            medication_order_id: {
+              [Op.iLike]: `%${parameters.medicationOrderId}%`,
+            },
           },
           order: [['date', 'ASC']],
           raw: true,
