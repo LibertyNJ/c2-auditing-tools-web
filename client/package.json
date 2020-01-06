@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Tools for auditing C2 medication chain of custody from withdrawal to administration in a hospital setting.",
   "scripts": {
-    "build": "webpack --config webpak.prod.js",
+    "build": "webpack --config webpack.prod.js",
     "lint": "eslint --cache --color --ext .jsx,.js src",
     "start": "webpack-dev-server --open --config webpack.dev.js",
     "test": "jest --coverage",

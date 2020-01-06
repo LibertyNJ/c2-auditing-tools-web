@@ -34,7 +34,7 @@ export function getFormData(form, parameters) {
     dispatch(requestFormData(form));
 
     try {
-      const response = await axios.get(`http://localhost:8000/${form}`, {
+      const response = await axios.get(`http://localhost:8000/api/${form}`, {
         params: parameters,
       });
 
@@ -53,7 +53,7 @@ export function getTableRecords(table, parameters) {
     dispatch(requestTableRecords(table));
 
     try {
-      const response = await axios.get(`http://localhost:8000/${table}`, {
+      const response = await axios.get(`http://localhost:8000/api/${table}`, {
         params: parameters,
       });
 

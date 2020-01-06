@@ -8,9 +8,9 @@ import store from './redux/store';
 import './scripts/font-awesome-icon-library';
 import './styles/style.css';
 import AdministrationsView from './views/AdministrationsView';
-import DataView from './views/DataView';
+// import DataView from './views/DataView';
 import LedgerView from './views/LedgerView';
-import ProvidersView from './views/ProvidersView';
+// import ProvidersView from './views/ProvidersView';
 import TransactionsView from './views/TransactionsView';
 
 export default function App() {
