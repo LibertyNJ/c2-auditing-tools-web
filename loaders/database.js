@@ -9,7 +9,12 @@ const {
 
 module.exports = async (config, modelsDirectory) => {
   try {
-    const db = new Sequelize(config);
+    const db = new Sequelize(config.connectionString, {
+      dialectOptions: { ssl: true },
+      pool: {
+        max: 20,
+      },
+    });
 
     await db.authenticate();
     importModels(db, modelsDirectory);
