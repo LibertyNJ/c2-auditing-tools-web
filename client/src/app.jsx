@@ -16,9 +16,7 @@ import TransactionsView from './views/TransactionsView';
 export default function App() {
   const location = useLocation();
   useEffect(initializeBootstrapSelect, [location]);
-  window.alert(
-    'This sample application contains sanitized data from between 00:00 and 02:00, August 1, 2019. Try it on a desktop or laptop computer for the best experience.'
-  );
+  useEffect(showSampleAlert, []);
   return (
     <React.Fragment>
       <Provider store={store}>
@@ -43,5 +41,11 @@ export default function App() {
         </Layout>
       </Provider>
     </React.Fragment>
+  );
+}
+
+function showSampleAlert() {
+  window.alert(
+    'This sample application contains sanitized data from between 00:00 and 02:00, August 1, 2019. Try it on a desktop or laptop computer for the best experience.'
   );
 }
